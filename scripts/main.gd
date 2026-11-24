@@ -36,7 +36,10 @@ const CHARACTER_VISUAL := preload("res://scripts/character_visual.gd")
 const FIGHTER_BASE := preload("res://scripts/fighter_base.gd")
 const DAVY_VISUAL := preload("res://scripts/davy_jones_visual.gd")
 const DAVY_HEALTH_BAR := preload("res://scripts/davy_boss_health_bar.gd")
-const DAVY_INTRO_VOICE := preload("res://images/davy_jones_intro.wav")
+const DAVY_BOSS_MUSIC := preload("res://images/01 - Falling Apart (Prologue).ogg")
+const DAVY_INTRO_VOICE := preload("res://images/heygen-speech.wav")
+const DAVY_BOSS_MUSIC_VOLUME_DB := -11.0
+const DAVY_DIALOGUE_MUSIC_VOLUME_DB := -23.0
 const SAVE_PATH := "user://dorval_save.cfg"
 const MUSIC_RATE := 22050
 const BRIEFING_DISPLAY_SECONDS := 4.5
@@ -1499,6 +1502,9 @@ func _begin_davy_boss_encounter() -> void:
 		davy_saved_music_position = music_player.get_playback_position()
 		davy_saved_music_volume_db = music_player.volume_db
 		music_player.stop()
+		music_player.stream = DAVY_BOSS_MUSIC
+		music_player.volume_db = DAVY_BOSS_MUSIC_VOLUME_DB
+		music_player.play()
 	_clear_touch_directions()
 	player.velocity = Vector2.ZERO
 	var boss := CharacterBody2D.new()
@@ -1532,6 +1538,7 @@ func _begin_davy_boss_encounter() -> void:
 	davy_voice_player = AudioStreamPlayer.new()
 	davy_voice_player.stream = DAVY_INTRO_VOICE
 	davy_voice_player.volume_db = -1.5
+	davy_voice_player.finished.connect(_on_davy_voice_finished)
 	add_child(davy_voice_player)
 	visual.call("play_animation", "entrance", 7.0, true)
 	_update_character_depth_sorting()
@@ -1579,10 +1586,16 @@ func _show_davy_boss_intro() -> void:
 	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(dialogue)
-	_play_sfx(72.0, 0.42, 0.30)
 	await get_tree().create_timer(0.45).timeout
 	if is_instance_valid(davy_voice_player):
+		if is_instance_valid(music_player) and music_player.playing:
+			music_player.volume_db = DAVY_DIALOGUE_MUSIC_VOLUME_DB
 		davy_voice_player.play()
+
+
+func _on_davy_voice_finished() -> void:
+	if davy_boss_active and not davy_boss_defeated and is_instance_valid(music_player):
+		music_player.volume_db = DAVY_BOSS_MUSIC_VOLUME_DB
 
 
 func _update_davy_boss(delta: float) -> void:
@@ -1596,7 +1609,7 @@ func _update_davy_boss(delta: float) -> void:
 			visual.set("flip_h", true)
 			visual.call("play_animation", "side_walk", 7.0, true)
 			davy_boss_state = "dialogue"
-			davy_boss_intro_timer = 11.7
+			davy_boss_intro_timer = 12.0
 			_show_davy_boss_intro()
 		return
 	if davy_boss_state == "dialogue":
@@ -1761,13 +1774,16 @@ func _restore_davy_music_after_victory() -> void:
 	davy_saved_music_stream = null
 
 
-func _start_davy_boss_music(phase: int) -> void:
+func _start_davy_boss_music(_phase: int) -> void:
+	# The uploaded boss theme runs continuously through both fight phases.
+	# Phase changes must not restart or replace the selected track.
 	if music_player == null:
 		return
-	music_player.stop()
-	music_player.stream = _make_davy_boss_music(phase)
-	music_player.volume_db = -11.0
-	music_player.play()
+	if music_player.stream != DAVY_BOSS_MUSIC:
+		music_player.stream = DAVY_BOSS_MUSIC
+	if not music_player.playing:
+		music_player.play()
+	music_player.volume_db = DAVY_BOSS_MUSIC_VOLUME_DB
 
 
 func _make_davy_boss_music(phase: int) -> AudioStreamWAV:
