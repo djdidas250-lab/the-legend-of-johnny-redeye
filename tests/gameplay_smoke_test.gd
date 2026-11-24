@@ -12,7 +12,8 @@ func _ready() -> void:
 	var davy_script_text := (game.get_script() as GDScript).source_code
 	for asset_name in ["davy_human_walk.png", "davy_human_attack.png", "davy_human_fall.png", "davy_human_entrance.png", "davy_transformation.png", "davy_octopus_walk.png", "davy_octopus_attack.png"]:
 		if not _check(ResourceLoader.exists("res://images/sprites/" + asset_name), "Davy Jones animation asset missing: " + asset_name): return
-	if not _check(ResourceLoader.exists("res://images/davy_jones_intro.wav"), "Davy Jones spoken intro audio is missing."): return
+	if not _check(ResourceLoader.exists("res://images/heygen-speech.wav"), "Davy Jones approved spoken intro audio is missing."): return
+	if not _check(ResourceLoader.exists("res://images/01 - Falling Apart (Prologue).ogg"), "Davy Jones boss music is missing."): return
 	if not _check(davy_script_text.contains("func _begin_davy_boss_encounter") and davy_script_text.contains("rivals.is_empty()") and davy_script_text.contains("davy_boss_health == 10") and davy_script_text.contains("davy_boss_health <= 0") and davy_script_text.contains("func _restore_davy_music_after_victory") and davy_script_text.contains("music_player.play(davy_saved_music_position)"), "Davy Jones encounter trigger, two-phase health, or paused-music restoration is incomplete."): return
 	for expected_lives in [2, 1, 0]:
 		if not _check(bool(game.call("_lose_life_or_end_run")) and int(game.get("player_lives")) == expected_lives, "Each depleted set of five hearts must consume exactly one life."): return
