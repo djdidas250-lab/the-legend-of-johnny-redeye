@@ -1,0 +1,202 @@
+name: Build Android APK
+# Rebuild animation previews after clearing enclosed white matte pockets in octopus cells.
+# Rebuild after correcting octopus extraction to the authored 3x4 sprite grid.
+
+on:
+  push:
+    branches: [main, "build/*"]
+  workflow_dispatch:
+
+concurrency:
+  group: android-apk-build
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    name: Export Android APK
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out game
+        uses: actions/checkout@v4
+
+      - name: Extract supplied character sprite sheets
+        run: |
+          test -s Dorval_Extracted_Sprite_Sheets.zip
+          mkdir -p images/sprites
+          unzip -o Dorval_Extracted_Sprite_Sheets.zip -d images/sprites
+          python3 -m pip install --user Pillow numpy scipy
+          python3 tools/prepare_john_animations.py
+          python3 tools/prepare_davy_jones.py
+          curl --fail --location --retry 2 "https://resource2.heygen.ai/text_to_speech/070e5d9910f1498fa3d3c2eba605a98b/04f5e7c61b664654923e8f644e5c5d07/id=6a25fd9276bd4d2cad45c5db85816a0e.wav" --output images/davy_jones_intro.wav
+          test -s images/davy_jones_intro.wav
+          test -s images/sprites/davy_human_entrance.png
+          test -s images/sprites/davy_transformation.png
+          test -s images/sprites/davy_octopus_walk_down.png
+          test -s images/sprites/davy_octopus_walk_up.png
+          test -s images/sprites/davy_octopus_transition.png
+          test -s images/sprites/davy_octopus_attack.png
+          test -s images/sprites/enemy_updated.png
+          for asset in john_walk john_walk_away john_walk_toward john_punch john_hurt_recovery john_slingshot; do
+            test -s "images/sprites/${asset}.png"
+          done
+
+      - name: Generate and publish Davy Jones animation review previews
+        run: |
+          test -s build/davy_previews/davy_human_walk.gif
+          test -s build/davy_previews/davy_human_attack.gif
+          test -s build/davy_previews/davy_human_fall.gif
+          test -s build/davy_previews/davy_entrance.gif
+          test -s build/davy_previews/davy_transformation.gif
+          test -s build/davy_previews/davy_octopus_walk_down.gif
+          test -s build/davy_previews/davy_octopus_walk_up.gif
+          test -s build/davy_previews/davy_octopus_transition.gif
+          test -s build/davy_previews/davy_octopus_walk.gif
+          test -s build/davy_previews/davy_octopus_attack.gif
+          python3 - <<'PY'
+          import base64
+          from pathlib import Path
+          source = Path("images/Gemini_Generated_Image_tly5t5tly5t5tly5.jpeg").read_bytes()
+          print("SOURCE_OCTOPUS_SHEET_BASE64=" + base64.b64encode(source).decode("ascii"))
+          for name in ("davy_human_walk_contact.png", "davy_human_attack_contact.png", "davy_human_fall_contact.png", "davy_entrance_contact.png", "davy_transformation_contact.png", "davy_octopus_walk_contact.png", "davy_octopus_walk_down_contact.png", "davy_octopus_walk_up_contact.png", "davy_octopus_transition_contact.png", "davy_octopus_idle_contact.png", "davy_octopus_attack_contact.png", "davy_transformation_handoff_contact.png", "davy_human_walk.gif", "davy_human_attack.gif", "davy_human_fall.gif", "davy_entrance.gif", "davy_transformation.gif", "davy_octopus_walk.gif", "davy_octopus_walk_down.gif", "davy_octopus_walk_up.gif", "davy_octopus_transition.gif", "davy_octopus_attack.gif", "davy_transformation_handoff.gif"):
+              data = (Path("build/davy_previews") / name).read_bytes()
+              print(f"PREVIEW_{name}_BASE64=" + base64.b64encode(data).decode("ascii"))
+          PY
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Godot 4.4.1 and export templates
+        uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.4.1-stable
+          export-templates: true
+
+      - name: Restore stable Android debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: dorval-android-debug-keystore-v1
+
+      - name: Configure Android export settings
+        run: |
+          mkdir -p ~/.config/godot ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -noprompt -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          cat > ~/.config/godot/editor_settings-4.4.tres <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/java_sdk_path = "${JAVA_HOME}"
+          export/android/android_sdk_path = "${ANDROID_HOME}"
+          export/android/debug_keystore = "${HOME}/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+          test -x "${ANDROID_HOME}/platform-tools/adb"
+          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --install "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+          test -d "${ANDROID_HOME}/platforms/android-34"
+          test -d "${ANDROID_HOME}/build-tools/34.0.0"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=${HOME}/.android/debug.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+
+      - name: Verify supplied continuous Newleaf street panorama
+        run: |
+          test -s images/image_54ce9940.jpg
+          python3 -m pip install --user Pillow
+          python3 - <<'PY'
+          from PIL import Image
+          image = Image.open('images/image_54ce9940.jpg')
+          assert image.width >= 1800 and image.height >= 450, image.size
+          print('Verified supplied continuous Newleaf route:', image.size)
+          PY
+
+      - name: Verify complete Leaside panorama
+        run: |
+          test -s images/image_928e623e.jpg
+          python3 - <<'PY'
+          from PIL import Image
+          image = Image.open('images/image_928e623e.jpg')
+          assert image.width >= 1600 and image.height >= 400, image.size
+          assert image.width / image.height >= 3.0, image.size
+          print('Verified complete single-image Leaside panorama:', image.size)
+          PY
+
+      - name: Import project resources
+        run: godot --headless --editor --path . --quit
+
+      - name: Validate project scripts
+        run: godot --headless --path . --quit
+
+      - name: Smoke test game startup
+        run: godot --headless --path . --quit-after 5
+
+      - name: Test core gameplay loop
+        run: timeout 90s godot --headless --path . --scene res://tests/gameplay_smoke_test.tscn
+
+      - name: Export Android APK
+        run: |
+          mkdir -p build
+          godot --headless --verbose --path . --export-debug "Android" build/TheLegendOfJohnnyRedeye.apk
+          test -s build/TheLegendOfJohnnyRedeye.apk
+
+      - name: Verify APK package and Android launcher name
+        run: |
+          file build/TheLegendOfJohnnyRedeye.apk
+          unzip -t build/TheLegendOfJohnnyRedeye.apk
+          "${ANDROID_HOME}/build-tools/34.0.0/apksigner" verify --verbose build/TheLegendOfJohnnyRedeye.apk
+          AAPT="${ANDROID_HOME}/build-tools/34.0.0/aapt"
+          "$AAPT" dump badging build/TheLegendOfJohnnyRedeye.apk | tee build/apk-badging.txt
+          grep -F "package: name='com.djdidas.legendofdorval'" build/apk-badging.txt
+          grep -F "application-label:'The Legend of Johnny Redeye'" build/apk-badging.txt
+          grep -F "label='The Legend of Johnny Redeye'" build/apk-badging.txt | grep -F "launchable-activity:"
+          "$AAPT" dump xmltree build/TheLegendOfJohnnyRedeye.apk AndroidManifest.xml | tee build/apk-manifest.txt
+
+      - name: Publish installable APK as a GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-build-${{ github.run_number }}
+          name: The Legend of Johnny Redeye - Android build #${{ github.run_number }}
+          prerelease: true
+          generate_release_notes: false
+          body: |
+            Automated Android test build.
+            Commit: ${{ github.sha }}
+            APK was exported, package-checked, and signature-verified by the workflow.
+          files: |
+            build/TheLegendOfJohnnyRedeye.apk
+            build/davy_previews/davy_human_walk.gif
+            build/davy_previews/davy_human_attack.gif
+            build/davy_previews/davy_human_fall.gif
+            build/davy_previews/davy_entrance.gif
+            build/davy_previews/davy_transformation.gif
+            build/davy_previews/davy_octopus_walk.gif
+            build/davy_previews/davy_octopus_walk_down.gif
+            build/davy_previews/davy_octopus_walk_up.gif
+            build/davy_previews/davy_octopus_transition.gif
+            build/davy_previews/davy_octopus_attack.gif
+            build/davy_previews/davy_transformation_handoff.gif
+            build/davy_previews/davy_human_walk_contact.png
+            build/davy_previews/davy_human_attack_contact.png
+            build/davy_previews/davy_human_fall_contact.png
+            build/davy_previews/davy_entrance_contact.png
+            build/davy_previews/davy_transformation_contact.png
+            build/davy_previews/davy_octopus_walk_contact.png
+            build/davy_previews/davy_octopus_walk_down_contact.png
+            build/davy_previews/davy_octopus_walk_up_contact.png
+            build/davy_previews/davy_octopus_transition_contact.png
+            build/davy_previews/davy_octopus_idle_contact.png
+            build/davy_previews/davy_octopus_attack_contact.png
+            build/davy_previews/davy_transformation_handoff_contact.png
+
+# QA build: verify front-facing octopus bridge between transformation and walk.
+
+# Retry preview QA after fixing the malformed transition GIF check.

@@ -1,0 +1,42 @@
+name: Clean up old Actions artifacts
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old artifacts and preserve Build 519 APK
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const keepArtifactId = 14738201260;
+            const artifacts = await github.paginate(
+              github.rest.actions.listArtifactsForRepo,
+              { owner: context.repo.owner, repo: context.repo.repo, per_page: 100 }
+            );
+
+            const keep = artifacts.find(a => a.id === keepArtifactId);
+            if (!keep || keep.expired || keep.name !== "TheLegendOfDorval-Android-APK") {
+              throw new Error("Safety check failed: the confirmed Build #519 APK was not found as an active Android APK. Nothing was deleted.");
+            }
+
+            const remove = artifacts.filter(a => a.id !== keepArtifactId);
+            core.info(`Found ${artifacts.length} artifacts; preserving ${keep.name} (ID ${keep.id}); deleting ${remove.length} others.`);
+
+            let deleted = 0;
+            for (const artifact of remove) {
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id
+              });
+              deleted++;
+              core.info(`Deleted ${artifact.name} (ID ${artifact.id}, ${artifact.size_in_bytes} bytes)`);
+            }
+
+            core.notice(`Cleanup complete. Deleted ${deleted} artifacts. Preserved Build #519 APK (ID ${keepArtifactId}).`);
