@@ -30,8 +30,8 @@ jobs:
           python3 -m pip install --user Pillow numpy scipy
           python3 tools/prepare_john_animations.py
           python3 tools/prepare_davy_jones.py
-          curl --fail --location --retry 2 "https://resource2.heygen.ai/text_to_speech/070e5d9910f1498fa3d3c2eba605a98b/04f5e7c61b664654923e8f644e5c5d07/id=6a25fd9276bd4d2cad45c5db85816a0e.wav" --output images/davy_jones_intro.wav
-          test -s images/davy_jones_intro.wav
+          test -s "images/01 - Falling Apart (Prologue).ogg"
+          test -s images/heygen-speech.wav
           test -s images/sprites/davy_human_entrance.png
           test -s images/sprites/davy_transformation.png
           test -s images/sprites/davy_octopus_walk_down.png
