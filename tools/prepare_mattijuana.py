@@ -141,5 +141,35 @@ def main():
     print(f"Prepared phase-two joint frames: {phase_strip.size}")
 
 
+    # Final monster form: the supplied 1584x672 atlas is a 6-column by
+    # 3-row grid. The top-right cells contain the upright burning monster;
+    # the middle row supplies its lunging/attack poses.
+    monster_path = ROOT / "images" / "Gemini_Generated_Image_6bcmqi6bcmqi6bcm.jpeg"
+    monster_source = remove_white_background(Image.open(monster_path))
+    if monster_source.size != (1584, 672):
+        raise RuntimeError(f"Unexpected monster sheet dimensions: {monster_source.size}")
+    monster_w, monster_h = monster_source.width / 6.0, monster_source.height / 3.0
+    monster_frames = [(3, 0), (4, 0), (5, 0), (0, 1), (1, 1), (2, 1)]
+    monster_strip = Image.new("RGBA", (FRAME_W * len(monster_frames), FRAME_H), (0, 0, 0, 0))
+    for index, (col, row) in enumerate(monster_frames):
+        cell = monster_source.crop((round(col * monster_w), round(row * monster_h),
+                                    round((col + 1) * monster_w), round((row + 1) * monster_h)))
+        alpha = cell.getchannel("A")
+        labels, _ = ndimage.label(np.asarray(alpha) > 0, structure=np.ones((3, 3), dtype=bool))
+        sizes = np.bincount(labels.ravel())
+        valid = np.where((sizes >= 20) & (np.arange(len(sizes)) != 0))[0]
+        alpha = Image.fromarray((np.isin(labels, valid) * 255).astype(np.uint8), "L")
+        cell.putalpha(alpha)
+        bounds = alpha.getbbox()
+        if not bounds:
+            raise RuntimeError(f"Monster frame {index} is empty")
+        art = cell.crop(bounds)
+        art.thumbnail((FRAME_W - 20, FRAME_H - 12), Image.Resampling.LANCZOS)
+        frame = Image.new("RGBA", (FRAME_W, FRAME_H), (0, 0, 0, 0))
+        frame.alpha_composite(art, ((FRAME_W - art.width) // 2, FRAME_H - art.height))
+        monster_strip.alpha_composite(frame, (index * FRAME_W, 0))
+    monster_strip.save(HUMAN_OUTPUT / "mattijuana_monster_phase.png", optimize=True)
+    print(f"Prepared final monster phase frames: {monster_strip.size}")
+
 if __name__ == "__main__":
     main()
