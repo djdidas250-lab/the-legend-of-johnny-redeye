@@ -14,12 +14,17 @@ var frame_time := 0.0
 var frame_rate := 5.0
 var looping := true
 var finished := false
+var gait_time := 0.0
+var base_position := Vector2.ZERO
+var base_rotation := 0.0
 
 func _ready() -> void:
     centered = true
     region_enabled = true
     texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
     texture = SHEETS[animation_name]
+    base_position = position
+    base_rotation = rotation
     _apply_frame()
 
 func play_animation(name: String, fps: float = 5.0, loop: bool = true) -> void:
@@ -33,9 +38,26 @@ func play_animation(name: String, fps: float = 5.0, loop: bool = true) -> void:
     frame_rate = maxf(1.0, fps)
     looping = loop
     finished = false
+    if selected != "walk":
+        position = base_position
+        rotation = base_rotation
     _apply_frame()
 
 func _process(delta: float) -> void:
+    if animation_name == "walk":
+        gait_time += delta
+        # The source sheet has no authored walking poses. Add a restrained
+        # squash/bob/rock gait to the distinct idle poses instead of presenting
+        # a static duplicate as a conventional walk cycle.
+        var gait := sin(gait_time * TAU * 2.2)
+        position = base_position + Vector2(0.0, -2.5 - absf(gait) * 2.0)
+        rotation = base_rotation + gait * 0.035
+        scale.y = 1.0 + absf(gait) * 0.018
+    else:
+        position = base_position
+        rotation = base_rotation
+        scale.y = 1.0
+
     if finished:
         return
     frame_time += delta
