@@ -1917,13 +1917,11 @@ func _add_vehicle_obstacles() -> void:
 	# them on Leaside creates invisible walls across unrelated parts of its road.
 	if current_street == "LEASIDE DRIVE" or current_street == "WOODLAWN PARK" or current_street == "WOODLAWN PARK PLAYGROUND":
 		return
-	# Invisible blockers match parked vehicles embedded in the panorama.
-	# David can walk around them by using the foreground sidewalk lane.
+	# Keep the blockers tight to the visible parked vehicles. Their lower
+	# edges stop at y=412 so the player can walk along the road beneath them.
 	var vehicles := [
-		# Slightly inset footprints remove excess invisible padding while still
-		# preventing David from walking through the visible vehicle body.
-		[676.0, 409.0, 112.0, 54.0],
-		[1260.0, 409.0, 142.0, 54.0]
+		[676.0, 395.0, 100.0, 34.0],
+		[1260.0, 395.0, 128.0, 34.0]
 	]
 	for vehicle in vehicles:
 		var obstacle := StaticBody2D.new()
