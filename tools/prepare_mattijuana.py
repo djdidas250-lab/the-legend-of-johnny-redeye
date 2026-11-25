@@ -246,6 +246,8 @@ def main() -> None:
         extract_cell(joint, 2, 4, 5, 3, "joint recovery upright", pad=8, component_margin=16),
     ]
     idle_strip = write_strip(joint_idle, "mattijuana_joint_idle.png")
+    # The supplied joint sheet contains no distinct walking poses. Keep a separate
+    # strip for the controller, while the runtime adds a subtle gait to these poses.
     write_strip(joint_idle, "mattijuana_joint_walk.png")
     attack_strip = write_strip(joint_attack, "mattijuana_joint_attack.png")
     write_strip(joint_recovery, "mattijuana_joint_recovery.png")
@@ -279,7 +281,7 @@ def main() -> None:
         fire_cells.append(fire)
     write_strip(fire_cells, "mattijuana_monster_fire_breath.png", align="left")
 
-    print("Matt-ijuana extraction complete: entrance 12; human 6x4; transform 5; joint idle 3/attack 4/recovery 2; monster idle 3/walk 3/attack 3/fire breath 3.")
+    print("Matt-ijuana extraction complete: entrance 12; human 6x4; transform 5; joint idle 3/walk source 3/attack 4/recovery 2; monster idle 3/walk 3/attack 3/fire breath 2.")
 
 
 if __name__ == "__main__":
