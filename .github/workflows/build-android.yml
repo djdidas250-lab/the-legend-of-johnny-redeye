@@ -31,6 +31,7 @@ jobs:
           python3 tools/prepare_john_animations.py
           python3 tools/prepare_davy_jones.py
           python3 tools/prepare_mattijuana.py
+          python3 tools/create_mattijuana_previews.py
           test -s "images/01 - Falling Apart (Prologue).ogg"
           test -s images/heygen-speech.wav
           test -s "images/10_Angel With The Scabbed Wings.mp3"
@@ -72,6 +73,16 @@ jobs:
           for name in ("davy_human_walk_contact.png", "davy_human_attack_contact.png", "davy_human_fall_contact.png", "davy_entrance_contact.png", "davy_transformation_contact.png", "davy_octopus_walk_contact.png", "davy_octopus_walk_down_contact.png", "davy_octopus_walk_up_contact.png", "davy_octopus_transition_contact.png", "davy_octopus_idle_contact.png", "davy_octopus_attack_contact.png", "davy_transformation_handoff_contact.png", "davy_human_walk.gif", "davy_human_attack.gif", "davy_human_fall.gif", "davy_entrance.gif", "davy_transformation.gif", "davy_octopus_walk.gif", "davy_octopus_walk_down.gif", "davy_octopus_walk_up.gif", "davy_octopus_transition.gif", "davy_octopus_attack.gif", "davy_transformation_handoff.gif"):
               data = (Path("build/davy_previews") / name).read_bytes()
               print(f"PREVIEW_{name}_BASE64=" + base64.b64encode(data).decode("ascii"))
+          PY
+
+      - name: Publish Matt-ijuana frame review images to workflow log
+        run: |
+          python3 - <<'PY'
+          import base64
+          from pathlib import Path
+          for name in ("mattijuana_entrance_walk_contact.png", "mattijuana_human_attack_contact.png", "mattijuana_human_to_joint_contact.png", "mattijuana_joint_phase_contact.png", "mattijuana_monster_phase_contact.png", "mattijuana_all_sequences_overview.png"):
+              data = (Path("build/mattijuana_previews") / name).read_bytes()
+              print(f"MATTIJUANA_{name.upper().replace('.', '_')}_BASE64=" + base64.b64encode(data).decode("ascii"))
           PY
 
       - name: Set up Java 17
@@ -206,6 +217,9 @@ jobs:
             build/davy_previews/davy_octopus_idle_contact.png
             build/davy_previews/davy_octopus_attack_contact.png
             build/davy_previews/davy_transformation_handoff_contact.png
+            build/mattijuana_previews/*.gif
+            build/mattijuana_previews/*.png
+            build/mattijuana_previews/*.json
 
 # QA build: verify front-facing octopus bridge between transformation and walk.
 
