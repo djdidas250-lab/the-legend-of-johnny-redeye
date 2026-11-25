@@ -2598,6 +2598,11 @@ func _begin_newleaf_transition() -> void:
 	world_end = float(street_panorama.get_width())
 	current_street = "NEWLEAF CRESCENT"
 	active_slot_area = "Newleaf Crescent"
+	# Restore the original Newleaf slingshot pickup on this live street handoff.
+	# _build_game() handles direct checkpoint starts; this transition needs the
+	# same spawn explicitly because it reuses the existing player and HUD.
+	if not has_slingshot:
+		_create_slingshot_pickup()
 	# Reaching Newleaf from McRae permanently unlocks its map checkpoint.
 	active_slot_unlocked_newleaf_checkpoint = true
 	_save_slot_progress()
