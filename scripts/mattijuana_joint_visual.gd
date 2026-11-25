@@ -17,6 +17,7 @@ var finished := false
 var gait_time := 0.0
 var base_position := Vector2.ZERO
 var base_rotation := 0.0
+var base_scale := Vector2.ONE
 
 func _ready() -> void:
     centered = true
@@ -25,6 +26,7 @@ func _ready() -> void:
     texture = SHEETS[animation_name]
     base_position = position
     base_rotation = rotation
+    base_scale = scale
     _apply_frame()
 
 func play_animation(name: String, fps: float = 5.0, loop: bool = true) -> void:
@@ -52,11 +54,11 @@ func _process(delta: float) -> void:
         var gait := sin(gait_time * TAU * 2.2)
         position = base_position + Vector2(0.0, -2.5 - absf(gait) * 2.0)
         rotation = base_rotation + gait * 0.035
-        scale.y = 1.0 + absf(gait) * 0.018
+        scale.y = base_scale.y * (1.0 + absf(gait) * 0.018)
     else:
         position = base_position
         rotation = base_rotation
-        scale.y = 1.0
+        scale.y = base_scale.y
 
     if finished:
         return
