@@ -813,7 +813,7 @@ func _show_map_screen() -> void:
 
 	# John's X is centred in the gap between the fourth and fifth houses
 	# to the right of the SILVAN DR label. The hitbox shares its bounds.
-	var john_marker := _make_checkpoint_marker(0.79, 0.745, 0.835, 0.855)
+	var john_marker := _make_checkpoint_marker(0.79, 0.745, 0.835, 0.855, not active_slot_unlocked_mcrae)
 	john_marker.name = "JohnHouseCheckpointMarker"
 	map_layer.add_child(john_marker)
 
@@ -847,7 +847,7 @@ func _show_map_screen() -> void:
 	if active_slot_unlocked_mcrae:
 		# Center the X on the Leeside Drive–McRae Drive road junction.
 		# Coordinates are normalized to the supplied Mission Select artwork.
-		var mcrae_marker := _make_checkpoint_marker(0.528, 0.62, 0.608, 0.75)
+		var mcrae_marker := _make_checkpoint_marker(0.528, 0.62, 0.608, 0.75, not active_slot_unlocked_newleaf_checkpoint)
 		mcrae_marker.name = "McRaeCheckpointMarker"
 		map_layer.add_child(mcrae_marker)
 		var mcrae_hitbox := Button.new()
@@ -870,7 +870,7 @@ func _show_map_screen() -> void:
 	# The Newleaf–McRae checkpoint unlocks only after the player has
 	# travelled from McRae back onto Newleaf during normal progression.
 	if active_slot_unlocked_newleaf_checkpoint:
-		var newleaf_marker := _make_checkpoint_marker(0.519, 0.345, 0.581, 0.505)
+		var newleaf_marker := _make_checkpoint_marker(0.519, 0.345, 0.581, 0.505, not active_slot_unlocked_woodlawn_checkpoint)
 		newleaf_marker.name = "NewleafMcRaeCheckpointMarker"
 		map_layer.add_child(newleaf_marker)
 		var newleaf_hitbox := Button.new()
@@ -898,7 +898,7 @@ func _show_map_screen() -> void:
 	# has delivered the player into Woodlawn Park. Its position matches the
 	# red-dot reference on the upper Leeside Drive segment.
 	if active_slot_unlocked_woodlawn_checkpoint:
-		var woodlawn_marker := _make_checkpoint_marker(0.216, 0.145, 0.279, 0.285)
+		var woodlawn_marker := _make_checkpoint_marker(0.216, 0.145, 0.279, 0.285, not active_slot_unlocked_woodlawn_park_checkpoint)
 		woodlawn_marker.name = "RoadToWoodlawnCheckpointMarker"
 		map_layer.add_child(woodlawn_marker)
 		var woodlawn_hitbox := Button.new()
@@ -925,7 +925,7 @@ func _show_map_screen() -> void:
 	# The actual Woodlawn Park checkpoint sits within the wooded park area,
 	# left of the vertical WOODLAWN PARK lettering so the label remains clear.
 	if active_slot_unlocked_woodlawn_park_checkpoint:
-		var park_marker := _make_checkpoint_marker(0.025, 0.545, 0.095, 0.685)
+		var park_marker := _make_checkpoint_marker(0.025, 0.545, 0.095, 0.685, not mattijuana_defeated)
 		park_marker.name = "WoodlawnParkCheckpointMarker"
 		map_layer.add_child(park_marker)
 		var park_hitbox := Button.new()
@@ -949,7 +949,7 @@ func _show_map_screen() -> void:
 		park_hitbox.pressed.connect(_show_woodlawn_park_checkpoint_from_map)
 		map_layer.add_child(park_hitbox)
 
-func _make_checkpoint_marker(left: float, top: float, right: float, bottom: float) -> TextureRect:
+func _make_checkpoint_marker(left: float, top: float, right: float, bottom: float, should_pulse: bool = true) -> TextureRect:
 	var marker := TextureRect.new()
 	marker.texture = MAP_CHECKPOINT_MARKER
 	marker.anchor_left = left
@@ -959,9 +959,10 @@ func _make_checkpoint_marker(left: float, top: float, right: float, bottom: floa
 	marker.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	marker.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var pulse := create_tween().set_loops()
-	pulse.tween_property(marker, "modulate:a", 0.48, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	pulse.tween_property(marker, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	if should_pulse:
+		var pulse := create_tween().set_loops()
+		pulse.tween_property(marker, "modulate:a", 0.48, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		pulse.tween_property(marker, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	return marker
 
 
