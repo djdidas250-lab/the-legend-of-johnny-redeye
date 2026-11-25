@@ -3386,7 +3386,7 @@ func _begin_woodlawn_playground_transition() -> void:
 	street_panorama = _make_woodlawn_playground_panorama()
 	world_end = float(street_panorama.get_width())
 	current_street = "WOODLAWN PARK PLAYGROUND"
-	active_slot_area = "Woodlawn Park"
+	active_slot_area = "Woodlawn Park Playground"
 	# The separate park checkpoint unlocks only when the player reaches the
 	# actual park/playground section, not when entering Leaside Drive B.
 	active_slot_unlocked_woodlawn_park_checkpoint = true
