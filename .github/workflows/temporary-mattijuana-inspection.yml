@@ -1,0 +1,51 @@
+name: Temporary Matt-ijuana Sprite Inspection
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/temporary-mattijuana-inspection.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-sprite-sheets:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Generate compact visual previews
+        run: |
+          python3 -m pip install --user Pillow
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageOps, ImageDraw
+          import base64, io
+          names = [
+              "Gemini_Generated_Image_6bcmqi6bcmqi6bcm.jpeg",
+              "Gemini_Generated_Image_7c899f7c899f7c89.jpeg",
+              "Gemini_Generated_Image_g9722kg9722kg972.jpeg",
+          ]
+          panels = []
+          for name in names:
+              path = Path("images") / name
+              im = Image.open(path).convert("RGB")
+              print(f"SPRITE_SHEET {name} SIZE {im.width}x{im.height}")
+              im.thumbnail((1500, 1500), Image.Resampling.LANCZOS)
+              panel = Image.new("RGB", (1540, im.height + 70), "white")
+              panel.paste(im, ((1540-im.width)//2, 55))
+              ImageDraw.Draw(panel).text((20, 18), f"{name} | original: {Image.open(path).size}", fill="black")
+              panels.append(panel)
+          sheet = Image.new("RGB", (1540, sum(p.height for p in panels)), "#dddddd")
+          y = 0
+          for panel in panels:
+              sheet.paste(panel, (0,y))
+              y += panel.height
+          out = io.BytesIO()
+          sheet.save(out, format="JPEG", quality=88, optimize=True)
+          encoded = base64.b64encode(out.getvalue()).decode("ascii")
+          print("MATTJUANA_PREVIEW_BASE64_BEGIN")
+          print(encoded)
+          print("MATTJUANA_PREVIEW_BASE64_END")
+          PY
