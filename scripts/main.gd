@@ -2980,16 +2980,76 @@ func _transition_mattijuana_to_joint() -> void:
 	_show_notice("PHASE TWO: THE BURNING JOINT!")
 
 
+func _transition_mattijuana_to_monster() -> void:
+	await get_tree().create_timer(1.25).timeout
+	if not is_instance_valid(mattijuana_boss) or mattijuana_boss_state != "phase3_pending":
+		return
+	if is_instance_valid(mattijuana_boss_visual):
+		mattijuana_boss_visual.queue_free()
+	mattijuana_boss_visual = Sprite2D.new()
+	mattijuana_boss_visual.set_script(MATTIJUANA_MONSTER_VISUAL)
+	mattijuana_boss_visual.position = Vector2(0.0, -108.0)
+	mattijuana_boss_visual.scale = Vector2(0.88, 0.88)
+	mattijuana_boss.add_child(mattijuana_boss_visual)
+	mattijuana_phase = 3
+	mattijuana_health = 10
+	if is_instance_valid(mattijuana_health_bar):
+		mattijuana_health_bar.set("maximum_health", 10)
+		mattijuana_health_bar.call("update_health", mattijuana_health, mattijuana_phase)
+	mattijuana_attack_cooldown = 1.0
+	mattijuana_fire_cooldown = 2.4
+	mattijuana_boss_state = "monster_fight"
+	mattijuana_boss_active = true
+	_show_notice("FINAL PHASE: THE FIRE-BREATHING MONSTER!")
+
+
+func _show_mattijuana_fire_breath(direction: float) -> void:
+	var flame := Line2D.new()
+	flame.name = "MattijuanaFireBreath"
+	flame.points = PackedVector2Array([Vector2(0.0, -98.0), Vector2(direction * 205.0, -98.0)])
+	flame.width = 42.0
+	flame.default_color = Color(1.0, 0.29, 0.025, 0.94)
+	flame.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	flame.end_cap_mode = Line2D.LINE_CAP_ROUND
+	flame.z_index = 35
+	mattijuana_boss.add_child(flame)
+	var glow := Line2D.new()
+	glow.points = flame.points
+	glow.width = 19.0
+	glow.default_color = Color(1.0, 0.82, 0.24, 0.95)
+	glow.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	glow.end_cap_mode = Line2D.LINE_CAP_ROUND
+	glow.z_index = 36
+	mattijuana_boss.add_child(glow)
+	var fade := create_tween()
+	fade.tween_property(flame, "modulate:a", 0.0, 0.48)
+	fade.parallel().tween_property(glow, "modulate:a", 0.0, 0.48)
+	fade.tween_callback(flame.queue_free)
+	fade.tween_callback(glow.queue_free)
+
+
 func _update_mattijuana_boss(delta: float) -> void:
-	if not mattijuana_boss_active or mattijuana_boss_state not in ["human_fight", "joint_fight"] or not is_instance_valid(mattijuana_boss) or not is_instance_valid(player):
+	if not mattijuana_boss_active or mattijuana_boss_state not in ["human_fight", "joint_fight", "monster_fight"] or not is_instance_valid(mattijuana_boss) or not is_instance_valid(player):
 		return
 	mattijuana_attack_cooldown = maxf(0.0, mattijuana_attack_cooldown - delta)
+	mattijuana_fire_cooldown = maxf(0.0, mattijuana_fire_cooldown - delta)
 	var dx := player.position.x - mattijuana_boss.position.x
 	var dy := player.position.y - mattijuana_boss.position.y
 	var visual := mattijuana_boss_visual
-	if absf(dx) > 76.0 or absf(dy) > 18.0:
+	if mattijuana_boss_state == "monster_fight" and absf(dx) <= 235.0 and absf(dy) <= 34.0 and mattijuana_fire_cooldown <= 0.0 and player_invulnerable <= 0.0 and not player_recovery_active:
+		mattijuana_fire_cooldown = 3.1
+		if is_instance_valid(visual):
+			visual.flip_h = dx < 0.0
+			visual.call("play_animation", "attack", 6.0, false)
+		_show_mattijuana_fire_breath(signf(dx))
+		if absf(dx) >= 72.0:
+			_hurt_player(mattijuana_boss)
+		return
+	var preferred_distance := 76.0 if mattijuana_boss_state != "monster_fight" else 145.0
+	if absf(dx) > preferred_distance or absf(dy) > 18.0:
 		var direction := Vector2(signf(dx), signf(dy) * 0.55).normalized()
-		mattijuana_boss.position += direction * (30.0 if mattijuana_phase == 1 else 23.0) * delta
+		var speed := 30.0 if mattijuana_phase == 1 else (23.0 if mattijuana_phase == 2 else 20.0)
+		mattijuana_boss.position += direction * speed * delta
 		if is_instance_valid(visual):
 			visual.flip_h = dx < 0.0
 			visual.call("play_animation", "walk", 7.0 if mattijuana_phase == 1 else 5.0, true)
@@ -3001,6 +3061,24 @@ func _update_mattijuana_boss(delta: float) -> void:
 			visual.flip_h = dx < 0.0
 			visual.call("play_animation", "attack", 8.0 if mattijuana_phase == 1 else 5.0, false)
 		_hurt_player(mattijuana_boss)
+
+
+func _finish_mattijuana_encounter() -> void:
+	mattijuana_boss_state = "defeated"
+	mattijuana_boss_active = false
+	mattijuana_defeated = true
+	if is_instance_valid(mattijuana_boss_visual):
+		mattijuana_boss_visual.call("play_animation", "attack", 3.0, false)
+	_show_notice("MATTIJUANA DEFEATED! THE PLAYGROUND IS CLEAR!")
+	if is_instance_valid(music_player):
+		music_player.stop()
+	_play_davy_victory_sting()
+	await get_tree().create_timer(1.5).timeout
+	if is_instance_valid(mattijuana_boss):
+		mattijuana_boss.queue_free()
+	mattijuana_boss = null
+	mattijuana_boss_visual = null
+	mattijuana_health_bar = null
 
 
 func _show_mattijuana_intro() -> void:
