@@ -3012,27 +3012,10 @@ func _begin_mattijuana_entrance() -> void:
 		mattijuana_boss_visual.set("walking", false)
 	mattijuana_boss_state = "dialogue"
 	_show_mattijuana_intro()
-	# Keep the intro panel and ducked boss music tied to the actual voice playback.
-	if is_instance_valid(mattijuana_voice_player):
-		await mattijuana_voice_player.finished
-	if is_instance_valid(mattijuana_dialogue_layer):
-		mattijuana_dialogue_layer.queue_free()
-		mattijuana_dialogue_layer = null
-	if is_instance_valid(music_player) and music_player.playing:
-		music_player.volume_db = -10.0
-	mattijuana_boss_state = "human_fight"
-	mattijuana_boss_active = true
-	mattijuana_health = 10
-	mattijuana_phase = 1
-	if is_instance_valid(mattijuana_health_bar):
-		mattijuana_health_bar.call("update_health", mattijuana_health, mattijuana_phase)
-	if is_instance_valid(mattijuana_boss_visual):
-		mattijuana_boss_visual.queue_free()
-	mattijuana_boss_visual = Sprite2D.new()
-	mattijuana_boss_visual.set_script(MATTIJUANA_HUMAN_VISUAL)
-	mattijuana_boss_visual.position = Vector2(0.0, -105.0)
-	mattijuana_boss_visual.scale = Vector2(0.62, 0.62)
-	mattijuana_boss.add_child(mattijuana_boss_visual)
+	# Voice completion owns the dialogue cleanup and the start of the fight.
+	# A duration fallback covers devices/decoders that fail to emit finished.
+	var voice_duration := maxf(1.0, MATTIJUANA_INTRO_VOICE.get_length() + 0.35)
+	_call_mattijuana_intro_fallback(voice_duration)
 
 
 func _transition_mattijuana_to_joint() -> void:
@@ -3209,15 +3192,46 @@ func _show_mattijuana_intro() -> void:
 	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(dialogue)
-	# Duck the boss music for the spoken line, matching the Davy Jones intro.
-	if is_instance_valid(music_player) and music_player.playing:
+	# Always duck the active boss soundtrack during the spoken line.
+	# Do not gate this on AudioStreamPlayer.playing: some Android audio
+	# backends briefly report false while the newly selected stream starts.
+	if is_instance_valid(music_player):
 		music_player.volume_db = DAVY_DIALOGUE_MUSIC_VOLUME_DB
-	# The dialogue panel is removed as soon as this voice player's finished signal fires.
 	mattijuana_voice_player = AudioStreamPlayer.new()
 	mattijuana_voice_player.stream = MATTIJUANA_INTRO_VOICE
 	mattijuana_voice_player.volume_db = 0.0
 	mattijuana_dialogue_layer.add_child(mattijuana_voice_player)
+	mattijuana_voice_player.finished.connect(_on_mattijuana_intro_voice_finished, CONNECT_ONE_SHOT)
 	mattijuana_voice_player.play()
+
+
+func _call_mattijuana_intro_fallback(duration: float) -> void:
+	await get_tree().create_timer(duration).timeout
+	if mattijuana_boss_state == "dialogue":
+		_on_mattijuana_intro_voice_finished()
+
+
+func _on_mattijuana_intro_voice_finished() -> void:
+	if mattijuana_boss_state != "dialogue":
+		return
+	if is_instance_valid(mattijuana_dialogue_layer):
+		mattijuana_dialogue_layer.queue_free()
+	mattijuana_dialogue_layer = null
+	if is_instance_valid(music_player):
+		music_player.volume_db = -10.0
+	mattijuana_boss_state = "human_fight"
+	mattijuana_boss_active = true
+	mattijuana_health = 10
+	mattijuana_phase = 1
+	if is_instance_valid(mattijuana_health_bar):
+		mattijuana_health_bar.call("update_health", mattijuana_health, mattijuana_phase)
+	if is_instance_valid(mattijuana_boss_visual):
+		mattijuana_boss_visual.queue_free()
+	mattijuana_boss_visual = Sprite2D.new()
+	mattijuana_boss_visual.set_script(MATTIJUANA_HUMAN_VISUAL)
+	mattijuana_boss_visual.position = Vector2(0.0, -105.0)
+	mattijuana_boss_visual.scale = Vector2(0.62, 0.62)
+	mattijuana_boss.add_child(mattijuana_boss_visual)
 
 
 func _begin_woodlawn_playground_transition() -> void:
