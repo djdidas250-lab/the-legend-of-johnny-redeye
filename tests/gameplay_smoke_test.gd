@@ -10,6 +10,10 @@ func _ready() -> void:
 	if not _check(title_layer != null, "Title screen missing."): return
 	if not _check(int(game.get("player_lives")) == 3 and int(game.get("player_health")) == 5, "A fresh game must begin with three lives and five heart cells."): return
 	var davy_script_text := (game.get_script() as GDScript).source_code
+	for matt_asset in ["mattijuana_front_walk.png", "mattijuana_human_walk.png", "mattijuana_human_attack.png", "mattijuana_human_fall.png", "mattijuana_human_recover.png", "mattijuana_joint_phase.png", "mattijuana_monster_phase.png"]:
+		if not _check(ResourceLoader.exists("res://images/sprites/" + matt_asset), "Matt-ijuana phase animation asset missing: " + matt_asset): return
+	if not _check(ResourceLoader.exists("res://images/10_Angel With The Scabbed Wings.mp3"), "Matt-ijuana's supplied entrance soundtrack is missing."): return
+	if not _check(davy_script_text.contains("func _transition_mattijuana_to_joint") and davy_script_text.contains("func _transition_mattijuana_to_monster") and davy_script_text.contains("func _show_mattijuana_fire_breath") and davy_script_text.contains("func _finish_mattijuana_encounter") and davy_script_text.contains("mattijuana_boss_state in [\"human_fight\", \"joint_fight\", \"monster_fight\"]"), "Matt-ijuana must have three connected combat phases, fire breath, and a victory sequence."): return
 	for asset_name in ["davy_human_walk.png", "davy_human_attack.png", "davy_human_fall.png", "davy_human_entrance.png", "davy_transformation.png", "davy_octopus_walk.png", "davy_octopus_attack.png"]:
 		if not _check(ResourceLoader.exists("res://images/sprites/" + asset_name), "Davy Jones animation asset missing: " + asset_name): return
 	if not _check(ResourceLoader.exists("res://images/heygen-speech.wav"), "Davy Jones approved spoken intro audio is missing."): return
