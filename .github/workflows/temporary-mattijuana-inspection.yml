@@ -1,0 +1,42 @@
+name: Temporary Matt-ijuana Sprite Inspection
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/temporary-mattijuana-inspection.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-sprite-sheets:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Create viewable previews
+        run: |
+          python3 -m pip install --user Pillow
+          mkdir -p /tmp/mattijuana-previews
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          names = [
+              "Gemini_Generated_Image_6bcmqi6bcmqi6bcm.jpeg",
+              "Gemini_Generated_Image_7c899f7c899f7c89.jpeg",
+              "Gemini_Generated_Image_g9722kg9722kg972.jpeg",
+              "Gemini_Generated_Image_u02s9gu02s9gu02s.jpeg",
+              "Gemini_Generated_Image_ure48yure48yure4.jpeg",
+          ]
+          for index, name in enumerate(names, 1):
+              im = Image.open(Path("images") / name).convert("RGB")
+              print(f"Sheet {index}: {name} — {im.width}x{im.height}")
+              im.save(Path("/tmp/mattijuana-previews") / f"sheet-{index}.jpg", quality=96, subsampling=0)
+          PY
+      - name: Upload previews for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: mattijuana-sprite-previews
+          path: /tmp/mattijuana-previews/*.jpg
+          retention-days: 1
