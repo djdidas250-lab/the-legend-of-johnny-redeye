@@ -107,7 +107,7 @@ def main():
             frame.alpha_composite(art, ((FRAME_W - art.width) // 2, FRAME_H - art.height))
             human_strip.alpha_composite(frame, (col * FRAME_W, 0))
         human_strip.save(HUMAN_OUTPUT / filename, optimize=True)
-        print(f"Prepared 6 human-form frames: {HUMAN_OUTPUT / filename} {human_strip.size})
+        print(f"Prepared 6 human-form frames: {HUMAN_OUTPUT / filename} {human_strip.size}")
 
 
 if __name__ == "__main__":
