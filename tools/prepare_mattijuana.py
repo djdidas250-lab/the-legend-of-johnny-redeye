@@ -71,14 +71,14 @@ def crop_to_alpha(image: Image.Image, padding: int = 5) -> Image.Image:
                        min(image.width, right + padding), min(image.height, bottom + padding)))
 
 
-def extract_cell(sheet: Image.Image, row: int, col: int, cols: int, rows: int, label: str, pad: int = 8) -> Image.Image:
+def extract_cell(sheet: Image.Image, row: int, col: int, cols: int, rows: int, label: str, pad: int = 8, component_margin: int = 34) -> Image.Image:
     cell_w, cell_h = sheet.width / float(cols), sheet.height / float(rows)
     left, top = round(col * cell_w), round(row * cell_h)
     right, bottom = round((col + 1) * cell_w), round((row + 1) * cell_h)
     cell = sheet.crop((max(0, left - pad), max(0, top - pad),
                        min(sheet.width, right + pad), min(sheet.height, bottom + pad)))
     rgba = np.asarray(remove_white_background(cell)).copy()
-    rgba = retain_pose_components(rgba, margin=34)
+    rgba = retain_pose_components(rgba, margin=component_margin)
     result = crop_to_alpha(Image.fromarray(rgba, "RGBA"), padding=5)
     if result.width < 8 or result.height < 8:
         raise RuntimeError(f"Invalid extracted cell {label} row={row + 1} col={col + 1}")
@@ -86,7 +86,7 @@ def extract_cell(sheet: Image.Image, row: int, col: int, cols: int, rows: int, l
 
 
 def extract_row_frames(sheet: Image.Image, y0: int, y1: int, count: int, label: str,
-                       overlap_before: int = 16, overlap_after: int = 16) -> list[Image.Image]:
+                       overlap_before: int = 16, overlap_after: int = 16, component_margin: int = 28) -> list[Image.Image]:
     """Detect complete authored poses across a row while allowing limbs/effects to cross cell boundaries."""
     crop_y0 = max(0, y0 - overlap_before)
     crop_y1 = min(sheet.height, y1 + overlap_after)
@@ -137,8 +137,8 @@ def extract_row_frames(sheet: Image.Image, y0: int, y1: int, count: int, label: 
             raise RuntimeError(f"No pose silhouette intersects its authored band in {label} frame {index + 1}")
         main_label = int(max(valid_labels, key=lambda value: sizes[int(value)]))
         main_y, main_x = np.where(labels == main_label)
-        box = (int(main_x.min()) - 28, int(main_y.min()) - 28,
-               int(main_x.max()) + 29, int(main_y.max()) + 29)
+        box = (int(main_x.min()) - component_margin, int(main_y.min()) - component_margin,
+               int(main_x.max()) + component_margin + 1, int(main_y.max()) + component_margin + 1)
         min_area = max(20, int(sizes[main_label] * 0.0015))
         keep = labels == main_label
         for component in range(1, component_count + 1):
@@ -166,7 +166,7 @@ def normalize_frames(frames: list[Image.Image], align: str = "bottom") -> list[I
             frame = frame.resize((max(1, round(frame.width * scale)),
                                   max(1, round(frame.height * scale))), Image.Resampling.LANCZOS)
         canvas = Image.new("RGBA", (FRAME_W, FRAME_H), (0, 0, 0, 0))
-        x = (FRAME_W - frame.width) // 2
+        x = SAFE_X if align == "left" else (FRAME_W - frame.width) // 2
         y = FRAME_H - SAFE_BOTTOM - frame.height if align == "bottom" else (FRAME_H - frame.height) // 2
         canvas.alpha_composite(frame, (x, y))
         normalized.append(canvas)
@@ -216,8 +216,8 @@ def main() -> None:
 
     human_rows = [
         extract_row_frames(human, 0, 192, 6, "human walk", overlap_after=18),
-        extract_row_frames(human, 192, 384, 6, "human attack", overlap_before=18, overlap_after=18),
-        extract_row_frames(human, 384, 576, 6, "human fall", overlap_before=18, overlap_after=18),
+        extract_row_frames(human, 192, 384, 6, "human attack", overlap_before=18, overlap_after=18, component_margin=10),
+        extract_row_frames(human, 384, 576, 6, "human fall", overlap_before=18, overlap_after=18, component_margin=12),
         extract_row_frames(human, 576, 768, 6, "human recovery", overlap_before=18),
     ]
     for frames, name in zip(human_rows, ("mattijuana_human_walk.png", "mattijuana_human_attack.png",
@@ -229,23 +229,32 @@ def main() -> None:
     write_strip(transform_frames, "mattijuana_human_to_joint.png", align="center")
 
     joint_idle = [
-        extract_cell(joint, 0, 3, 5, 3, "joint idle unlit", pad=5),
-        extract_cell(joint, 0, 4, 5, 3, "joint idle lit", pad=5),
-        extract_cell(joint, 1, 0, 5, 3, "joint idle smoke", pad=5),
+        extract_cell(joint, 0, 3, 5, 3, "joint idle unlit", pad=5, component_margin=16),
+        extract_cell(joint, 0, 4, 5, 3, "joint idle lit", pad=5, component_margin=16),
+        extract_cell(joint, 1, 0, 5, 3, "joint idle smoke", pad=5, component_margin=16),
     ]
-    joint_attack = extract_row_frames(joint, 256, 512, 5, "joint phase attack",
-                                      overlap_before=16, overlap_after=16)
-    joint_recovery = extract_row_frames(joint, 512, 768, 5, "joint phase recovery",
-                                        overlap_before=16)
+    # The lower joint poses cross the nominal grid boundaries. Use overlapping
+    # cell crops around the four authored attack poses, then the first full recovery pose.
+    joint_attack = [
+        extract_cell(joint, 1, col, 5, 3, "joint attack", pad=16, component_margin=12)
+        for col in (1, 2, 3, 4)
+    ] + [extract_cell(joint, 2, 0, 5, 3, "joint attack impact", pad=16, component_margin=12)]
+    joint_recovery = [
+        extract_cell(joint, 2, col, 5, 3, "joint recovery", pad=12, component_margin=12)
+        for col in (1, 2, 3, 4)
+    ]
     idle_strip = write_strip(joint_idle, "mattijuana_joint_idle.png")
     write_strip(joint_idle, "mattijuana_joint_walk.png")
     attack_strip = write_strip(joint_attack, "mattijuana_joint_attack.png")
     write_strip(joint_recovery, "mattijuana_joint_recovery.png")
     write_strip(joint_idle + joint_attack, "mattijuana_joint_phase.png")
 
-    monster_idle = [extract_cell(monster, 0, col, 6, 3, "monster idle", pad=8) for col in (3, 4, 5)]
-    monster_walk = [extract_cell(monster, 1, col, 6, 3, "monster walk", pad=8) for col in (0, 1, 2)]
-    monster_attack = [extract_cell(monster, 1, col, 6, 3, "monster attack", pad=8) for col in (3, 4, 5)]
+    monster_transform = [extract_cell(monster, 0, col, 6, 3, "joint-to-monster transformation", pad=0, component_margin=12)
+                         for col in (0, 1, 2)]
+    write_strip(monster_transform, "mattijuana_joint_to_monster.png", align="center")
+    monster_idle = [extract_cell(monster, 0, col, 6, 3, "monster idle", pad=0, component_margin=12) for col in (3, 4, 5)]
+    monster_walk = [extract_cell(monster, 1, col, 6, 3, "monster walk", pad=0, component_margin=12) for col in (0, 1, 2)]
+    monster_attack = [extract_cell(monster, 1, col, 6, 3, "monster attack", pad=0, component_margin=12) for col in (3, 4, 5)]
     idle_monster_strip = write_strip(monster_idle, "mattijuana_monster_idle.png")
     walk_monster_strip = write_strip(monster_walk, "mattijuana_monster_walk.png")
     attack_monster_strip = write_strip(monster_attack, "mattijuana_monster_attack.png")
@@ -260,13 +269,13 @@ def main() -> None:
         cell = monster.crop((col * monster_cell_w, 2 * monster_cell_h,
                              (col + 1) * monster_cell_w, 3 * monster_cell_h))
         if col == 1:
-            cell = cell.crop((120, 16, cell.width, cell.height - 8))
+            cell = cell.crop((150, 16, cell.width, cell.height - 8))
         fire = remove_white_background(cell)
         fire = crop_to_alpha(fire, padding=5)
         fire_cells.append(fire)
-    write_strip(fire_cells, "mattijuana_monster_fire_breath.png", align="center")
+    write_strip(fire_cells, "mattijuana_monster_fire_breath.png", align="left")
 
-    print("Matt-ijuana extraction complete: entrance 12; human 6x4; transform 5; joint idle 3/attack 5/recovery 5; monster idle 3/walk 3/attack 3/fire breath 3.")
+    print("Matt-ijuana extraction complete: entrance 12; human 6x4; transform 5; joint idle 3/attack 5/recovery 4; monster idle 3/walk 3/attack 3/fire breath 3.")
 
 
 if __name__ == "__main__":

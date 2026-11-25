@@ -17,7 +17,8 @@ SEQUENCES = {
     "human_to_joint": ("mattijuana_human_to_joint.png", 5, 420),
     "joint_idle": ("mattijuana_joint_idle.png", 3, 220),
     "joint_attack": ("mattijuana_joint_attack.png", 5, 180),
-    "joint_recovery": ("mattijuana_joint_recovery.png", 5, 180),
+    "joint_recovery": ("mattijuana_joint_recovery.png", 4, 180),
+    "joint_to_monster": ("mattijuana_joint_to_monster.png", 3, 420),
     "monster_idle": ("mattijuana_monster_idle.png", 3, 220),
     "monster_walk": ("mattijuana_monster_walk.png", 3, 160),
     "monster_attack": ("mattijuana_monster_attack.png", 3, 180),
@@ -83,6 +84,21 @@ def main():
             source_grid.paste(cell, (x, y))
             source_draw.text((col * 270 + 8, row * 250 + 6), f"row {row + 1}, col {col + 1}", fill=(255, 255, 255))
     source_grid.save(OUT / "mattijuana_monster_source_grid.png", optimize=True)
+
+    joint_source_path = ROOT / "images" / "Gemini_Generated_Image_g9722kg9722kg972.jpeg"
+    joint_source = Image.open(joint_source_path).convert("RGB")
+    joint_cell_w, joint_cell_h = joint_source.width // 5, joint_source.height // 3
+    joint_grid = Image.new("RGB", (5 * 300, 3 * 280), (40, 43, 49))
+    joint_draw = ImageDraw.Draw(joint_grid)
+    for row in range(3):
+        for col in range(5):
+            cell = joint_source.crop((col * joint_cell_w, row * joint_cell_h,
+                                      (col + 1) * joint_cell_w, (row + 1) * joint_cell_h))
+            cell.thumbnail((290, 250), Image.Resampling.LANCZOS)
+            x, y = col * 300 + (300 - cell.width) // 2, row * 280 + 24
+            joint_grid.paste(cell, (x, y))
+            joint_draw.text((col * 300 + 8, row * 280 + 6), f"row {row + 1}, col {col + 1}", fill=(255, 255, 255))
+    joint_grid.save(OUT / "mattijuana_joint_source_grid.png", optimize=True)
 
     overview = Image.new("RGB", (1080, len(all_contacts) * 250), (30, 33, 39))
     draw = ImageDraw.Draw(overview)
