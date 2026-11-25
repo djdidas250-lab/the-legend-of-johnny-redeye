@@ -1913,9 +1913,9 @@ func _make_character(at: Vector2, shirt: Color, rival: bool, rival_variant: int 
 	return body
 
 func _add_vehicle_obstacles() -> void:
-	# The fixed vehicle footprints belong only to the Newleaf panorama. Reusing
-	# them on Leaside creates invisible walls across unrelated parts of its road.
-	if current_street == "LEASIDE DRIVE" or current_street == "WOODLAWN PARK" or current_street == "WOODLAWN PARK PLAYGROUND":
+	# These two fixed vehicle footprints belong exclusively to Newleaf.
+	# Never create them on McRae, Leaside, or either Woodlawn street.
+	if current_street != "NEWLEAF CRESCENT":
 		return
 	# Keep the blockers tight to the visible parked vehicles. Their lower
 	# edges stop at y=412 so the player can walk along the road beneath them.
