@@ -42,6 +42,7 @@ const MATTIJUANA_BOSS_MUSIC := preload("res://images/10_Angel With The Scabbed W
 const MATTIJUANA_VISUAL := preload("res://scripts/mattijuana_visual.gd")
 const MATTIJUANA_HUMAN_VISUAL := preload("res://scripts/mattijuana_human_visual.gd")
 const MATTIJUANA_JOINT_VISUAL := preload("res://scripts/mattijuana_joint_visual.gd")
+const MATTIJUANA_TRANSFORM_VISUAL := preload("res://scripts/mattijuana_transform_visual.gd")
 const MATTIJUANA_MONSTER_VISUAL := preload("res://scripts/mattijuana_monster_visual.gd")
 const MATTIJUANA_HEALTH_BAR := preload("res://scripts/davy_boss_health_bar.gd")
 const DAVY_INTRO_VOICE := preload("res://images/heygen-speech.wav")
@@ -2967,7 +2968,21 @@ func _begin_mattijuana_entrance() -> void:
 
 
 func _transition_mattijuana_to_joint() -> void:
-	await get_tree().create_timer(1.1).timeout
+	# Keep the defeated human visible briefly, then play all five supplied
+	# transformation poses slowly enough to read clearly (3 frames/second).
+	await get_tree().create_timer(0.45).timeout
+	if not is_instance_valid(mattijuana_boss) or mattijuana_boss_state != "phase2_pending":
+		return
+	if is_instance_valid(mattijuana_boss_visual):
+		mattijuana_boss_visual.queue_free()
+	mattijuana_boss_visual = Sprite2D.new()
+	mattijuana_boss_visual.set_script(MATTIJUANA_TRANSFORM_VISUAL)
+	mattijuana_boss_visual.position = Vector2(0.0, -105.0)
+	mattijuana_boss_visual.scale = Vector2(0.82, 0.82)
+	mattijuana_boss.add_child(mattijuana_boss_visual)
+	mattijuana_boss_visual.call("play_animation", "transform", 3.0, false)
+	while is_instance_valid(mattijuana_boss_visual) and not mattijuana_boss_visual.call("is_animation_finished"):
+		await get_tree().process_frame
 	if not is_instance_valid(mattijuana_boss) or mattijuana_boss_state != "phase2_pending":
 		return
 	if is_instance_valid(mattijuana_boss_visual):
