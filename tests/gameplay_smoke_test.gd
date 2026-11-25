@@ -279,6 +279,7 @@ func _ready() -> void:
 	if not _check(int(game.get("player_health")) == 5 and not bool(game.get("player_bonus_heart")) and int(health_display.get("health")) == 5, "After a depleted bonus-heart set, the next life must restart with exactly five hearts."): return
 	if not _check(game.get_script().source_code.contains("func _create_baggy_pickup()") and game.get_script().source_code.contains("func _update_baggy_pickup()") and game.get_script().source_code.contains("func _make_baggy_pickup_texture(") and game.get_script().source_code.contains("func _clear_baggy_dark_pixels(") and game.get_script().source_code.contains("func _show_baggy_notification()") and game.get_script().source_code.contains("func _dismiss_baggy_notification()"), "Leaside must have the transparent, collectible baggy power-up and its pausing notification."): return
 	if not _check(ResourceLoader.exists("res://images/image_108a4396.jpg") and game.get_script().source_code.contains('preload("res://images/image_108a4396.jpg")'), "The complete uploaded collage must be available to the baggy notification."): return
+	if not _check(ResourceLoader.exists("res://images/long sniff.mp3") and game.get_script().source_code.contains('preload("res://images/long sniff.mp3")'), "The Leaside baggy close sound must be present and preloaded."): return
 	var menu_button := game.get("hud").get_child(0) as Button
 	if not _check(menu_button != null and menu_button.text == "—" and is_equal_approx(menu_button.position.x, 32.0) and is_equal_approx(menu_button.position.y, 24.0) and menu_button.size.x >= 48.0 and menu_button.size.y >= 40.0, "Top-left dropdown must be inset from the edges and have a larger phone-friendly touch target."): return
 	var gameplay_menu_panel := game.get("hud").get_child(1) as PanelContainer
@@ -639,8 +640,11 @@ func _ready() -> void:
 	var popup_music: AudioStreamPlayer = game.get("music_player")
 	if not _check(baggy_panel != null and is_equal_approx(baggy_panel.custom_minimum_size.x, 330.0) and baggy_artwork != null and baggy_artwork.texture.resource_path == "res://images/image_108a4396.jpg" and baggy_artwork.custom_minimum_size == Vector2(280.0, 190.0) and game.get_script().source_code.contains('heading.text = "COKE BAGGIE"') and game.get_script().source_code.contains('description.text = "Snorting a rockstar line restores your energy!"'), "COKE BAGGIE popup must retain its smaller centered layout, complete collage, and exact approved wording."): return
 	if not _check(popup_music != null and popup_music.process_mode == Node.PROCESS_MODE_ALWAYS, "Background music must continue while the baggy notification pauses gameplay."): return
+	var baggy_close_player: AudioStreamPlayer = game.get("baggy_close_player")
 	game.call("_dismiss_baggy_notification")
-	if not _check(game.get("baggy_notice") == null and not get_tree().paused and popup_music.process_mode == Node.PROCESS_MODE_INHERIT, "Closing the baggy notification must resume gameplay and restore normal music pause behavior."): return
+	if not _check(game.get("baggy_notice") == null and get_tree().paused and baggy_close_player.playing and popup_music.stream_paused, "Closing the baggy notification must play the long-sniff sound while keeping gameplay paused and music held."): return
+	game.call("_on_baggy_close_sound_finished")
+	if not _check(not get_tree().paused and not popup_music.stream_paused and popup_music.process_mode == Node.PROCESS_MODE_INHERIT, "Background music and gameplay must resume only after the baggy close sound finishes."): return
 	game.call("_create_baggy_pickup")
 	baggy = game.get("baggy_pickup")
 	game.set("player_health", 5)
@@ -649,7 +653,9 @@ func _ready() -> void:
 	if not _check(game.get("baggy_pickup") == null and int(game.get("player_health")) == 6 and bool(game.get("player_bonus_heart")), "Collecting the Leaside baggy at full health must grant the sixth heart."): return
 	if not _check(game.get("baggy_notice") != null and get_tree().paused, "The baggy notification must also appear and pause gameplay when the bonus heart is granted."): return
 	game.call("_dismiss_baggy_notification")
-	if not _check(not get_tree().paused, "Closing the second baggy notification must resume gameplay."): return
+	if not _check(get_tree().paused and baggy_close_player.playing and popup_music.stream_paused, "The second baggy notification must also hold gameplay and music during its close sound."): return
+	game.call("_on_baggy_close_sound_finished")
+	if not _check(not get_tree().paused and not popup_music.stream_paused, "The second baggy notification must resume only after its close sound finishes."): return
 	game.call("_consume_player_heart")
 	if not _check(int(game.get("player_health")) == 5 and not bool(game.get("player_bonus_heart")), "Losing the bonus heart must return the HUD to the standard five hearts."): return
 	game.set("player_health", 0)
