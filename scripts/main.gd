@@ -18,6 +18,7 @@ const BAGGY_PICKUP_IMAGE := preload("res://images/polyethylene-bag-dose-cocaine-
 const SIX_BRICK_PICKUP_IMAGE := preload("res://images/six_brick_stash_source.jpg")
 const BRICK_COKE_NOTICE_IMAGE := preload("res://images/Gemini_Generated_Image_mnuc8bmnuc8bmnuc.jpeg")
 const BAGGY_NOTICE_IMAGE := preload("res://images/image_108a4396.jpg")
+const BAGGY_CLOSE_SOUND := preload("res://images/long sniff.mp3")
 const SLINGSHOT_NOTICE_IMAGE := preload("res://images/slingshot_notice.png")
 const SLINGSHOT_FIRE_SOUND := preload("res://images/freesound_community-ricochet-4-101446.mp3")
 const ITEM_COLLECTED_SOUND := preload("res://images/alexis_gaming_cam-item-collected-1-367087.mp3")
@@ -130,6 +131,7 @@ var death_layer: CanvasLayer
 var splash_layer: CanvasLayer
 var music_player: AudioStreamPlayer
 var sfx_player: AudioStreamPlayer
+var baggy_close_player: AudioStreamPlayer
 var attack_cooldown := 0.0
 var combo_step := 0
 var combo_timer := 0.0
@@ -160,6 +162,12 @@ func _ready() -> void:
 	sfx_player = AudioStreamPlayer.new()
 	sfx_player.volume_db = -7.0
 	add_child(sfx_player)
+	baggy_close_player = AudioStreamPlayer.new()
+	baggy_close_player.name = "BaggyNotificationCloseSound"
+	baggy_close_player.stream = BAGGY_CLOSE_SOUND
+	baggy_close_player.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(baggy_close_player)
+	baggy_close_player.finished.connect(_on_baggy_close_sound_finished)
 	_start_title_music()
 	_show_title()
 
@@ -3365,8 +3373,19 @@ func _dismiss_baggy_notification() -> void:
 		return
 	baggy_notice.queue_free()
 	baggy_notice = null
+	# Keep gameplay paused and hold the background music until the close sound ends.
+	if is_instance_valid(music_player):
+		music_player.process_mode = Node.PROCESS_MODE_ALWAYS
+		music_player.stream_paused = true
+	if is_instance_valid(baggy_close_player):
+		baggy_close_player.play()
+	else:
+		_on_baggy_close_sound_finished()
+
+func _on_baggy_close_sound_finished() -> void:
 	get_tree().paused = false
 	if is_instance_valid(music_player):
+		music_player.stream_paused = false
 		music_player.process_mode = Node.PROCESS_MODE_INHERIT
 
 func _show_brick_coke_notification() -> void:
