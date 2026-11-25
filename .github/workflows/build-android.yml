@@ -53,6 +53,16 @@ jobs:
             test -s "images/sprites/${asset}.png"
           done
 
+      - name: Publish Matt-ijuana frame review images to workflow log
+        run: |
+          python3 - <<'PY'
+          import base64
+          from pathlib import Path
+          for name in ("mattijuana_entrance_walk_contact.png", "mattijuana_human_attack_contact.png", "mattijuana_human_to_joint_contact.png", "mattijuana_joint_phase_contact.png", "mattijuana_monster_phase_contact.png", "mattijuana_monster_source_grid.png", "mattijuana_all_sequences_overview.png"):
+              data = (Path("build/mattijuana_previews") / name).read_bytes()
+              print(f"MATTIJUANA_{name.upper().replace('.', '_')}_BASE64=" + base64.b64encode(data).decode("ascii"))
+          PY
+
       - name: Generate and publish Davy Jones animation review previews
         run: |
           test -s build/davy_previews/davy_human_walk.gif
