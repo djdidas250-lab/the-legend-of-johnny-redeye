@@ -585,6 +585,10 @@ func _ready() -> void:
 	var playground_camera := game.get_viewport().get_camera_2d()
 	if not _check(playground_camera != null and playground_camera.get_parent() == player and playground_camera.get_instance_id() != camera_before_playground_id and playground_camera.is_current(), "The playground section must refresh and activate its own player camera."): return
 	if not _check(playground_camera.limit_left == 0 and playground_camera.limit_right == int(game.get("world_end")) and is_equal_approx(playground_camera.zoom.x, 1.35), "The playground camera must use the new panorama's complete bounds."): return
+\tvar mattijuana := game.get("mattijuana_boss") as Node2D
+\tif not _check(mattijuana != null and str(game.get("mattijuana_boss_state")) == "waiting" and mattijuana.position == Vector2(110.0, 360.0), "Matt-ijuana must be present and waiting at the far-left side of the playground before the final enemy is defeated."): return
+\tif not _check(game_script.source_code.contains('const MATTIJUANA_BOSS_MUSIC := preload("res://images/10_Angel With The Scabbed Wings.mp3")') and game_script.source_code.contains("func _maybe_begin_mattijuana_entrance()") and game_script.source_code.contains("func _begin_mattijuana_entrance()") and game_script.source_code.contains("func _show_mattijuana_intro()"), "Matt-ijuana's soundtrack handoff and entrance sequence must be connected."): return
+\tif not _check(game_script.source_code.contains("You stepped into the wrong damn park, motherfucker—I’m gonna smoke your ass like a cheap dime bag and leave your bitch-ass swinging from the monkey bars!"), "Matt-ijuana's introduction must retain the exact approved dialogue."): return
 	# The in-game Mission Select option must save current progress, cleanly
 	# remove gameplay controls/actors, and reopen the map without resetting the slot.
 	var active_hud: CanvasLayer = game.get("hud")
