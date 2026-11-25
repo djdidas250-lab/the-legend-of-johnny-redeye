@@ -132,6 +132,7 @@ var splash_layer: CanvasLayer
 var music_player: AudioStreamPlayer
 var sfx_player: AudioStreamPlayer
 var baggy_close_player: AudioStreamPlayer
+var baggy_close_sound_active := false
 var attack_cooldown := 0.0
 var combo_step := 0
 var combo_timer := 0.0
@@ -3378,11 +3379,13 @@ func _dismiss_baggy_notification() -> void:
 		music_player.process_mode = Node.PROCESS_MODE_ALWAYS
 		music_player.stream_paused = true
 	if is_instance_valid(baggy_close_player):
+		baggy_close_sound_active = true
 		baggy_close_player.play()
 	else:
 		_on_baggy_close_sound_finished()
 
 func _on_baggy_close_sound_finished() -> void:
+	baggy_close_sound_active = false
 	get_tree().paused = false
 	if is_instance_valid(music_player):
 		music_player.stream_paused = false
