@@ -31,7 +31,6 @@ jobs:
           python3 tools/prepare_john_animations.py
           python3 tools/prepare_davy_jones.py
           python3 tools/prepare_mattijuana.py
-          python3 tools/inspect_mattijuana_sources.py
           test -s "images/01 - Falling Apart (Prologue).ogg"
           test -s images/heygen-speech.wav
           test -s "images/10_Angel With The Scabbed Wings.mp3"
@@ -40,6 +39,8 @@ jobs:
           test -s images/sprites/mattijuana_human_attack.png
           test -s images/sprites/mattijuana_human_fall.png
           test -s images/sprites/mattijuana_human_recover.png
+          test -s images/sprites/mattijuana_joint_phase.png
+          test -s images/sprites/mattijuana_monster_phase.png
           test -s images/sprites/davy_human_entrance.png
           test -s images/sprites/davy_transformation.png
           test -s images/sprites/davy_octopus_walk_down.png
