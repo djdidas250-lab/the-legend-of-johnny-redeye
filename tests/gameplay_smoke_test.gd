@@ -537,16 +537,14 @@ func _ready() -> void:
 	if not _check(absf(player.position.x - 55.0) < 1.0 and float(visual.get("facing")) > 0.0, "John must enter Newleaf at the far left, facing right down the street."): return
 	if not _check(game_script.source_code.contains('forward_view.texture = NEWLEAF_FORWARD_IMAGE') and game_script.source_code.contains('street_panorama = STREET_PANORAMA_IMAGE'), "Newleaf transition must use its dedicated forward image and original continuous panorama."): return
 	if not _check(game_script.source_code.contains("const BRIEFING_DISPLAY_SECONDS := 4.5") and game_script.source_code.contains("create_timer(BRIEFING_DISPLAY_SECONDS)"), "Automatic street briefings must use the shared 4.5-second reading interval."): return
-	# The earlier save-slot overwrite deliberately reset slot 1. Re-collect the
-	# slingshot in that active slot so the later Mission Select test verifies
-	# persistence of real inventory acquired after the reset.
-	if not bool(game.get("has_slingshot")):
-		game.call("_create_slingshot_pickup")
-		var final_pickup: Sprite2D = game.get("slingshot_pickup")
-		if not _check(final_pickup != null, "Slingshot must be available for the post-overwrite inventory persistence test."): return
-		player.position = final_pickup.position
-		game.call("_update_slingshot_pickup")
-		if not _check(bool(game.get("has_slingshot")) and game.get("slingshot_pickup") == null, "Re-collecting the slingshot after save-slot reset must update active inventory."): return
+	# The live McRae-to-Newleaf transition must restore the original pickup
+	# automatically, at its original world position, without test-side spawning.
+	if not _check(not bool(game.get("has_slingshot")) and game.get("slingshot_pickup") != null, "Entering Newleaf from McRae must automatically spawn the slingshot pickup."): return
+	var final_pickup: Sprite2D = game.get("slingshot_pickup")
+	if not _check(final_pickup.position == Vector2(1190.0, 475.0), "The restored Newleaf slingshot must retain its original pickup position."): return
+	player.position = final_pickup.position
+	game.call("_update_slingshot_pickup")
+	if not _check(bool(game.get("has_slingshot")) and game.get("slingshot_pickup") == null and game.get("slingshot_notice") != null, "Collecting the restored pickup must enable the slingshot and show its original notification."): return
 	if not _check(game_script.source_code.contains('const WOODLAWN_BRIEFING_IMAGE := preload("res://images/Gemini_Generated_Image_hk86sthk86sthk86.jpeg")') and game_script.source_code.contains('const WOODLAWN_PARK_IMAGE := preload("res://images/image_4e2da26f.jpg")') and game_script.source_code.contains('street_title.text = "SECRET SHORTCUT PATH TO LEASIDE DRIVE"') and game_script.source_code.contains('objective.text = "Make your way to Woodlawn Park."'), "Woodlawn briefing must use both supplied assets and the exact heading/objective."): return
 	if not _check(game_script.source_code.contains('if current_street == "NEWLEAF CRESCENT" and player.position.x >= world_end - 45.0:') and game_script.source_code.contains("func _begin_woodlawn_park_transition() -> void:"), "Reaching the far-right edge of Newleaf must trigger the Woodlawn transition."): return
 	var viewport_before_woodlawn := game.get_viewport()
