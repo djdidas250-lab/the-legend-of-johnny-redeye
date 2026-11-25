@@ -62,6 +62,7 @@ var active_save_slot := -1
 var active_slot_unlocked_leaside := false
 var active_slot_unlocked_mcrae := false
 var active_slot_unlocked_newleaf_checkpoint := false
+var active_slot_unlocked_woodlawn_checkpoint := false
 var active_slot_area := "Newleaf Crescent"
 var save_slot_layer: CanvasLayer
 var overwrite_slot_pending := -1
@@ -619,6 +620,7 @@ func _begin_fresh_save_slot(slot_index: int) -> void:
 	active_slot_unlocked_leaside = false
 	active_slot_unlocked_mcrae = false
 	active_slot_unlocked_newleaf_checkpoint = false
+	active_slot_unlocked_woodlawn_checkpoint = false
 	active_slot_area = "Newleaf Crescent"
 	has_slingshot = false
 	player_lives = 3
@@ -631,6 +633,7 @@ func _begin_fresh_save_slot(slot_index: int) -> void:
 	cfg.set_value(section, "unlocked_leaside", false)
 	cfg.set_value(section, "unlocked_mcrae", false)
 	cfg.set_value(section, "unlocked_newleaf_checkpoint", false)
+	cfg.set_value(section, "unlocked_woodlawn_checkpoint", false)
 	cfg.set_value(section, "area", active_slot_area)
 	cfg.set_value(section, "has_slingshot", false)
 	cfg.set_value(section, "lives", 3)
@@ -719,6 +722,7 @@ func _on_save_slot_selected(slot_index: int, for_new_game: bool) -> void:
 	active_slot_unlocked_leaside = bool(cfg.get_value(section, "unlocked_leaside", false))
 	active_slot_unlocked_mcrae = bool(cfg.get_value(section, "unlocked_mcrae", false))
 	active_slot_unlocked_newleaf_checkpoint = bool(cfg.get_value(section, "unlocked_newleaf_checkpoint", false))
+	active_slot_unlocked_woodlawn_checkpoint = bool(cfg.get_value(section, "unlocked_woodlawn_checkpoint", false))
 	active_slot_area = str(cfg.get_value(section, "area", "Newleaf Crescent"))
 	has_slingshot = bool(cfg.get_value(section, "has_slingshot", false))
 	player_lives = clampi(int(cfg.get_value(section, "lives", 3)), 0, 99)
@@ -884,6 +888,34 @@ func _show_map_screen() -> void:
 		newleaf_hitbox.pressed.connect(_show_newleaf_checkpoint_from_map)
 		map_layer.add_child(newleaf_hitbox)
 
+	# The Road to Woodlawn checkpoint appears only after the secret-path handoff
+	# has delivered the player into Woodlawn Park. Its position matches the
+	# red-dot reference on the upper Leeside Drive segment.
+	if active_slot_unlocked_woodlawn_checkpoint:
+		var woodlawn_marker := _make_checkpoint_marker(0.216, 0.145, 0.279, 0.285)
+		woodlawn_marker.name = "RoadToWoodlawnCheckpointMarker"
+		map_layer.add_child(woodlawn_marker)
+		var woodlawn_hitbox := Button.new()
+		woodlawn_hitbox.name = "RoadToWoodlawnCheckpointHitbox"
+		woodlawn_hitbox.anchor_left = 0.225
+		woodlawn_hitbox.anchor_right = 0.270
+		woodlawn_hitbox.anchor_top = 0.165
+		woodlawn_hitbox.anchor_bottom = 0.265
+		woodlawn_hitbox.offset_left = 0
+		woodlawn_hitbox.offset_right = 0
+		woodlawn_hitbox.offset_top = 0
+		woodlawn_hitbox.offset_bottom = 0
+		woodlawn_hitbox.focus_mode = Control.FOCUS_NONE
+		woodlawn_hitbox.text = ""
+		woodlawn_hitbox.modulate = Color(1, 1, 1, 0.02)
+		woodlawn_hitbox.add_theme_stylebox_override("normal", clear_style)
+		woodlawn_hitbox.add_theme_stylebox_override("hover", clear_style)
+		woodlawn_hitbox.add_theme_stylebox_override("pressed", clear_style)
+		woodlawn_hitbox.add_theme_stylebox_override("focus", clear_style)
+		woodlawn_hitbox.pressed.connect(_play_map_click)
+		woodlawn_hitbox.pressed.connect(_show_woodlawn_checkpoint_from_map)
+		map_layer.add_child(woodlawn_hitbox)
+
 func _make_checkpoint_marker(left: float, top: float, right: float, bottom: float) -> TextureRect:
 	var marker := TextureRect.new()
 	marker.texture = MAP_CHECKPOINT_MARKER
@@ -952,6 +984,33 @@ func _show_newleaf_checkpoint_from_map() -> void:
 		var camera := player.get_node_or_null("Camera2D") as Camera2D
 		if camera != null:
 			camera.position.x = 180.0
+			camera.limit_left = 0
+			camera.limit_right = int(world_end)
+			camera.reset_smoothing()
+
+
+func _show_woodlawn_checkpoint_from_map() -> void:
+	if not active_slot_unlocked_woodlawn_checkpoint:
+		return
+	if music_player != null:
+		music_player.stop()
+	if map_layer != null:
+		map_layer.queue_free()
+		map_layer = null
+	if title_layer != null:
+		title_layer.queue_free()
+		title_layer = null
+	street_panorama = _make_woodlawn_park_panorama()
+	world_end = float(street_panorama.get_width())
+	current_street = "WOODLAWN PARK"
+	active_slot_area = "Woodlawn Park"
+	_save_slot_progress()
+	_start_game(world_end - 320.0, 475.0)
+	if is_instance_valid(player):
+		player.get_child(0).set("facing", -1.0)
+		var camera := player.get_node_or_null("Camera2D") as Camera2D
+		if camera != null:
+			camera.position.x = 0.0
 			camera.limit_left = 0
 			camera.limit_right = int(world_end)
 			camera.reset_smoothing()
@@ -2816,6 +2875,9 @@ func _begin_woodlawn_park_transition() -> void:
 	world_end = float(street_panorama.get_width())
 	current_street = "WOODLAWN PARK"
 	active_slot_area = "Woodlawn Park"
+	# Reaching the Road to Woodlawn checkpoint is a progression milestone.
+	# Persist it only after the secret-path transition has reached this street.
+	active_slot_unlocked_woodlawn_checkpoint = true
 	_save_slot_progress()
 	# Woodlawn Park begins at the far right; David faces left into the park.
 	player.position = Vector2(world_end - 320.0, 475.0)
@@ -3985,6 +4047,7 @@ func _save_slot_progress() -> bool:
 	cfg.set_value(section, "unlocked_leaside", active_slot_unlocked_leaside)
 	cfg.set_value(section, "unlocked_mcrae", active_slot_unlocked_mcrae)
 	cfg.set_value(section, "unlocked_newleaf_checkpoint", active_slot_unlocked_newleaf_checkpoint)
+	cfg.set_value(section, "unlocked_woodlawn_checkpoint", active_slot_unlocked_woodlawn_checkpoint)
 	cfg.set_value(section, "area", active_slot_area)
 	cfg.set_value(section, "has_slingshot", has_slingshot)
 	cfg.set_value(section, "lives", clampi(player_lives, 0, 99))
