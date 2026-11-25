@@ -133,6 +133,8 @@ var music_player: AudioStreamPlayer
 var sfx_player: AudioStreamPlayer
 var baggy_close_player: AudioStreamPlayer
 var baggy_close_sound_active := false
+var baggy_saved_music_volume_db := 0.0
+var baggy_music_volume_saved := false
 var attack_cooldown := 0.0
 var combo_step := 0
 var combo_timer := 0.0
@@ -3377,7 +3379,9 @@ func _dismiss_baggy_notification() -> void:
 	# Keep gameplay paused and hold the background music until the close sound ends.
 	if is_instance_valid(music_player):
 		music_player.process_mode = Node.PROCESS_MODE_ALWAYS
-		music_player.stream_paused = true
+		baggy_saved_music_volume_db = music_player.volume_db
+		baggy_music_volume_saved = true
+		music_player.volume_db = -80.0
 	if is_instance_valid(baggy_close_player):
 		baggy_close_sound_active = true
 		baggy_close_player.play()
@@ -3388,7 +3392,9 @@ func _on_baggy_close_sound_finished() -> void:
 	baggy_close_sound_active = false
 	get_tree().paused = false
 	if is_instance_valid(music_player):
-		music_player.stream_paused = false
+		if baggy_music_volume_saved:
+			music_player.volume_db = baggy_saved_music_volume_db
+			baggy_music_volume_saved = false
 		music_player.process_mode = Node.PROCESS_MODE_INHERIT
 
 func _show_brick_coke_notification() -> void:
