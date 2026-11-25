@@ -391,7 +391,7 @@ func _ready() -> void:
 	if not _check(player.position.y >= 420.0 and player.position.y <= 540.0, "John must stay between the curb and the bottom edge of the playable road."): return
 	if not _check(game_script.source_code.contains("const PLAYER_DEPTH_MIN := 420.0") and game_script.source_code.contains("const PLAYER_DEPTH_MAX := 540.0"), "Street depth boundaries must stop John at the curb and allow him to reach the bottom edge."): return
 	if not _check(game_script.source_code.contains("player.velocity = direction * 76.0"), "Stage One walking pace must make the house-to-corner journey last roughly 24 seconds."): return
-	if not _check(game_script.source_code.contains("[676.0, 409.0, 112.0, 54.0]") and game_script.source_code.contains("[1260.0, 409.0, 142.0, 54.0]"), "Vehicle collision footprints must cover the complete visible bumpers and body depth."): return
+	if not _check(game_script.source_code.contains("[676.0, 395.0, 100.0, 34.0]") and game_script.source_code.contains("[1260.0, 395.0, 128.0, 34.0]"), "Vehicle collision footprints must cover the complete visible bumpers and body depth."): return
 
 	var touch_buttons := []
 	for child in game.get("hud").get_children():
