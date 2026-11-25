@@ -7,7 +7,7 @@ on:
       - ".github/workflows/temporary-mattijuana-inspection.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   inspect-sprite-sheets:
@@ -15,13 +15,13 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      - name: Create viewable previews
+      - name: Generate UTF-8 SVG previews with embedded originals
         run: |
           python3 -m pip install --user Pillow
-          mkdir -p /tmp/mattijuana-previews
           python3 - <<'PY'
           from pathlib import Path
           from PIL import Image
+          import base64
           names = [
               "Gemini_Generated_Image_6bcmqi6bcmqi6bcm.jpeg",
               "Gemini_Generated_Image_7c899f7c899f7c89.jpeg",
@@ -29,14 +29,20 @@ jobs:
               "Gemini_Generated_Image_u02s9gu02s9gu02s.jpeg",
               "Gemini_Generated_Image_ure48yure48yure4.jpeg",
           ]
+          outdir = Path("inspection-previews")
+          outdir.mkdir(exist_ok=True)
           for index, name in enumerate(names, 1):
-              im = Image.open(Path("images") / name).convert("RGB")
-              print(f"Sheet {index}: {name} — {im.width}x{im.height}")
-              im.save(Path("/tmp/mattijuana-previews") / f"sheet-{index}.jpg", quality=96, subsampling=0)
+              path = Path("images") / name
+              im = Image.open(path).convert("RGB")
+              data = base64.b64encode(path.read_bytes()).decode("ascii")
+              svg = f'''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{im.width}" height="{im.height}" viewBox="0 0 {im.width} {im.height}"><image x="0" y="0" width="{im.width}" height="{im.height}" xlink:href="data:image/jpeg;base64,{data}"/></svg>'''
+              (outdir / f"sheet-{index}.svg").write_text(svg)
+              print(f"Prepared sheet {index}: {name}, {im.width}x{im.height}")
           PY
-      - name: Upload previews for inspection
-        uses: actions/upload-artifact@v4
-        with:
-          name: mattijuana-sprite-previews
-          path: /tmp/mattijuana-previews/*.jpg
-          retention-days: 1
+      - name: Commit temporary previews for visual retrieval
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add inspection-previews/*.svg
+          git commit -m "Temporarily publish Matt-ijuana sprite previews"
+          git push
