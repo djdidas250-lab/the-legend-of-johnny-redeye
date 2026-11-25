@@ -120,6 +120,7 @@ var mattijuana_health := 10
 var mattijuana_phase := 1
 var mattijuana_attack_cooldown := 1.4
 var mattijuana_fire_cooldown := 2.8
+var mattijuana_defeated := false
 var davy_saved_music_stream: AudioStream
 var davy_saved_music_position := 0.0
 var davy_saved_music_volume_db := -15.0
