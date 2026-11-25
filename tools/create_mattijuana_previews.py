@@ -66,6 +66,24 @@ def main():
                         "gif": gif_path.name, "contact": contact_path.name}
         all_contacts.append((name, contact))
 
+    # Raw monster atlas grid, labelled by authored row/column, for checking
+    # whether the extracted attack/fire poses match the supplied artwork.
+    source_path = ROOT / "images" / "Gemini_Generated_Image_6bcmqi6bcmqi6bcm.jpeg"
+    source = Image.open(source_path).convert("RGB")
+    if source.size != (1584, 672):
+        raise SystemExit(f"Unexpected monster source dimensions: {source.size}")
+    cell_w, cell_h = source.width // 6, source.height // 3
+    source_grid = Image.new("RGB", (6 * 270, 3 * 250), (40, 43, 49))
+    source_draw = ImageDraw.Draw(source_grid)
+    for row in range(3):
+        for col in range(6):
+            cell = source.crop((col * cell_w, row * cell_h, (col + 1) * cell_w, (row + 1) * cell_h))
+            cell.thumbnail((260, 220), Image.Resampling.LANCZOS)
+            x, y = col * 270 + (270 - cell.width) // 2, row * 250 + 24
+            source_grid.paste(cell, (x, y))
+            source_draw.text((col * 270 + 8, row * 250 + 6), f"row {row + 1}, col {col + 1}", fill=(255, 255, 255))
+    source_grid.save(OUT / "mattijuana_monster_source_grid.png", optimize=True)
+
     # One overview sheet makes it easy to compare the registration/scale of
     # every animation without opening each file individually.
     overview = Image.new("RGB", (1080, len(all_contacts) * 250), (30, 33, 39))
