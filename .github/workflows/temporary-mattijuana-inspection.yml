@@ -1,0 +1,40 @@
+name: Temporary Matt-ijuana Sprite Sheet Inspection
+
+on:
+  push:
+    branches:
+      - "inspect-assets/**"
+
+permissions:
+  contents: read
+
+jobs:
+  create-previews:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Create image previews for visual inspection
+        run: |
+          python3 -m pip install --user Pillow
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import base64, io
+          names = [
+              "Gemini_Generated_Image_6bcmqi6bcmqi6bcm.jpeg",
+              "Gemini_Generated_Image_7c899f7c899f7c89.jpeg",
+              "Gemini_Generated_Image_g9722kg9722kg972.jpeg",
+          ]
+          for name in names:
+              path = Path("images") / name
+              im = Image.open(path).convert("RGB")
+              original_size = im.size
+              im.thumbnail((2200, 2200), Image.Resampling.LANCZOS)
+              buf = io.BytesIO()
+              im.save(buf, format="JPEG", quality=94, subsampling=0)
+              encoded = base64.b64encode(buf.getvalue()).decode("ascii")
+              print(f"IMAGE_BEGIN {name} original={original_size} preview={im.size}")
+              print("IMAGE_BASE64 " + encoded)
+              print(f"IMAGE_END {name}")
+          PY
