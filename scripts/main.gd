@@ -2332,7 +2332,7 @@ func _resolve_player_attack() -> void:
 			else:
 				_show_notice("HEAVY HIT!" if finisher else "BONK!  Keep moving!")
 			break
-	if not bool(player.get("attack_hit_confirmed")) and mattijuana_boss_active and mattijuana_boss_state in ["human_fight", "joint_fight"] and is_instance_valid(mattijuana_boss):
+	if not bool(player.get("attack_hit_confirmed")) and mattijuana_boss_active and mattijuana_boss_state in ["human_fight", "joint_fight", "monster_fight"] and is_instance_valid(mattijuana_boss):
 		var matt_dx := mattijuana_boss.position.x - player.position.x
 		var matt_dy := mattijuana_boss.position.y - player.position.y
 		if absf(matt_dx) <= reach and absf(matt_dy) <= 18.0 and signf(matt_dx) == facing:
@@ -2351,10 +2351,15 @@ func _resolve_player_attack() -> void:
 					mattijuana_boss_active = false
 					_show_notice("MATTIJUANA TRANSFORMS!")
 					_transition_mattijuana_to_joint()
-				else:
+				elif mattijuana_phase == 2:
 					mattijuana_boss_state = "phase3_pending"
 					mattijuana_boss_active = false
 					_show_notice("THE MONSTER AWAKENS!")
+					_transition_mattijuana_to_monster()
+				else:
+					mattijuana_boss_state = "victory_pending"
+					mattijuana_boss_active = false
+					_finish_mattijuana_encounter()
 			else:
 				_show_notice("HIT MATTIJUANA!")
 	if not bool(player.get("attack_hit_confirmed")) and davy_boss_active and davy_boss_state == "fight" and is_instance_valid(davy_boss):
