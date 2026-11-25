@@ -110,6 +110,30 @@ def main():
         print(f"Prepared 6 human-form frames: {HUMAN_OUTPUT / filename} {human_strip.size}")
 
 
+    # Human-to-joint transformation: the first five cells in row one
+    # show the complete sequence from human, wrapping, and emergence as a joint.
+    transform_frames = [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)]
+    transform_strip = Image.new("RGBA", (FRAME_W * len(transform_frames), FRAME_H), (0, 0, 0, 0))
+    for index, (col, row) in enumerate(transform_frames):
+        cell = phase_source.crop((round(col * phase_w), round(row * phase_h),
+                                  round((col + 1) * phase_w), round((row + 1) * phase_h)))
+        alpha = cell.getchannel("A")
+        labels, _ = ndimage.label(np.asarray(alpha) > 0, structure=np.ones((3, 3), dtype=bool))
+        sizes = np.bincount(labels.ravel())
+        valid = np.where((sizes >= 20) & (np.arange(len(sizes)) != 0))[0]
+        alpha = Image.fromarray((np.isin(labels, valid) * 255).astype(np.uint8), "L")
+        cell.putalpha(alpha)
+        bounds = alpha.getbbox()
+        if not bounds:
+            raise RuntimeError(f"Transformation frame {index} is empty")
+        art = cell.crop(bounds)
+        art.thumbnail((FRAME_W - 20, FRAME_H - 12), Image.Resampling.LANCZOS)
+        frame = Image.new("RGBA", (FRAME_W, FRAME_H), (0, 0, 0, 0))
+        frame.alpha_composite(art, ((FRAME_W - art.width) // 2, (FRAME_H - art.height) // 2))
+        transform_strip.alpha_composite(frame, (index * FRAME_W, 0))
+    transform_strip.save(HUMAN_OUTPUT / "mattijuana_human_to_joint.png", optimize=True)
+    print(f"Prepared human-to-joint transformation frames: {transform_strip.size}")
+
     # The supplied 1376x768 transformation atlas contains the wrapped
     # burning-joint form across its first two rows. Extract the idle and
     # attack poses as a dedicated phase-two strip (5 columns x 3 rows).
