@@ -45,6 +45,7 @@ const MATTIJUANA_HUMAN_VISUAL := preload("res://scripts/mattijuana_human_visual.
 const MATTIJUANA_JOINT_VISUAL := preload("res://scripts/mattijuana_joint_visual.gd")
 const MATTIJUANA_TRANSFORM_VISUAL := preload("res://scripts/mattijuana_transform_visual.gd")
 const MATTIJUANA_MONSTER_VISUAL := preload("res://scripts/mattijuana_monster_visual.gd")
+const MATTIJUANA_MONSTER_FIRE_VISUAL := preload("res://scripts/mattijuana_monster_fire_visual.gd")
 const MATTIJUANA_HEALTH_BAR := preload("res://scripts/davy_boss_health_bar.gd")
 const DAVY_INTRO_VOICE := preload("res://images/heygen-speech.wav")
 const DAVY_BOSS_MUSIC_VOLUME_DB := -11.0
@@ -2958,7 +2959,7 @@ func _create_mattijuana_waiting() -> void:
 	health_bar.set_script(MATTIJUANA_HEALTH_BAR)
 	health_bar.set("maximum_health", 10)
 	health_bar.set("health", 10)
-	health_bar.position = Vector2(0.0, -168.0)
+	health_bar.position = Vector2(0.0, -198.0)
 	health_bar.z_index = 30
 	mattijuana_boss.add_child(health_bar)
 	mattijuana_health_bar = health_bar
@@ -3033,6 +3034,8 @@ func _begin_mattijuana_entrance() -> void:
 	mattijuana_boss_visual.position = Vector2(0.0, -105.0)
 	mattijuana_boss_visual.scale = Vector2(0.62, 0.62)
 	mattijuana_boss.add_child(mattijuana_boss_visual)
+	if is_instance_valid(mattijuana_health_bar):
+		mattijuana_health_bar.position = Vector2(0.0, -158.0)
 
 
 func _transition_mattijuana_to_joint() -> void:
@@ -3060,6 +3063,8 @@ func _transition_mattijuana_to_joint() -> void:
 	mattijuana_boss_visual.position = Vector2(0.0, -105.0)
 	mattijuana_boss_visual.scale = Vector2(0.82, 0.82)
 	mattijuana_boss.add_child(mattijuana_boss_visual)
+	if is_instance_valid(mattijuana_health_bar):
+		mattijuana_health_bar.position = Vector2(0.0, -212.0)
 	mattijuana_phase = 2
 	mattijuana_health = 10
 	if is_instance_valid(mattijuana_health_bar):
@@ -3082,6 +3087,8 @@ func _transition_mattijuana_to_monster() -> void:
 	mattijuana_boss_visual.position = Vector2(0.0, -108.0)
 	mattijuana_boss_visual.scale = Vector2(0.88, 0.88)
 	mattijuana_boss.add_child(mattijuana_boss_visual)
+	if is_instance_valid(mattijuana_health_bar):
+		mattijuana_health_bar.position = Vector2(0.0, -204.0)
 	mattijuana_phase = 3
 	mattijuana_health = 10
 	if is_instance_valid(mattijuana_health_bar):
@@ -3095,28 +3102,19 @@ func _transition_mattijuana_to_monster() -> void:
 
 
 func _show_mattijuana_fire_breath(direction: float) -> void:
-	var flame := Line2D.new()
-	flame.name = "MattijuanaFireBreath"
-	flame.points = PackedVector2Array([Vector2(0.0, -98.0), Vector2(direction * 205.0, -98.0)])
-	flame.width = 42.0
-	flame.default_color = Color(1.0, 0.29, 0.025, 0.94)
-	flame.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	flame.end_cap_mode = Line2D.LINE_CAP_ROUND
-	flame.z_index = 35
-	mattijuana_boss.add_child(flame)
-	var glow := Line2D.new()
-	glow.points = flame.points
-	glow.width = 19.0
-	glow.default_color = Color(1.0, 0.82, 0.24, 0.95)
-	glow.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	glow.end_cap_mode = Line2D.LINE_CAP_ROUND
-	glow.z_index = 36
-	mattijuana_boss.add_child(glow)
-	var fade := create_tween()
-	fade.tween_property(flame, "modulate:a", 0.0, 0.48)
-	fade.parallel().tween_property(glow, "modulate:a", 0.0, 0.48)
-	fade.tween_callback(flame.queue_free)
-	fade.tween_callback(glow.queue_free)
+	if not is_instance_valid(mattijuana_boss):
+		return
+	# Use the supplied three-frame fire stream and smoke animation, aligned to
+	# the monster's mouth. The monster body remains visible behind the effect.
+	var fire := Sprite2D.new()
+	fire.name = "MattijuanaFireBreath"
+	fire.set_script(MATTIJUANA_MONSTER_FIRE_VISUAL)
+	fire.position = Vector2(direction * 140.0, -108.0)
+	fire.scale = Vector2(0.85, 0.85)
+	fire.flip_h = direction < 0.0
+	fire.z_index = 35
+	mattijuana_boss.add_child(fire)
+	fire.call("play_animation", "fire", 8.0, false)
 
 
 func _update_mattijuana_boss(delta: float) -> void:
@@ -3152,6 +3150,8 @@ func _update_mattijuana_boss(delta: float) -> void:
 			visual.flip_h = dx < 0.0
 			visual.call("play_animation", "attack", 8.0 if mattijuana_phase == 1 else 5.0, false)
 		_hurt_player(mattijuana_boss)
+	elif is_instance_valid(visual) and mattijuana_phase >= 2 and bool(visual.call("is_animation_finished")):
+		visual.call("play_animation", "idle", 4.0, true)
 
 
 func _finish_mattijuana_encounter() -> void:

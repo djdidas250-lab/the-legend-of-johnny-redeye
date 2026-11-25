@@ -42,6 +42,13 @@ jobs:
           test -s images/sprites/mattijuana_human_recover.png
           test -s images/sprites/mattijuana_joint_phase.png
           test -s images/sprites/mattijuana_monster_phase.png
+          test -s images/sprites/mattijuana_joint_idle.png
+          test -s images/sprites/mattijuana_joint_walk.png
+          test -s images/sprites/mattijuana_joint_attack.png
+          test -s images/sprites/mattijuana_monster_idle.png
+          test -s images/sprites/mattijuana_monster_walk.png
+          test -s images/sprites/mattijuana_monster_attack.png
+          test -s images/sprites/mattijuana_monster_fire_breath.png
           test -s images/sprites/davy_human_entrance.png
           test -s images/sprites/davy_transformation.png
           test -s images/sprites/davy_octopus_walk_down.png
@@ -58,7 +65,7 @@ jobs:
           python3 - <<'PY'
           import base64
           from pathlib import Path
-          for name in ("mattijuana_entrance_walk_contact.png", "mattijuana_human_attack_contact.png", "mattijuana_human_to_joint_contact.png", "mattijuana_joint_phase_contact.png", "mattijuana_monster_phase_contact.png", "mattijuana_monster_source_grid.png", "mattijuana_all_sequences_overview.png"):
+          for name in ("mattijuana_entrance_walk.gif", "mattijuana_human_walk.gif", "mattijuana_human_attack.gif", "mattijuana_human_fall.gif", "mattijuana_human_recover.gif", "mattijuana_human_to_joint.gif", "mattijuana_joint_idle.gif", "mattijuana_joint_attack.gif", "mattijuana_joint_recovery.gif", "mattijuana_monster_idle.gif", "mattijuana_monster_walk.gif", "mattijuana_monster_attack.gif", "mattijuana_monster_fire_breath.gif", "mattijuana_human_attack_contact.png", "mattijuana_joint_attack_contact.png", "mattijuana_monster_attack_contact.png", "mattijuana_monster_fire_breath_contact.png", "mattijuana_monster_source_grid.png", "mattijuana_all_sequences_overview.png"):
               data = (Path("build/mattijuana_previews") / name).read_bytes()
               print(f"MATTIJUANA_{name.upper().replace('.', '_')}_BASE64=" + base64.b64encode(data).decode("ascii"))
           PY

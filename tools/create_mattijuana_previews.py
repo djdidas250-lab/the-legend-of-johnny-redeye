@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build visual QA GIFs/contact sheets from the exact Matt-ijuana strips used by the game."""
+"""Build GIFs/contact sheets from every Matt-ijuana animation strip used by the game."""
 from pathlib import Path
 from PIL import Image, ImageDraw
 import json
@@ -15,8 +15,13 @@ SEQUENCES = {
     "human_fall": ("mattijuana_human_fall.png", 6, 180),
     "human_recover": ("mattijuana_human_recover.png", 6, 160),
     "human_to_joint": ("mattijuana_human_to_joint.png", 5, 420),
-    "joint_phase": ("mattijuana_joint_phase.png", 6, 180),
-    "monster_phase": ("mattijuana_monster_phase.png", 6, 180),
+    "joint_idle": ("mattijuana_joint_idle.png", 3, 220),
+    "joint_attack": ("mattijuana_joint_attack.png", 5, 180),
+    "joint_recovery": ("mattijuana_joint_recovery.png", 5, 180),
+    "monster_idle": ("mattijuana_monster_idle.png", 3, 220),
+    "monster_walk": ("mattijuana_monster_walk.png", 3, 160),
+    "monster_attack": ("mattijuana_monster_attack.png", 3, 180),
+    "monster_fire_breath": ("mattijuana_monster_fire_breath.png", 3, 180),
 }
 
 def frame_images(path: Path, count: int):
@@ -42,7 +47,7 @@ def main():
             gif_frames.append(bg.convert("P", palette=Image.Palette.ADAPTIVE, colors=128))
         gif_path = OUT / f"mattijuana_{name}.gif"
         gif_frames[0].save(gif_path, save_all=True, append_images=gif_frames[1:],
-                           duration=duration, loop=0, optimize=False, disposal=2)
+                           duration=duration, loop=0, optimize=True, disposal=2)
 
         cols = 3
         rows = (len(thumbs) + cols - 1) // cols
@@ -57,17 +62,12 @@ def main():
 
         bounds = []
         for i, frame in enumerate(frames):
-            alpha = frame.getchannel("A")
-            bbox = alpha.getbbox()
-            pixels = sum(1 for a in alpha.getdata() if a > 0)
-            bounds.append({"frame": i + 1, "bbox": list(bbox) if bbox else None,
-                           "opaque_pixels": pixels})
+            bbox = frame.getchannel("A").getbbox()
+            bounds.append({"frame": i + 1, "bbox": list(bbox) if bbox else None})
         report[name] = {"source_strip": filename, "frames": bounds,
                         "gif": gif_path.name, "contact": contact_path.name}
         all_contacts.append((name, contact))
 
-    # Raw monster atlas grid, labelled by authored row/column, for checking
-    # whether the extracted attack/fire poses match the supplied artwork.
     source_path = ROOT / "images" / "Gemini_Generated_Image_6bcmqi6bcmqi6bcm.jpeg"
     source = Image.open(source_path).convert("RGB")
     if source.size != (1584, 672):
@@ -84,8 +84,6 @@ def main():
             source_draw.text((col * 270 + 8, row * 250 + 6), f"row {row + 1}, col {col + 1}", fill=(255, 255, 255))
     source_grid.save(OUT / "mattijuana_monster_source_grid.png", optimize=True)
 
-    # One overview sheet makes it easy to compare the registration/scale of
-    # every animation without opening each file individually.
     overview = Image.new("RGB", (1080, len(all_contacts) * 250), (30, 33, 39))
     draw = ImageDraw.Draw(overview)
     for row, (name, contact) in enumerate(all_contacts):
