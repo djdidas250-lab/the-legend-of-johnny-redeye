@@ -8,6 +8,8 @@ from scipy import ndimage
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "images" / "Gemini_Generated_Image_ure48yure48yure4.jpeg"
 OUTPUT = ROOT / "images" / "sprites" / "mattijuana_front_walk.png"
+HUMAN_SOURCE = ROOT / "images" / "Gemini_Generated_Image_u02s9gu02s9gu02s.jpeg"
+HUMAN_OUTPUT = ROOT / "images" / "sprites"
 CELL_W, CELL_H = 264, 336
 FRAME_W, FRAME_H = 256, 256
 FRAME_COUNT = 12
@@ -68,6 +70,44 @@ def main():
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     strip.save(OUTPUT, optimize=True)
     print(f"Prepared {FRAME_COUNT} Matt-ijuana entrance frames: {OUTPUT} {strip.size}")
+
+    # The human-form atlas is a 6-column by 4-row sheet: walk, attacks,
+    # falling, and recovery. Preserve every supplied pose.
+    if not HUMAN_SOURCE.is_file():
+        raise FileNotFoundError(HUMAN_SOURCE)
+    human = remove_white_background(Image.open(HUMAN_SOURCE))
+    if human.size != (1376, 768):
+        raise RuntimeError(f"Unexpected human sheet dimensions: {human.size}")
+    cell_w, cell_h = human.width / 6.0, human.height / 4.0
+    animations = {
+        "mattijuana_human_walk.png": 0,
+        "mattijuana_human_attack.png": 1,
+        "mattijuana_human_fall.png": 2,
+        "mattijuana_human_recover.png": 3,
+    }
+    for filename, row in animations.items():
+        human_strip = Image.new("RGBA", (FRAME_W * 6, FRAME_H), (0, 0, 0, 0))
+        for col in range(6):
+            left, top = round(col * cell_w), round(row * cell_h)
+            right, bottom = round((col + 1) * cell_w), round((row + 1) * cell_h)
+            cell = human.crop((left, top, right, bottom))
+            alpha = cell.getchannel("A")
+            labels, _ = ndimage.label(np.asarray(alpha) > 0, structure=np.ones((3, 3), dtype=bool))
+            sizes = np.bincount(labels.ravel())
+            valid = np.where((sizes >= 20) & (np.arange(len(sizes)) != 0))[0]
+            mask = np.isin(labels, valid)
+            alpha = Image.fromarray((mask * 255).astype(np.uint8), "L")
+            cell.putalpha(alpha)
+            bounds = alpha.getbbox()
+            if not bounds:
+                raise RuntimeError(f"{filename} frame {col} is empty")
+            art = cell.crop(bounds)
+            art.thumbnail((FRAME_W - 20, FRAME_H - 12), Image.Resampling.LANCZOS)
+            frame = Image.new("RGBA", (FRAME_W, FRAME_H), (0, 0, 0, 0))
+            frame.alpha_composite(art, ((FRAME_W - art.width) // 2, FRAME_H - art.height))
+            human_strip.alpha_composite(frame, (col * FRAME_W, 0))
+        human_strip.save(HUMAN_OUTPUT / filename, optimize=True)
+        print(f"Prepared 6 human-form frames: {HUMAN_OUTPUT / filename} {human_strip.size})
 
 
 if __name__ == "__main__":
