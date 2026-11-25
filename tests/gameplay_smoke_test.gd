@@ -642,6 +642,7 @@ func _ready() -> void:
 	if not _check(popup_music != null and popup_music.process_mode == Node.PROCESS_MODE_ALWAYS, "Background music must continue while the baggy notification pauses gameplay."): return
 	var baggy_close_player: AudioStreamPlayer = game.get("baggy_close_player")
 	game.call("_dismiss_baggy_notification")
+	print("Baggy close diagnostic: notice_null=", game.get("baggy_notice") == null, " tree_paused=", get_tree().paused, " active=", bool(game.get("baggy_close_sound_active")), " player_valid=", is_instance_valid(baggy_close_player), " stream=", baggy_close_player.stream, " process_mode=", baggy_close_player.process_mode if is_instance_valid(baggy_close_player) else -1, " music_valid=", is_instance_valid(popup_music), " music_paused=", popup_music.stream_paused if is_instance_valid(popup_music) else false)
 	if not _check(game.get("baggy_notice") == null and get_tree().paused and bool(game.get("baggy_close_sound_active")) and baggy_close_player.stream != null and baggy_close_player.process_mode == Node.PROCESS_MODE_ALWAYS and popup_music.stream_paused, "Closing the baggy notification must start the long-sniff sound while keeping gameplay paused and music held."): return
 	game.call("_on_baggy_close_sound_finished")
 	if not _check(not get_tree().paused and not popup_music.stream_paused and popup_music.process_mode == Node.PROCESS_MODE_INHERIT, "Background music and gameplay must resume only after the baggy close sound finishes."): return
