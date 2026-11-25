@@ -35,6 +35,10 @@ jobs:
           test -s images/heygen-speech.wav
           test -s "images/10_Angel With The Scabbed Wings.mp3"
           test -s images/sprites/mattijuana_front_walk.png
+          test -s images/sprites/mattijuana_human_walk.png
+          test -s images/sprites/mattijuana_human_attack.png
+          test -s images/sprites/mattijuana_human_fall.png
+          test -s images/sprites/mattijuana_human_recover.png
           test -s images/sprites/davy_human_entrance.png
           test -s images/sprites/davy_transformation.png
           test -s images/sprites/davy_octopus_walk_down.png
