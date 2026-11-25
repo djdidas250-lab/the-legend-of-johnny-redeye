@@ -110,6 +110,15 @@ def main():
         print(f"Prepared 6 human-form frames: {HUMAN_OUTPUT / filename} {human_strip.size}")
 
 
+    # The supplied 1376x768 transformation atlas contains the wrapped
+    # burning-joint form across its first two rows. Extract the idle and
+    # attack poses as a dedicated phase-two strip (5 columns x 3 rows).
+    phase_source_path = ROOT / "images" / "Gemini_Generated_Image_g9722kg9722kg972.jpeg"
+    phase_source = remove_white_background(Image.open(phase_source_path))
+    if phase_source.size != (1376, 768):
+        raise RuntimeError(f"Unexpected phase-two sheet dimensions: {phase_source.size}")
+    phase_w, phase_h = phase_source.width / 5.0, phase_source.height / 3.0
+
     # Human-to-joint transformation: the first five cells in row one
     # show the complete sequence from human, wrapping, and emergence as a joint.
     transform_frames = [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)]
@@ -134,14 +143,6 @@ def main():
     transform_strip.save(HUMAN_OUTPUT / "mattijuana_human_to_joint.png", optimize=True)
     print(f"Prepared human-to-joint transformation frames: {transform_strip.size}")
 
-    # The supplied 1376x768 transformation atlas contains the wrapped
-    # burning-joint form across its first two rows. Extract the idle and
-    # attack poses as a dedicated phase-two strip (5 columns x 3 rows).
-    phase_source_path = ROOT / "images" / "Gemini_Generated_Image_g9722kg9722kg972.jpeg"
-    phase_source = remove_white_background(Image.open(phase_source_path))
-    if phase_source.size != (1376, 768):
-        raise RuntimeError(f"Unexpected phase-two sheet dimensions: {phase_source.size}")
-    phase_w, phase_h = phase_source.width / 5.0, phase_source.height / 3.0
     phase_frames = [(3, 0), (4, 0), (4, 1), (3, 1), (2, 1), (4, 0)]
     phase_strip = Image.new("RGBA", (FRAME_W * len(phase_frames), FRAME_H), (0, 0, 0, 0))
     for index, (col, row) in enumerate(phase_frames):
