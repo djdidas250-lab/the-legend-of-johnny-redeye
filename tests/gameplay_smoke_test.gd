@@ -642,7 +642,7 @@ func _ready() -> void:
 	if not _check(popup_music != null and popup_music.process_mode == Node.PROCESS_MODE_ALWAYS, "Background music must continue while the baggy notification pauses gameplay."): return
 	var baggy_close_player: AudioStreamPlayer = game.get("baggy_close_player")
 	game.call("_dismiss_baggy_notification")
-	if not _check(game.get("baggy_notice") == null and get_tree().paused and baggy_close_player.playing and popup_music.stream_paused, "Closing the baggy notification must play the long-sniff sound while keeping gameplay paused and music held."): return
+	if not _check(game.get("baggy_notice") == null and get_tree().paused and bool(game.get("baggy_close_sound_active")) and baggy_close_player.stream != null and baggy_close_player.process_mode == Node.PROCESS_MODE_ALWAYS and popup_music.stream_paused, "Closing the baggy notification must start the long-sniff sound while keeping gameplay paused and music held."): return
 	game.call("_on_baggy_close_sound_finished")
 	if not _check(not get_tree().paused and not popup_music.stream_paused and popup_music.process_mode == Node.PROCESS_MODE_INHERIT, "Background music and gameplay must resume only after the baggy close sound finishes."): return
 	game.call("_create_baggy_pickup")
@@ -653,7 +653,7 @@ func _ready() -> void:
 	if not _check(game.get("baggy_pickup") == null and int(game.get("player_health")) == 6 and bool(game.get("player_bonus_heart")), "Collecting the Leaside baggy at full health must grant the sixth heart."): return
 	if not _check(game.get("baggy_notice") != null and get_tree().paused, "The baggy notification must also appear and pause gameplay when the bonus heart is granted."): return
 	game.call("_dismiss_baggy_notification")
-	if not _check(get_tree().paused and baggy_close_player.playing and popup_music.stream_paused, "The second baggy notification must also hold gameplay and music during its close sound."): return
+	if not _check(get_tree().paused and bool(game.get("baggy_close_sound_active")) and popup_music.stream_paused, "The second baggy notification must also hold gameplay and music during its close sound."): return
 	game.call("_on_baggy_close_sound_finished")
 	if not _check(not get_tree().paused and not popup_music.stream_paused, "The second baggy notification must resume only after its close sound finishes."): return
 	game.call("_consume_player_heart")
