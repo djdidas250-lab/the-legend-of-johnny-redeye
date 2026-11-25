@@ -38,6 +38,8 @@ const FIGHTER_BASE := preload("res://scripts/fighter_base.gd")
 const DAVY_VISUAL := preload("res://scripts/davy_jones_visual.gd")
 const DAVY_HEALTH_BAR := preload("res://scripts/davy_boss_health_bar.gd")
 const DAVY_BOSS_MUSIC := preload("res://images/01 - Falling Apart (Prologue).ogg")
+const MATTIJUANA_BOSS_MUSIC := preload("res://images/10_Angel With The Scabbed Wings.mp3")
+const MATTIJUANA_VISUAL := preload("res://scripts/mattijuana_visual.gd")
 const DAVY_INTRO_VOICE := preload("res://images/heygen-speech.wav")
 const DAVY_BOSS_MUSIC_VOLUME_DB := -11.0
 const DAVY_DIALOGUE_MUSIC_VOLUME_DB := -23.0
@@ -105,6 +107,11 @@ var davy_boss_attack_hit_done := false
 var davy_boss_dialogue_layer: CanvasLayer
 var davy_boss_health_bar: Node2D
 var davy_voice_player: AudioStreamPlayer
+var mattijuana_boss: Node2D
+var mattijuana_boss_visual: Sprite2D
+var mattijuana_boss_active := false
+var mattijuana_boss_state := "inactive"
+var mattijuana_dialogue_layer: CanvasLayer
 var davy_saved_music_stream: AudioStream
 var davy_saved_music_position := 0.0
 var davy_saved_music_volume_db := -15.0
@@ -1972,6 +1979,10 @@ func _resolve_player_direction(raw_direction: Vector2) -> Vector2:
 func _physics_process(delta: float) -> void:
 	if not game_started or player == null or street_transition_active or game_over_pending:
 		return
+	if mattijuana_boss_active:
+		player.velocity = Vector2.ZERO
+		player.move_and_slide()
+		return
 	player.call("tick_fighter", delta)
 	if player_recovery_active:
 		player_recovery_timer = maxf(0.0, player_recovery_timer - delta)
@@ -2309,6 +2320,7 @@ func _resolve_player_attack() -> void:
 			if hp <= 0:
 				rivals.erase(rival)
 				rival.queue_free()
+				_maybe_begin_mattijuana_entrance()
 			else:
 				_show_notice("HEAVY HIT!" if finisher else "BONK!  Keep moving!")
 			break
@@ -2821,6 +2833,115 @@ func _begin_woodlawn_park_transition() -> void:
 	transition_layer.queue_free()
 	street_transition_active = false
 
+
+func _create_mattijuana_waiting() -> void:
+	if current_street != "WOODLAWN PARK PLAYGROUND":
+		return
+	if is_instance_valid(mattijuana_boss):
+		mattijuana_boss.queue_free()
+	mattijuana_boss = Node2D.new()
+	mattijuana_boss.name = "MattijuanaFinalBoss"
+	mattijuana_boss.position = Vector2(110.0, 360.0)
+	mattijuana_boss.z_index = 360
+	mattijuana_boss_visual = Sprite2D.new()
+	mattijuana_boss_visual.set_script(MATTIJUANA_VISUAL)
+	mattijuana_boss_visual.position = Vector2(0.0, -105.0)
+	mattijuana_boss_visual.scale = Vector2(0.62, 0.62)
+	mattijuana_boss.add_child(mattijuana_boss_visual)
+	add_child(mattijuana_boss)
+	mattijuana_boss_active = false
+	mattijuana_boss_state = "waiting"
+
+
+func _maybe_begin_mattijuana_entrance() -> void:
+	if current_street != "WOODLAWN PARK PLAYGROUND":
+		return
+	if mattijuana_boss_state != "waiting" or not rivals.is_empty():
+		return
+	_begin_mattijuana_entrance()
+
+
+func _begin_mattijuana_entrance() -> void:
+	if mattijuana_boss_state != "waiting" or not is_instance_valid(mattijuana_boss):
+		return
+	mattijuana_boss_active = true
+	mattijuana_boss_state = "entrance"
+	_clear_touch_directions()
+	player.velocity = Vector2.ZERO
+	if is_instance_valid(music_player):
+		music_player.stop()
+		music_player.stream = MATTIJUANA_BOSS_MUSIC
+		music_player.volume_db = -10.0
+		music_player.play()
+	if is_instance_valid(mattijuana_boss_visual):
+		mattijuana_boss_visual.set("walking", true)
+		mattijuana_boss_visual.set("frame_rate", 4.0)
+	var target := Vector2(
+		clampf(player.position.x - 105.0, 90.0, world_end - 130.0),
+		clampf(player.position.y - 34.0, PLAYER_DEPTH_MIN + 5.0, PLAYER_DEPTH_MAX - 5.0)
+	)
+	var distance := mattijuana_boss.position.distance_to(target)
+	var duration := maxf(2.0, distance / 72.0)
+	var approach := create_tween()
+	approach.set_trans(Tween.TRANS_SINE)
+	approach.set_ease(Tween.EASE_OUT)
+	approach.tween_property(mattijuana_boss, "position", target, duration)
+	await approach.finished
+	if not is_instance_valid(mattijuana_boss):
+		return
+	mattijuana_boss.position = target
+	mattijuana_boss.z_index = clampi(roundi(target.y), 0, 1024)
+	if is_instance_valid(mattijuana_boss_visual):
+		mattijuana_boss_visual.set("walking", false)
+	mattijuana_boss_state = "dialogue"
+	_show_mattijuana_intro()
+	await get_tree().create_timer(12.0).timeout
+	if is_instance_valid(mattijuana_dialogue_layer):
+		mattijuana_dialogue_layer.queue_free()
+		mattijuana_dialogue_layer = null
+	mattijuana_boss_state = "awaiting_combat"
+	mattijuana_boss_active = false
+
+
+func _show_mattijuana_intro() -> void:
+	if is_instance_valid(mattijuana_dialogue_layer):
+		mattijuana_dialogue_layer.queue_free()
+	mattijuana_dialogue_layer = CanvasLayer.new()
+	mattijuana_dialogue_layer.layer = 30
+	add_child(mattijuana_dialogue_layer)
+	var panel := PanelContainer.new()
+	panel.anchor_left = 0.06
+	panel.anchor_right = 0.94
+	panel.anchor_top = 0.035
+	panel.anchor_bottom = 0.27
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.055, 0.085, 0.115, 0.97)
+	style.border_color = Color("#c99a50")
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(8)
+	style.shadow_color = Color(0, 0, 0, 0.65)
+	style.shadow_size = 9
+	panel.add_theme_stylebox_override("panel", style)
+	mattijuana_dialogue_layer.add_child(panel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	panel.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 5)
+	margin.add_child(content)
+	var heading := _make_hud_label("MATTIJUANA", Vector2.ZERO, 19)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_color_override("font_color", Color("#f2c879"))
+	content.add_child(heading)
+	var dialogue := _make_hud_label("You stepped into the wrong damn park, motherfucker—I’m gonna smoke your ass like a cheap dime bag and leave your bitch-ass swinging from the monkey bars!", Vector2.ZERO, 14)
+	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(dialogue)
+
+
 func _begin_woodlawn_playground_transition() -> void:
 	if street_transition_active or current_street != "WOODLAWN PARK":
 		return
@@ -2930,6 +3051,7 @@ func _begin_woodlawn_playground_transition() -> void:
 
 	_clear_street_obstacles()
 	_spawn_level_enemies()
+	_create_mattijuana_waiting()
 
 	# Reset the camera for this independent panorama, retaining the proven
 	# Woodlawn framing approach and preventing stale camera limits.
@@ -3630,6 +3752,7 @@ func _update_slingshot_projectiles(delta: float) -> void:
 				if hp <= 0:
 					rivals.erase(rival)
 					rival.queue_free()
+					_maybe_begin_mattijuana_entrance()
 				hit = true
 				break
 		if hit or float(shot["life"]) <= 0.0 or projectile.position.x < 0.0 or projectile.position.x > world_end:
