@@ -26,6 +26,10 @@ func play_animation(name: String, fps: float = 7.0, loop: bool = true) -> void:
     if not SHEETS.has(name):
         push_warning("Unknown Matt-ijuana human animation: " + name)
         return
+    # The boss AI requests its current animation every frame. Preserve the
+    # current frame instead of restarting the strip on every request.
+    if animation_name == name and is_equal_approx(frame_rate, maxf(1.0, fps)) and looping == loop and not finished:
+        return
     animation_name = name
     texture = SHEETS[name]
     frame_index = 0
