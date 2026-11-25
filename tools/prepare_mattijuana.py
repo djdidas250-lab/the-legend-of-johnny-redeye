@@ -110,5 +110,36 @@ def main():
         print(f"Prepared 6 human-form frames: {HUMAN_OUTPUT / filename} {human_strip.size}")
 
 
+    # The supplied 1376x768 transformation atlas contains the wrapped
+    # burning-joint form across its first two rows. Extract the idle and
+    # attack poses as a dedicated phase-two strip (5 columns x 3 rows).
+    phase_source_path = ROOT / "images" / "Gemini_Generated_Image_g9722kg9722kg972.jpeg"
+    phase_source = remove_white_background(Image.open(phase_source_path))
+    if phase_source.size != (1376, 768):
+        raise RuntimeError(f"Unexpected phase-two sheet dimensions: {phase_source.size}")
+    phase_w, phase_h = phase_source.width / 5.0, phase_source.height / 3.0
+    phase_frames = [(3, 0), (4, 0), (4, 1), (3, 1), (2, 1), (4, 0)]
+    phase_strip = Image.new("RGBA", (FRAME_W * len(phase_frames), FRAME_H), (0, 0, 0, 0))
+    for index, (col, row) in enumerate(phase_frames):
+        cell = phase_source.crop((round(col * phase_w), round(row * phase_h),
+                                  round((col + 1) * phase_w), round((row + 1) * phase_h)))
+        alpha = cell.getchannel("A")
+        labels, _ = ndimage.label(np.asarray(alpha) > 0, structure=np.ones((3, 3), dtype=bool))
+        sizes = np.bincount(labels.ravel())
+        valid = np.where((sizes >= 20) & (np.arange(len(sizes)) != 0))[0]
+        alpha = Image.fromarray((np.isin(labels, valid) * 255).astype(np.uint8), "L")
+        cell.putalpha(alpha)
+        bounds = alpha.getbbox()
+        if not bounds:
+            raise RuntimeError(f"Phase-two frame {index} is empty")
+        art = cell.crop(bounds)
+        art.thumbnail((FRAME_W - 20, FRAME_H - 12), Image.Resampling.LANCZOS)
+        frame = Image.new("RGBA", (FRAME_W, FRAME_H), (0, 0, 0, 0))
+        frame.alpha_composite(art, ((FRAME_W - art.width) // 2, FRAME_H - art.height))
+        phase_strip.alpha_composite(frame, (index * FRAME_W, 0))
+    phase_strip.save(HUMAN_OUTPUT / "mattijuana_joint_phase.png", optimize=True)
+    print(f"Prepared phase-two joint frames: {phase_strip.size}")
+
+
 if __name__ == "__main__":
     main()
