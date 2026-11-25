@@ -30,8 +30,11 @@ jobs:
           python3 -m pip install --user Pillow numpy scipy
           python3 tools/prepare_john_animations.py
           python3 tools/prepare_davy_jones.py
+          python3 tools/prepare_mattijuana.py
           test -s "images/01 - Falling Apart (Prologue).ogg"
           test -s images/heygen-speech.wav
+          test -s "images/10_Angel With The Scabbed Wings.mp3"
+          test -s images/sprites/mattijuana_front_walk.png
           test -s images/sprites/davy_human_entrance.png
           test -s images/sprites/davy_transformation.png
           test -s images/sprites/davy_octopus_walk_down.png
