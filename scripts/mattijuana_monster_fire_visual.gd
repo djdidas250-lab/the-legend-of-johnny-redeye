@@ -2,7 +2,7 @@ extends Sprite2D
 
 const SHEET := preload("res://images/sprites/mattijuana_monster_fire_breath.png")
 const FRAME_SIZE := Vector2(256.0, 256.0)
-const FRAME_COUNT := 3
+const FRAME_COUNT := 2
 
 var frame_index := 0
 var frame_time := 0.0

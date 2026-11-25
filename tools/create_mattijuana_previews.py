@@ -16,13 +16,13 @@ SEQUENCES = {
     "human_recover": ("mattijuana_human_recover.png", 6, 160),
     "human_to_joint": ("mattijuana_human_to_joint.png", 5, 420),
     "joint_idle": ("mattijuana_joint_idle.png", 3, 220),
-    "joint_attack": ("mattijuana_joint_attack.png", 5, 180),
-    "joint_recovery": ("mattijuana_joint_recovery.png", 4, 180),
+    "joint_attack": ("mattijuana_joint_attack.png", 4, 180),
+    "joint_recovery": ("mattijuana_joint_recovery.png", 2, 220),
     "joint_to_monster": ("mattijuana_joint_to_monster.png", 3, 420),
     "monster_idle": ("mattijuana_monster_idle.png", 3, 220),
     "monster_walk": ("mattijuana_monster_walk.png", 3, 160),
     "monster_attack": ("mattijuana_monster_attack.png", 3, 180),
-    "monster_fire_breath": ("mattijuana_monster_fire_breath.png", 3, 180),
+    "monster_fire_breath": ("mattijuana_monster_fire_breath.png", 2, 200),
 }
 
 def frame_images(path: Path, count: int):

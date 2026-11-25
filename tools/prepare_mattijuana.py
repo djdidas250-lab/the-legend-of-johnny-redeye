@@ -236,12 +236,14 @@ def main() -> None:
     # The lower joint poses cross the nominal grid boundaries. Use overlapping
     # cell crops around the four authored attack poses, then the first full recovery pose.
     joint_attack = [
-        extract_cell(joint, 1, col, 5, 3, "joint attack", pad=16, component_margin=12)
-        for col in (1, 2, 3, 4)
-    ] + [extract_cell(joint, 2, 0, 5, 3, "joint attack impact", pad=16, component_margin=12)]
+        extract_cell(joint, 1, 1, 5, 3, "joint attack curl", pad=16, component_margin=12),
+        extract_cell(joint, 1, 3, 5, 3, "joint attack bend", pad=16, component_margin=12),
+        extract_cell(joint, 1, 4, 5, 3, "joint attack impact", pad=16, component_margin=12),
+        extract_cell(joint, 2, 0, 5, 3, "joint attack follow-through", pad=16, component_margin=12),
+    ]
     joint_recovery = [
-        extract_cell(joint, 2, col, 5, 3, "joint recovery", pad=12, component_margin=12)
-        for col in (1, 2, 3, 4)
+        extract_cell(joint, 2, 3, 5, 3, "joint recovery smoke", pad=8, component_margin=16),
+        extract_cell(joint, 2, 4, 5, 3, "joint recovery upright", pad=8, component_margin=16),
     ]
     idle_strip = write_strip(joint_idle, "mattijuana_joint_idle.png")
     write_strip(joint_idle, "mattijuana_joint_walk.png")
@@ -254,7 +256,7 @@ def main() -> None:
     write_strip(monster_transform, "mattijuana_joint_to_monster.png", align="center")
     monster_idle = [extract_cell(monster, 0, col, 6, 3, "monster idle", pad=0, component_margin=12) for col in (3, 4, 5)]
     monster_walk = [extract_cell(monster, 1, col, 6, 3, "monster walk", pad=0, component_margin=12) for col in (0, 1, 2)]
-    monster_attack = [extract_cell(monster, 1, col, 6, 3, "monster attack", pad=0, component_margin=12) for col in (3, 4, 5)]
+    monster_attack = [extract_cell(monster, 1, col, 6, 3, "monster attack", pad=0, component_margin=0) for col in (3, 4, 5)]
     idle_monster_strip = write_strip(monster_idle, "mattijuana_monster_idle.png")
     walk_monster_strip = write_strip(monster_walk, "mattijuana_monster_walk.png")
     attack_monster_strip = write_strip(monster_attack, "mattijuana_monster_attack.png")
@@ -265,17 +267,19 @@ def main() -> None:
     # use the full flame and smoke cells as the following frames of the effect.
     monster_cell_w, monster_cell_h = monster.width // 6, monster.height // 3
     fire_cells = []
-    for col in (1, 2, 3):
+    # These two cells are the clean, separate fire stream and its smoke tail;
+    # the neighbouring cell contains part of the monster's head and is not used.
+    for col in (2, 3):
         cell = monster.crop((col * monster_cell_w, 2 * monster_cell_h,
                              (col + 1) * monster_cell_w, 3 * monster_cell_h))
-        if col == 1:
-            cell = cell.crop((150, 16, cell.width, cell.height - 8))
         fire = remove_white_background(cell)
+        if col == 2:
+            fire = Image.fromarray(retain_pose_components(np.asarray(fire).copy(), margin=12), "RGBA")
         fire = crop_to_alpha(fire, padding=5)
         fire_cells.append(fire)
     write_strip(fire_cells, "mattijuana_monster_fire_breath.png", align="left")
 
-    print("Matt-ijuana extraction complete: entrance 12; human 6x4; transform 5; joint idle 3/attack 5/recovery 4; monster idle 3/walk 3/attack 3/fire breath 3.")
+    print("Matt-ijuana extraction complete: entrance 12; human 6x4; transform 5; joint idle 3/attack 4/recovery 2; monster idle 3/walk 3/attack 3/fire breath 3.")
 
 
 if __name__ == "__main__":

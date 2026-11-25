@@ -6,7 +6,7 @@ const SHEETS := {
     "walk": preload("res://images/sprites/mattijuana_joint_walk.png"),
     "attack": preload("res://images/sprites/mattijuana_joint_attack.png")
 }
-const FRAME_COUNTS := {"idle": 3, "walk": 3, "attack": 5}
+const FRAME_COUNTS := {"idle": 3, "walk": 3, "attack": 4}
 
 var animation_name := "idle"
 var frame_index := 0
