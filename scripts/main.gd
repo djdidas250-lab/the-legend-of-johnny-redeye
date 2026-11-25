@@ -42,6 +42,7 @@ const MATTIJUANA_BOSS_MUSIC := preload("res://images/10_Angel With The Scabbed W
 const MATTIJUANA_VISUAL := preload("res://scripts/mattijuana_visual.gd")
 const MATTIJUANA_HUMAN_VISUAL := preload("res://scripts/mattijuana_human_visual.gd")
 const MATTIJUANA_JOINT_VISUAL := preload("res://scripts/mattijuana_joint_visual.gd")
+const MATTIJUANA_MONSTER_VISUAL := preload("res://scripts/mattijuana_monster_visual.gd")
 const MATTIJUANA_HEALTH_BAR := preload("res://scripts/davy_boss_health_bar.gd")
 const DAVY_INTRO_VOICE := preload("res://images/heygen-speech.wav")
 const DAVY_BOSS_MUSIC_VOLUME_DB := -11.0
