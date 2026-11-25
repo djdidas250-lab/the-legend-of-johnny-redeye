@@ -3012,11 +3012,14 @@ func _begin_mattijuana_entrance() -> void:
 		mattijuana_boss_visual.set("walking", false)
 	mattijuana_boss_state = "dialogue"
 	_show_mattijuana_intro()
-	var intro_duration := maxf(12.0, MATTIJUANA_INTRO_VOICE.get_length() + 0.5)
-	await get_tree().create_timer(intro_duration).timeout
+	# Keep the intro panel and ducked boss music tied to the actual voice playback.
+	if is_instance_valid(mattijuana_voice_player):
+		await mattijuana_voice_player.finished
 	if is_instance_valid(mattijuana_dialogue_layer):
 		mattijuana_dialogue_layer.queue_free()
 		mattijuana_dialogue_layer = null
+	if is_instance_valid(music_player) and music_player.playing:
+		music_player.volume_db = -10.0
 	mattijuana_boss_state = "human_fight"
 	mattijuana_boss_active = true
 	mattijuana_health = 10
@@ -3206,7 +3209,10 @@ func _show_mattijuana_intro() -> void:
 	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(dialogue)
-	# Play the supplied Matt-ijuana voice immediately after the dialogue panel is built.
+	# Duck the boss music for the spoken line, matching the Davy Jones intro.
+	if is_instance_valid(music_player) and music_player.playing:
+		music_player.volume_db = DAVY_DIALOGUE_MUSIC_VOLUME_DB
+	# The dialogue panel is removed as soon as this voice player's finished signal fires.
 	mattijuana_voice_player = AudioStreamPlayer.new()
 	mattijuana_voice_player.stream = MATTIJUANA_INTRO_VOICE
 	mattijuana_voice_player.volume_db = 0.0
