@@ -39,6 +39,7 @@ const DAVY_VISUAL := preload("res://scripts/davy_jones_visual.gd")
 const DAVY_HEALTH_BAR := preload("res://scripts/davy_boss_health_bar.gd")
 const DAVY_BOSS_MUSIC := preload("res://images/01 - Falling Apart (Prologue).ogg")
 const MATTIJUANA_BOSS_MUSIC := preload("res://images/10_Angel With The Scabbed Wings.mp3")
+const MATTIJUANA_INTRO_VOICE := preload("res://images/ElevenLabs_2026-11-25T21_47_21_Angry Rob_pvc_s50_sim75_v4.mp3")
 const MATTIJUANA_VISUAL := preload("res://scripts/mattijuana_visual.gd")
 const MATTIJUANA_HUMAN_VISUAL := preload("res://scripts/mattijuana_human_visual.gd")
 const MATTIJUANA_JOINT_VISUAL := preload("res://scripts/mattijuana_joint_visual.gd")
@@ -117,6 +118,7 @@ var mattijuana_boss_visual: Sprite2D
 var mattijuana_boss_active := false
 var mattijuana_boss_state := "inactive"
 var mattijuana_dialogue_layer: CanvasLayer
+var mattijuana_voice_player: AudioStreamPlayer
 var mattijuana_health_bar: Node2D
 var mattijuana_health := 10
 var mattijuana_phase := 1
@@ -2948,7 +2950,8 @@ func _begin_mattijuana_entrance() -> void:
 		mattijuana_boss_visual.set("walking", false)
 	mattijuana_boss_state = "dialogue"
 	_show_mattijuana_intro()
-	await get_tree().create_timer(12.0).timeout
+	var intro_duration := maxf(12.0, MATTIJUANA_INTRO_VOICE.get_length() + 0.5)
+	await get_tree().create_timer(intro_duration).timeout
 	if is_instance_valid(mattijuana_dialogue_layer):
 		mattijuana_dialogue_layer.queue_free()
 		mattijuana_dialogue_layer = null
@@ -3141,6 +3144,12 @@ func _show_mattijuana_intro() -> void:
 	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(dialogue)
+	# Play the supplied Matt-ijuana voice immediately after the dialogue panel is built.
+	mattijuana_voice_player = AudioStreamPlayer.new()
+	mattijuana_voice_player.stream = MATTIJUANA_INTRO_VOICE
+	mattijuana_voice_player.volume_db = 0.0
+	mattijuana_dialogue_layer.add_child(mattijuana_voice_player)
+	mattijuana_voice_player.play()
 
 
 func _begin_woodlawn_playground_transition() -> void:
