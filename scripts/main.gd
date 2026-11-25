@@ -2960,7 +2960,7 @@ func _create_mattijuana_waiting() -> void:
 	health_bar.set_script(MATTIJUANA_HEALTH_BAR)
 	health_bar.set("maximum_health", 10)
 	health_bar.set("health", 10)
-	health_bar.position = Vector2(0.0, -198.0)
+	health_bar.position = Vector2(0.0, -218.0)
 	health_bar.z_index = 30
 	mattijuana_boss.add_child(health_bar)
 	mattijuana_health_bar = health_bar
@@ -3128,7 +3128,7 @@ func _show_mattijuana_fire_breath(direction: float) -> void:
 	fire.flip_h = direction < 0.0
 	fire.z_index = 35
 	mattijuana_boss.add_child(fire)
-	fire.call("play_animation", "fire", 6.0, false)
+	fire.call("play_animation", "fire", 3.5, false)
 
 
 func _update_mattijuana_boss(delta: float) -> void:
