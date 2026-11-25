@@ -41,6 +41,7 @@ const DAVY_BOSS_MUSIC := preload("res://images/01 - Falling Apart (Prologue).ogg
 const MATTIJUANA_BOSS_MUSIC := preload("res://images/10_Angel With The Scabbed Wings.mp3")
 const MATTIJUANA_VISUAL := preload("res://scripts/mattijuana_visual.gd")
 const MATTIJUANA_HUMAN_VISUAL := preload("res://scripts/mattijuana_human_visual.gd")
+const MATTIJUANA_JOINT_VISUAL := preload("res://scripts/mattijuana_joint_visual.gd")
 const MATTIJUANA_HEALTH_BAR := preload("res://scripts/davy_boss_health_bar.gd")
 const DAVY_INTRO_VOICE := preload("res://images/heygen-speech.wav")
 const DAVY_BOSS_MUSIC_VOLUME_DB := -11.0
@@ -2331,7 +2332,7 @@ func _resolve_player_attack() -> void:
 			else:
 				_show_notice("HEAVY HIT!" if finisher else "BONK!  Keep moving!")
 			break
-	if not bool(player.get("attack_hit_confirmed")) and mattijuana_boss_active and mattijuana_boss_state == "human_fight" and is_instance_valid(mattijuana_boss):
+	if not bool(player.get("attack_hit_confirmed")) and mattijuana_boss_active and mattijuana_boss_state in ["human_fight", "joint_fight"] and is_instance_valid(mattijuana_boss):
 		var matt_dx := mattijuana_boss.position.x - player.position.x
 		var matt_dy := mattijuana_boss.position.y - player.position.y
 		if absf(matt_dx) <= reach and absf(matt_dy) <= 18.0 and signf(matt_dx) == facing:
@@ -2342,12 +2343,18 @@ func _resolve_player_attack() -> void:
 			mattijuana_boss.position.x += facing * 10.0
 			_play_sfx(245.0 if int(player.get("combo_step")) == 3 else 190.0, 0.06, 0.18)
 			_trigger_hitstop()
-			if is_instance_valid(mattijuana_boss_visual):
+			if mattijuana_boss_state == "human_fight" and is_instance_valid(mattijuana_boss_visual):
 				mattijuana_boss_visual.call("play_animation", "fall", 8.0, false)
 			if mattijuana_health <= 0:
-				mattijuana_boss_state = "phase2_pending"
-				mattijuana_boss_active = false
-				_show_notice("MATTIJUANA IS DOWN!")
+				if mattijuana_phase == 1:
+					mattijuana_boss_state = "phase2_pending"
+					mattijuana_boss_active = false
+					_show_notice("MATTIJUANA TRANSFORMS!")
+					_transition_mattijuana_to_joint()
+				else:
+					mattijuana_boss_state = "phase3_pending"
+					mattijuana_boss_active = false
+					_show_notice("THE MONSTER AWAKENS!")
 			else:
 				_show_notice("HIT MATTIJUANA!")
 	if not bool(player.get("attack_hit_confirmed")) and davy_boss_active and davy_boss_state == "fight" and is_instance_valid(davy_boss):
@@ -2951,8 +2958,30 @@ func _begin_mattijuana_entrance() -> void:
 	mattijuana_boss.add_child(mattijuana_boss_visual)
 
 
+func _transition_mattijuana_to_joint() -> void:
+	await get_tree().create_timer(1.1).timeout
+	if not is_instance_valid(mattijuana_boss) or mattijuana_boss_state != "phase2_pending":
+		return
+	if is_instance_valid(mattijuana_boss_visual):
+		mattijuana_boss_visual.queue_free()
+	mattijuana_boss_visual = Sprite2D.new()
+	mattijuana_boss_visual.set_script(MATTIJUANA_JOINT_VISUAL)
+	mattijuana_boss_visual.position = Vector2(0.0, -105.0)
+	mattijuana_boss_visual.scale = Vector2(0.82, 0.82)
+	mattijuana_boss.add_child(mattijuana_boss_visual)
+	mattijuana_phase = 2
+	mattijuana_health = 10
+	if is_instance_valid(mattijuana_health_bar):
+		mattijuana_health_bar.set("maximum_health", 10)
+		mattijuana_health_bar.call("update_health", mattijuana_health, mattijuana_phase)
+	mattijuana_attack_cooldown = 1.5
+	mattijuana_boss_state = "joint_fight"
+	mattijuana_boss_active = true
+	_show_notice("PHASE TWO: THE BURNING JOINT!")
+
+
 func _update_mattijuana_boss(delta: float) -> void:
-	if not mattijuana_boss_active or mattijuana_boss_state != "human_fight" or not is_instance_valid(mattijuana_boss) or not is_instance_valid(player):
+	if not mattijuana_boss_active or mattijuana_boss_state not in ["human_fight", "joint_fight"] or not is_instance_valid(mattijuana_boss) or not is_instance_valid(player):
 		return
 	mattijuana_attack_cooldown = maxf(0.0, mattijuana_attack_cooldown - delta)
 	var dx := player.position.x - mattijuana_boss.position.x
@@ -2960,17 +2989,17 @@ func _update_mattijuana_boss(delta: float) -> void:
 	var visual := mattijuana_boss_visual
 	if absf(dx) > 76.0 or absf(dy) > 18.0:
 		var direction := Vector2(signf(dx), signf(dy) * 0.55).normalized()
-		mattijuana_boss.position += direction * 30.0 * delta
+		mattijuana_boss.position += direction * (30.0 if mattijuana_phase == 1 else 23.0) * delta
 		if is_instance_valid(visual):
 			visual.flip_h = dx < 0.0
-			visual.call("play_animation", "walk", 7.0, true)
+			visual.call("play_animation", "walk", 7.0 if mattijuana_phase == 1 else 5.0, true)
 		mattijuana_boss.z_index = clampi(roundi(mattijuana_boss.position.y), 0, 1024)
 		return
 	if mattijuana_attack_cooldown <= 0.0 and player_invulnerable <= 0.0 and not player_recovery_active:
 		mattijuana_attack_cooldown = 1.65
 		if is_instance_valid(visual):
 			visual.flip_h = dx < 0.0
-			visual.call("play_animation", "attack", 8.0, false)
+			visual.call("play_animation", "attack", 8.0 if mattijuana_phase == 1 else 5.0, false)
 		_hurt_player(mattijuana_boss)
 
 
