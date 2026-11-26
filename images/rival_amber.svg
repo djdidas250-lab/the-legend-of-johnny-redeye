@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="160" viewBox="0 0 128 160">
+<defs><linearGradient id="jacket" x2="0" y2="1"><stop stop-color="#e9a04b"/><stop offset="1" stop-color="#b95b38"/></linearGradient><linearGradient id="skin" x2="0" y2="1"><stop stop-color="#f8c99d"/><stop offset="1" stop-color="#d88c68"/></linearGradient></defs>
+<g stroke="#283047" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<ellipse cx="64" cy="148" rx="27" ry="5" fill="#263b43" opacity=".2" stroke="none"/>
+<path d="M42 110 L59 111 L57 138 L46 143 L36 137Z M68 110 L83 111 L88 137 L79 143 L66 138Z" fill="#4c527e"/>
+<path d="M37 135 Q47 132 55 140 L56 147 Q50 151 32 148Z M68 136 Q78 132 86 140 L91 147 Q85 151 67 148Z" fill="#e65e55"/><path d="M31 145 L56 145 L56 150 L30 150Z M67 145 L92 145 L93 150 L67 150Z" fill="#fff1df" stroke-width="2"/>
+<path d="M43 72 Q64 66 82 74 L86 111 Q65 121 42 111Z" fill="url(#jacket)"/><path d="M63 75 L64 112" stroke="#f7d28c" stroke-width="3"/><path d="M51 87 L58 90 M69 87 L77 90" stroke="#f7d28c" stroke-width="2"/>
+<path d="M43 78 Q31 84 34 101 L40 111 L50 106 L49 91Z M80 78 Q92 83 91 99 L86 111 L78 107 L78 91Z" fill="url(#jacket)"/>
+<path d="M39 104 Q37 115 45 119 Q51 119 52 112 L48 103Z M80 104 Q82 115 90 116 Q96 111 91 102Z" fill="url(#skin)"/>
+<path d="M42 38 Q44 17 65 17 Q87 18 88 42 L85 67 Q76 79 61 78 Q44 75 40 60Z" fill="url(#skin)"/>
+<path d="M39 43 Q36 20 55 13 Q79 6 90 29 L89 43 Q77 34 70 34 Q56 41 44 34Z" fill="#4c3025"/><path d="M84 29 Q103 25 99 47 Q96 58 87 59" fill="none" stroke="#4c3025" stroke-width="7"/>
+<path d="M51 46 Q56 43 60 46" fill="none" stroke="#754532" stroke-width="2.5"/><ellipse cx="72" cy="47" rx="3.2" ry="4" fill="#253047" stroke="none"/><circle cx="73" cy="45" r="1" fill="#fff" stroke="none"/><path d="M82 55 Q89 57 86 62" fill="none" stroke="#bd795d" stroke-width="2"/><path d="M70 67 Q77 71 83 66" fill="none" stroke="#9a4f49" stroke-width="2"/>
+<path d="M54 87 Q63 91 73 87" fill="none" stroke="#f4d4a2" stroke-width="2"/><circle cx="71" cy="98" r="4" fill="#f2d75d" stroke="#8d6827" stroke-width="1.5"/>
+</g></svg>

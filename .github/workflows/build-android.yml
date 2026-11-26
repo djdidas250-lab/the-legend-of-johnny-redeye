@@ -55,7 +55,7 @@ jobs:
                    "loudnorm=print_format=json", "-f", "null", "-"],
                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True
               )
-              matches = re.findall(r'\\{\\s*"input_i".*?\\}', result.stderr, re.S)
+              matches = re.findall(r'\{\s*"input_i".*?\}', result.stderr, re.S)
               if not matches:
                   raise RuntimeError(f"Could not read loudness measurement for {path}")
               stats = json.loads(matches[-1])
