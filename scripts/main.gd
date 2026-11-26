@@ -1451,6 +1451,7 @@ func _complete_return_to_mission_select() -> void:
 		remove_child(horror_atmosphere)
 		horror_atmosphere.free()
 	horror_atmosphere = null
+	material = null
 	light_mask = 1
 	_show_map_screen()
 	queue_redraw()
@@ -1579,6 +1580,7 @@ func _setup_horror_atmosphere() -> void:
 		horror_atmosphere.free()
 	horror_atmosphere = null
 	light_mask = 2
+	material = ENVIRONMENTAL_ATMOSPHERE.create_background_grade_material()
 	horror_atmosphere = ENVIRONMENTAL_ATMOSPHERE.new()
 	horror_atmosphere.name = "WorldOnlyHorrorAtmosphere"
 	horror_atmosphere.call("configure", world_end, current_street)
