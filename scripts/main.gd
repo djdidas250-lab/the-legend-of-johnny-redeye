@@ -933,7 +933,7 @@ func _update_intro_sequence() -> void:
 		return
 	var playback_time := intro_audio_player.get_playback_position()
 	if intro_audio_player.playing:
-		playback_time += intro_audio_player.get_time_since_last_mix()
+		playback_time += AudioServer.get_time_since_last_mix()
 	intro_elapsed = clampf(playback_time, 0.0, INTRO_TRACK_DURATION)
 	var next_index := mini(int(floor(intro_elapsed / INTRO_SLIDE_DURATION)), INTRO_IMAGES.size() - 1)
 	if next_index != intro_image_index:
@@ -1009,8 +1009,15 @@ func _finish_intro_sequence() -> void:
 	if is_instance_valid(intro_progress_fill):
 		intro_progress_fill.size.x = get_viewport_rect().size.x
 	if is_instance_valid(intro_layer):
+		var fade_overlay := ColorRect.new()
+		fade_overlay.name = "IntroFinalFadeToBlack"
+		fade_overlay.color = Color(0.0, 0.0, 0.0, 0.0)
+		fade_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		fade_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		fade_overlay.z_index = 100
+		intro_layer.add_child(fade_overlay)
 		var fade := create_tween()
-		fade.tween_property(intro_layer, "modulate:a", 0.0, 0.48)
+		fade.tween_property(fade_overlay, "color", Color.BLACK, 0.48)
 		await fade.finished
 		intro_layer.queue_free()
 	intro_layer = null
