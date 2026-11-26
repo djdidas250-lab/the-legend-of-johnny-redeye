@@ -2097,6 +2097,7 @@ func _make_character(at: Vector2, shirt: Color, rival: bool, rival_variant: int 
 	body.set_script(FIGHTER_BASE)
 	# Actors stay on the unlit character mask; environmental lights target mask 2.
 	body.light_mask = 1
+	body.use_parent_material = false
 	body.position = at
 	# Character bodies only collide with street obstacles, not one another.
 	body.collision_layer = 4 if rival else 2
@@ -2104,6 +2105,7 @@ func _make_character(at: Vector2, shirt: Color, rival: bool, rival_variant: int 
 	var visual := Sprite2D.new()
 	visual.set_script(CHARACTER_VISUAL)
 	visual.light_mask = 1
+	visual.use_parent_material = false
 	visual.position = Vector2(0, -46)
 	visual.scale = Vector2(0.5, 0.5)
 	visual.set("is_rival", rival)
@@ -3063,11 +3065,13 @@ func _create_mattijuana_waiting() -> void:
 		mattijuana_boss.queue_free()
 	mattijuana_boss = Node2D.new()
 	mattijuana_boss.light_mask = 1
+	mattijuana_boss.use_parent_material = false
 	mattijuana_boss.name = "MattijuanaFinalBoss"
 	mattijuana_boss.position = Vector2(110.0, 360.0)
 	mattijuana_boss.z_index = 360
 	mattijuana_boss_visual = Sprite2D.new()
 	mattijuana_boss_visual.light_mask = 1
+	mattijuana_boss_visual.use_parent_material = false
 	mattijuana_boss_visual.set_script(MATTIJUANA_VISUAL)
 	mattijuana_boss_visual.position = Vector2(0.0, -105.0)
 	mattijuana_boss_visual.scale = Vector2(0.62, 0.62)
