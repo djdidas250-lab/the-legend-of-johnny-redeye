@@ -2848,6 +2848,7 @@ func _begin_newleaf_transition() -> void:
 	street_panorama = STREET_PANORAMA_IMAGE
 	world_end = float(street_panorama.get_width())
 	current_street = "NEWLEAF CRESCENT"
+	_setup_horror_atmosphere()
 	active_slot_area = "Newleaf Crescent"
 	# Restore the original Newleaf slingshot pickup on this live street handoff.
 	# _build_game() handles direct checkpoint starts; this transition needs the
@@ -3002,6 +3003,7 @@ func _begin_woodlawn_park_transition() -> void:
 	street_panorama = _make_woodlawn_park_panorama()
 	world_end = float(street_panorama.get_width())
 	current_street = "WOODLAWN PARK"
+	_setup_horror_atmosphere()
 	active_slot_area = "Woodlawn Park"
 	# Reaching the Road to Woodlawn checkpoint is a progression milestone.
 	# Persist it only after the secret-path transition has reached this street.
