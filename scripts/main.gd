@@ -1827,7 +1827,7 @@ func _create_transition_briefing_panel(
 	content.add_child(prompt)
 	return panel
 
-func _begin_stage_one_mission() -> void:
+func _begin_stage_one_mission(play_first_stage_intro: bool = true) -> void:
 	# Stage One now begins at the far end of Leaside, away from McRae.
 	# David travels rightward along Leaside toward the McRae intersection.
 	street_panorama = _make_leaside_panorama()
@@ -1836,7 +1836,7 @@ func _begin_stage_one_mission() -> void:
 	active_slot_unlocked_leaside = true
 	active_slot_area = "Leaside Drive"
 	_save_slot_progress()
-	_start_game(55.0, 475.0, true)
+	_start_game(55.0, 475.0, play_first_stage_intro)
 	player.get_child(0).set("facing", 1.0)
 	var camera := player.get_node_or_null("Camera2D") as Camera2D
 	if camera != null:

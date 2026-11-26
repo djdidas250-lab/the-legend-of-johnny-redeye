@@ -198,8 +198,22 @@ func _ready() -> void:
 	if not _check(start_sfx != null and start_sfx.stream.resource_path == "res://images/freesound_community-game-start-6104.mp3", "Start Mission must use the title-screen game-start click sound."): return
 	if start_sfx.playing:
 		await start_sfx.finished
-	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
 	if not _check(bool(game.get("game_started")), "Invisible Start Mission click target did not start Stage One."): return
+	var opening_audio := game.get("first_stage_intro_player") as AudioStreamPlayer
+	var opening_music := game.get("music_player") as AudioStreamPlayer
+	if not _check(bool(game.get("first_stage_intro_active")) and get_tree().paused and opening_audio != null and opening_audio.playing and opening_audio.stream.resource_path == "res://images/John game intro.mp3" and opening_music != null and not opening_music.playing, "The supplied opening audio must play alone immediately after Begin Mission while gameplay is paused."):
+		return
+	if not _check(ResourceLoader.exists("res://images/John game intro.mp3") and game.get_script().source_code.contains("_begin_stage_one_mission(play_first_stage_intro: bool = true)") and game.get_script().source_code.contains("_start_game(55.0, 475.0, play_first_stage_intro)") and game.get_script().source_code.contains("play_first_stage_intro: bool = false"), "The opening audio must be tied to the first-mission start path, while generic starts default to no intro."):
+		return
+	game.set("attack_cooldown", 0.0)
+	game.call("_try_punch")
+	if not _check(is_equal_approx(float(game.get("attack_cooldown")), 0.0), "PUNCH must remain disabled while the opening audio is playing."):
+		return
+	game.call("_on_first_stage_intro_finished")
+	if not _check(not get_tree().paused and not bool(game.get("first_stage_intro_active")) and game.get("first_stage_intro_player") == null and opening_music.playing, "Stage One music must begin and gameplay must resume only after the opening audio finishes."):
+		return
 	var heart_hud: Control = game.get("health_label")
 	var game_script := game.get_script() as GDScript
 	if not _check(heart_hud != null and is_equal_approx(heart_hud.custom_minimum_size.y, 82.0) and int(heart_hud.get("health")) == 5 and int(heart_hud.get("lives")) == 3, "The top-right HUD must show five heart cells with X 3 directly underneath."): return
@@ -670,25 +684,13 @@ func _ready() -> void:
 	if not _check(returned_map.get_node_or_null("JohnHouseCheckpointHitbox") != null and returned_map.get_node_or_null("McRaeCheckpointMarker") != null, "Returning to Mission Select must restore the correct unlocked mission markers."): return
 	if not _check(bool(returned_cfg.get_value("slot_2", "available", false)) and bool(returned_cfg.get_value("slot_3", "available", false)) and bool(returned_cfg.get_value("slot_3", "unlocked_mcrae", false)), "Returning to Mission Select must leave the other save slots and their progress untouched."): return
 	if not _check(game.get("rivals").is_empty() and game.get("slingshot_projectiles").is_empty() and game.get("slingshot_pickup") == null and game.get("baggy_pickup") == null and game.get("touch_direction_by_finger").is_empty() and game.get("direction_touch_buttons").is_empty(), "Returning to Mission Select must clear enemies, projectiles, pickups, and stale touch controls."): return
-	# Enter Leaside through the actual first-mission briefing. The game pauses
-	# while its dedicated intro player runs; wait on rendering rather than
-	# forcing this test controller (and its gameplay child) to process while paused.
-	game.call("_begin_stage_one_mission")
+	# Re-enter Leaside through the same setup without the first-mission intro,
+	# representing a checkpoint/restart rather than a fresh mission start.
+	game.call("_begin_stage_one_mission", false)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
-	var opening_audio := game.get("first_stage_intro_player") as AudioStreamPlayer
-	var opening_music := game.get("music_player") as AudioStreamPlayer
-	if not _check(bool(game.get("first_stage_intro_active")) and get_tree().paused and opening_audio != null and opening_audio.playing and opening_audio.stream.resource_path == "res://images/John game intro.mp3" and opening_music != null and not opening_music.playing, "The supplied John game intro audio must play alone while first-stage gameplay is paused."):
-		return
-	if not _check(ResourceLoader.exists("res://images/John game intro.mp3") and game_script.source_code.contains("_start_game(55.0, 475.0, true)") and game_script.source_code.contains("play_first_stage_intro: bool = false"), "The opening audio must be installed and enabled only for the first-mission start path."):
-		return
-	game.set("attack_cooldown", 0.0)
-	game.call("_try_punch")
-	if not _check(is_equal_approx(float(game.get("attack_cooldown")), 0.0), "PUNCH must remain disabled while the opening audio is playing."):
-		return
-	game.call("_try_fire_slingshot")
-	game.call("_on_first_stage_intro_finished")
-	if not _check(not get_tree().paused and not bool(game.get("first_stage_intro_active")) and game.get("first_stage_intro_player") == null and opening_music.playing, "Stage One music must start and gameplay must resume only after the opening audio finishes."):
+	var restart_opening_music := game.get("music_player") as AudioStreamPlayer
+	if not _check(not bool(game.get("first_stage_intro_active")) and game.get("first_stage_intro_player") == null and not get_tree().paused and restart_opening_music != null and restart_opening_music.playing, "A Leaside checkpoint/restart must not replay the first-mission opening audio."):
 		return
 	var baggy: Sprite2D = game.get("baggy_pickup")
 	if not _check(baggy != null and baggy.name == "LeasideBaggyHealthPickup" and is_equal_approx(baggy.position.y, 475.0) and is_equal_approx(baggy.scale.x, 0.12), "The baggy pickup must be small and lie in the middle of the Leaside roadway."): return
