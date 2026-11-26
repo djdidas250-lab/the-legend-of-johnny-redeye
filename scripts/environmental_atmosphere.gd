@@ -101,16 +101,25 @@ void fragment() {
     vec2 uv = UV;
     float t = TIME * drift_speed;
     vec2 field = uv * vec2(scale_x, scale_y);
-    float broad = fbm(field + vec2(t, sin(uv.x * 8.0 + t) * 0.10));
-    float fine = noise2(field * 2.15 + vec2(-t * 1.42, t * 0.24));
-    float rolling_density = smoothstep(0.47, 0.76, broad * 0.66 + fine * 0.34);
-    float lower_bank = smoothstep(0.58 + vertical_offset, 0.78 + vertical_offset, uv.y);
-    lower_bank *= 1.0 - smoothstep(0.91, 0.995, uv.y);
-    float wispy_breakup = smoothstep(0.30, 0.80, fine);
+    // Low-frequency warping makes the banks roll and fold instead of sliding
+    // as uniform horizontal bands. The fine field breaks their edges into wisps.
+    vec2 warp = vec2(
+        noise2(field * 0.43 + vec2(t * 0.42, -t * 0.18)),
+        noise2(field * 0.39 + vec2(-t * 0.31, t * 0.22))
+    ) - vec2(0.5);
+    vec2 warped_field = field + warp * vec2(1.25, 0.52);
+    float broad = fbm(warped_field + vec2(t, sin(uv.x * 8.0 + t) * 0.14));
+    float fine = noise2(warped_field * 2.15 + vec2(-t * 1.42, t * 0.24));
+    float streaks = noise2(warped_field * vec2(0.72, 1.65) + vec2(t * 0.68, -t * 0.16));
+    float rolling_density = smoothstep(0.405, 0.735, broad * 0.58 + fine * 0.27 + streaks * 0.15);
+    float lower_bank = smoothstep(0.46 + vertical_offset, 0.73 + vertical_offset, uv.y);
+    lower_bank *= 1.0 - smoothstep(0.88, 0.985, uv.y);
+    float wispy_breakup = smoothstep(0.22, 0.76, fine * 0.72 + streaks * 0.28);
     float alpha = rolling_density * lower_bank * wispy_breakup * opacity;
-    float low_curl = smoothstep(0.73, 0.96, uv.y) * smoothstep(0.42, 0.72, broad);
-    alpha += low_curl * opacity * 0.22;
-    COLOR = vec4(fog_tint, clamp(alpha, 0.0, 0.20));
+    float low_curl = smoothstep(0.68, 0.94, uv.y) * smoothstep(0.36, 0.69, broad);
+    float drifting_ribbon = smoothstep(0.48, 0.76, streaks) * smoothstep(0.52, 0.78, uv.y);
+    alpha += low_curl * opacity * 0.30 + drifting_ribbon * opacity * 0.12;
+    COLOR = vec4(fog_tint, clamp(alpha, 0.0, 0.22));
 }
 """
 
@@ -161,9 +170,9 @@ func _build_fog_banks() -> void:
         density = 0.92
         fog_palette = [Color("#8b9aaa"), Color("#667589"), Color("#aab2b8")]
     var settings := [
-        {"speed": 0.010, "opacity": 0.105 * density, "sx": 7.0, "sy": 3.0, "offset": 0.00, "tint": fog_palette[0], "z": 0},
-        {"speed": -0.016, "opacity": 0.078 * density, "sx": 12.0, "sy": 4.1, "offset": -0.045, "tint": fog_palette[1], "z": 2},
-        {"speed": 0.023, "opacity": 0.045 * density, "sx": 18.0, "sy": 5.0, "offset": 0.035, "tint": fog_palette[2], "z": 4}
+        {"speed": 0.018, "opacity": 0.142 * density, "sx": 7.0, "sy": 3.0, "offset": 0.00, "tint": fog_palette[0], "z": 0},
+        {"speed": -0.026, "opacity": 0.104 * density, "sx": 12.0, "sy": 4.1, "offset": -0.045, "tint": fog_palette[1], "z": 2},
+        {"speed": 0.034, "opacity": 0.066 * density, "sx": 18.0, "sy": 5.0, "offset": 0.035, "tint": fog_palette[2], "z": 4}
     ]
     for setting in settings:
         var bank := Sprite2D.new()
@@ -281,7 +290,7 @@ func _make_dust_texture() -> Texture2D:
 func _build_dust_field() -> void:
     _dust = CPUParticles2D.new()
     _dust.name = "DriftingEnvironmentalDust"
-    _dust.amount = 44 if _park_mode else 30
+    _dust.amount = 54 if _park_mode else 40
     _dust.lifetime = 9.0
     _dust.preprocess = 3.0
     _dust.emitting = true
@@ -297,7 +306,7 @@ func _build_dust_field() -> void:
     _dust.angular_velocity_max = 12.0
     _dust.scale_amount_min = 0.45
     _dust.scale_amount_max = 1.25
-    _dust.color = Color(0.76, 0.70, 0.58, 0.24) if _park_mode else Color(0.70, 0.77, 0.86, 0.22)
+    _dust.color = Color(0.82, 0.74, 0.61, 0.30) if _park_mode else Color(0.73, 0.80, 0.91, 0.27)
     _dust.texture = _make_dust_texture()
     _dust.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
     _dust.z_index = 50
@@ -320,7 +329,7 @@ func _build_falling_leaves() -> void:
         return
     _leaves = CPUParticles2D.new()
     _leaves.name = "WindblownParkLeaves"
-    _leaves.amount = 13
+    _leaves.amount = 16
     _leaves.lifetime = 7.5
     _leaves.preprocess = 2.0
     _leaves.emitting = true
@@ -336,7 +345,7 @@ func _build_falling_leaves() -> void:
     _leaves.angular_velocity_max = 42.0
     _leaves.scale_amount_min = 0.55
     _leaves.scale_amount_max = 1.1
-    _leaves.color = Color(0.68, 0.48, 0.27, 0.34)
+    _leaves.color = Color(0.72, 0.51, 0.30, 0.40)
     _leaves.texture = _make_leaf_texture()
     _leaves.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
     _leaves.z_index = 49
