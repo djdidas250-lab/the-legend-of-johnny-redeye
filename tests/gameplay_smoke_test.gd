@@ -45,7 +45,7 @@ func _ready() -> void:
 	game.set("player_lives", 3)
 	game.set("game_over_pending", false)
 	var title_art := title_layer.find_child("TitleArtwork", true, false) as TextureRect
-	if not _check(title_art != null and title_art.texture.resource_path == "res://images/file_000000005268822f8114c8d6d185d9e5.png" and title_art.texture.get_width() > 1000 and title_art.texture.get_height() > 400, "The newly supplied Johnny Redeye title artwork must be installed."): return
+	if not _check(title_art != null and title_art.texture.resource_path == "res://images/Gemini_Generated_Image_p080dtp080dtp080.jpeg" and title_art.texture.get_width() > 1000 and title_art.texture.get_height() > 400, "The newly supplied Johnny Redeye title artwork must be installed."): return
 	var art_ratio := float(title_art.texture.get_width()) / float(title_art.texture.get_height())
 	var displayed_ratio := title_art.size.x / maxf(title_art.size.y, 1.0)
 	var visible_size: Vector2 = (game as Node2D).get_viewport_rect().size
@@ -55,7 +55,7 @@ func _ready() -> void:
 	if not _check(backdrop != null and backdrop.texture == title_art.texture and backdrop.material is ShaderMaterial, "Aspect-preserving title art must use a softened full-screen artwork extension instead of black bars."): return
 	var sword_glow := title_layer.find_child("TitleSwordGlow", true, false) as ColorRect
 	var sword_material := sword_glow.material as ShaderMaterial if sword_glow != null else null
-	if not _check(sword_material != null and sword_material.shader.code.contains("blend_add") and sword_material.shader.code.contains("0.68 + pulse * 0.27") and sword_material.shader.code.contains("0.48 + pulse * 0.32") and sword_material.shader.code.contains("blade_d") and sword_material.shader.code.contains("vec2(0.682, 0.315)") and sword_material.shader.code.contains("vec2(0.588, 0.573)") and sword_material.shader.code.contains("vec2((p.x - 0.505) / 0.138, (p.y - 0.887) / 0.098)") and sword_material.shader.code.contains("trouser_occlusion") and sword_material.shader.code.contains("ring_visibility") and sword_material.shader.code.contains("title_texture") and sword_material.get_shader_parameter("title_texture") == title_art.texture and not sword_material.shader.code.contains("SCREEN_UV"), "Sword glow must run along the inspected blade and the animated fire-ring glow must match the new artwork."): return
+	if not _check(sword_material != null and sword_material.shader.code.contains("blend_add") and sword_material.shader.code.contains("0.68 + pulse * 0.27") and sword_material.shader.code.contains("0.48 + pulse * 0.32") and sword_material.shader.code.contains("blade_d") and sword_material.shader.code.contains("vec2(0.642, 0.305)") and sword_material.shader.code.contains("vec2(0.535, 0.535)") and sword_material.shader.code.contains("vec2((p.x - 0.500) / 0.140, (p.y - 0.820) / 0.080)") and sword_material.shader.code.contains("trouser_occlusion") and sword_material.shader.code.contains("ring_visibility") and sword_material.shader.code.contains("title_texture") and sword_material.get_shader_parameter("title_texture") == title_art.texture and not sword_material.shader.code.contains("SCREEN_UV"), "Sword glow must run along the inspected blade and the animated fire-ring glow must match the new artwork."): return
 	var logo_glow := title_layer.find_child("TitleLogoFireGlow", true, false) as ColorRect
 	var logo_material := logo_glow.material as ShaderMaterial if logo_glow != null else null
 	if not _check(logo_material != null and logo_material.shader.code.contains("gold_mask") and logo_material.shader.code.contains("blend_add") and logo_material.shader.code.contains("subtitle_halo") and logo_material.shader.code.contains("letter_glow") and logo_material.shader.code.contains("title_texture") and logo_material.get_shader_parameter("title_texture") == title_art.texture, "Title illumination must sample the new artwork's gold lettering."): return
@@ -68,10 +68,10 @@ func _ready() -> void:
 	var viewport_size: Vector2 = game.get_viewport().get_visible_rect().size
 	var art_rect := Rect2(title_art.position, title_art.size)
 	var expected_hitboxes := [
-		["NewGameHitbox", 0.810, 0.445, 0.960, 0.540],
-		["ContinueHitbox", 0.810, 0.555, 0.960, 0.655],
-		["SettingsHitbox", 0.815, 0.660, 0.960, 0.760],
-		["ExitGameHitbox", 0.810, 0.770, 0.960, 0.875]
+		["NewGameHitbox", 0.708, 0.445, 0.866, 0.520],
+		["ContinueHitbox", 0.708, 0.530, 0.866, 0.605],
+		["SettingsHitbox", 0.708, 0.615, 0.866, 0.690],
+		["ExitGameHitbox", 0.708, 0.700, 0.866, 0.765]
 	]
 	for expected in expected_hitboxes:
 		var hitbox := title_layer.find_child(str(expected[0]), true, false) as Button
