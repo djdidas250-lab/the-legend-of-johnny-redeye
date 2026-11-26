@@ -179,7 +179,7 @@ jobs:
           xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 godot --path . --script res://tests/atmosphere_visual_capture.gd --audio-driver Dummy 2>&1 | tee atmosphere-capture.log
           grep -q "ATMOSPHERE_VISUAL_CAPTURE_COMPLETE" atmosphere-capture.log
           grep -q "CUTSCENE_CAPTURE_COUNT=4" atmosphere-capture.log
-grep -q "STREET_ATMOSPHERE_HANDOFF_COUNT=4" atmosphere-capture.log
+          grep -q "STREET_ATMOSPHERE_HANDOFF_COUNT=4" atmosphere-capture.log
           test "$(find build/atmosphere-captures -maxdepth 1 -type f -name 'cutscene_*.png' | wc -l)" -eq 4
           for frame in build/atmosphere-captures/cutscene_mcrae.png build/atmosphere-captures/cutscene_newleaf.png build/atmosphere-captures/cutscene_woodlawn_road.png build/atmosphere-captures/cutscene_woodlawn_park.png; do
             test -s "$frame"
