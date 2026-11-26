@@ -390,69 +390,20 @@ func _show_title() -> void:
 	title_layer = CanvasLayer.new()
 	add_child(title_layer)
 
-	# Fill the display with a softened extension of the artwork, then place the
-	# original image at its exact aspect ratio. This avoids stretching or cropping
-	# the supplied composition while keeping every display edge free of black bars.
+	# Fill the screen with the supplied artwork without distortion or side-fill.
+	# Keep its proportions and crop only the tiny amount required by the display aspect ratio.
 	var viewport_size := get_viewport_rect().size
-	var source_ratio := float(TITLE_IMAGE.get_width()) / float(TITLE_IMAGE.get_height())
-	var viewport_ratio := viewport_size.x / maxf(viewport_size.y, 1.0)
-	var art_size := viewport_size
-	if viewport_ratio > source_ratio:
-		art_size.x = viewport_size.y * source_ratio
-	else:
-		art_size.y = viewport_size.x / source_ratio
-	var art_rect := Rect2((viewport_size - art_size) * 0.5, art_size)
-
-	var title_backdrop := TextureRect.new()
-	title_backdrop.name = "TitleArtworkBackdrop"
-	title_backdrop.texture = TITLE_IMAGE
-	title_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	title_backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	title_backdrop.stretch_mode = TextureRect.STRETCH_SCALE
-	title_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var backdrop_shader := Shader.new()
-	backdrop_shader.code = """
-shader_type canvas_item;
-render_mode unshaded;
-void fragment() {
-	// Extend only the outermost image pixels into any aspect-ratio margins.
-	// This keeps the fitted artwork untouched and avoids the old blurred,
-	// desaturated side bands that looked like grey bars on wide displays.
-	float source_ratio = TEXTURE_PIXEL_SIZE.y / TEXTURE_PIXEL_SIZE.x;
-	float viewport_ratio = SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x;
-	vec2 sample_uv = UV;
-	if (viewport_ratio > source_ratio) {
-		float fitted_width = source_ratio / viewport_ratio;
-		sample_uv.x = clamp((UV.x - (1.0 - fitted_width) * 0.5) / fitted_width, 0.0, 1.0);
-	} else {
-		float fitted_height = viewport_ratio / source_ratio;
-		sample_uv.y = clamp((UV.y - (1.0 - fitted_height) * 0.5) / fitted_height, 0.0, 1.0);
-	}
-	vec3 color = texture(TEXTURE, sample_uv).rgb;
-	COLOR = vec4(color, 1.0);
-}
-"""
-	var backdrop_material := ShaderMaterial.new()
-	backdrop_material.shader = backdrop_shader
-	title_backdrop.material = backdrop_material
-	title_layer.add_child(title_backdrop)
+	var art_rect := Rect2(Vector2.ZERO, viewport_size)
 
 	var title_art := TextureRect.new()
 	title_art.name = "TitleArtwork"
 	title_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	title_art.custom_minimum_size = Vector2.ZERO
 	title_art.texture = TITLE_IMAGE
-	title_art.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	title_art.position = art_rect.position
-	title_art.size = art_rect.size
-	title_art.stretch_mode = TextureRect.STRETCH_SCALE
+	title_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	title_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	title_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Keep the supplied JPEG fully opaque at its fitted edges. The previous
-	# alpha feather exposed the stretched backdrop as narrow grey side strips.
 	title_layer.add_child(title_art)
-	title_art.custom_minimum_size = Vector2.ZERO
-	title_art.position = art_rect.position
-	title_art.size = art_rect.size
 
 	# Fine drifting smoke softens the scene edges; the separate additive light
 	# pass gives the moon, Ferris wheel and fire-lit ground a restrained light spill.
@@ -581,22 +532,31 @@ float segment_distance(vec2 p, vec2 a, vec2 b) {
 	return length(pa - ba * h);
 }
 void fragment() {
-	// The source image is 1584x672. These measured points follow the visible
-	// blade centerline from the tip (upper-right) down to the crossguard (lower-left).
-	// The final point stops at the guard, before the hands and grip.
+	// Convert screen-fitted UVs back to the original artwork's UVs.
+	// The artwork is aspect-covered (never stretched), so this compensates for its crop.
+	float source_ratio = 1584.0 / 672.0;
+	float viewport_ratio = SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x;
 	vec2 p = UV;
+	if (viewport_ratio > source_ratio) {
+		float visible_height = source_ratio / viewport_ratio;
+		p.y = UV.y * visible_height + (1.0 - visible_height) * 0.5;
+	} else {
+		float visible_width = viewport_ratio / source_ratio;
+		p.x = UV.x * visible_width + (1.0 - visible_width) * 0.5;
+	}
 	float pulse = 0.5 + 0.5 * sin(TIME * 2.1);
 	float flicker = 0.5 + 0.5 * sin(TIME * 10.5 + sin(TIME * 4.7));
+	// Centerline traced down the visible flaming blade; stop at the crossguard.
 	float blade_d = min(
-		min(segment_distance(p, vec2(0.633, 0.312), vec2(0.601, 0.390)),
-			segment_distance(p, vec2(0.601, 0.390), vec2(0.570, 0.458))),
-		min(segment_distance(p, vec2(0.570, 0.458), vec2(0.542, 0.515)),
-			segment_distance(p, vec2(0.542, 0.515), vec2(0.520, 0.566)))
+		min(segment_distance(p, vec2(0.642, 0.310), vec2(0.620, 0.375)),
+			segment_distance(p, vec2(0.620, 0.375), vec2(0.596, 0.435))),
+		min(segment_distance(p, vec2(0.596, 0.435), vec2(0.570, 0.485)),
+			segment_distance(p, vec2(0.570, 0.485), vec2(0.540, 0.530)))
 	);
-	float blade_halo = exp(-blade_d * 58.0) * (0.68 + pulse * 0.27) * (0.68 + flicker * 0.32);
-	float blade_edge = exp(-abs(blade_d - 0.006) * 145.0) * (0.34 + flicker * 0.24);
-	float blade_core = exp(-blade_d * 235.0) * 0.38;
-	float tip_bloom = exp(-length((p - vec2(0.633, 0.312)) * vec2(1.0, 0.82)) * 85.0) * (0.42 + pulse * 0.28);
+	float blade_halo = exp(-blade_d * 82.0) * (0.68 + pulse * 0.27) * (0.68 + flicker * 0.32);
+	float blade_edge = exp(-abs(blade_d - 0.0045) * 190.0) * (0.34 + flicker * 0.24);
+	float blade_core = exp(-blade_d * 300.0) * 0.38;
+	float tip_bloom = exp(-length((p - vec2(0.642, 0.310)) * vec2(1.0, 0.82)) * 105.0) * (0.42 + pulse * 0.28);
 	// Warm, localized reflection and an animated halo around the existing fire ring.
 	vec2 ground_p = vec2((p.x - 0.500) * 1.05, (p.y - 0.820) * 3.8);
 	float ground_d = length(ground_p);
