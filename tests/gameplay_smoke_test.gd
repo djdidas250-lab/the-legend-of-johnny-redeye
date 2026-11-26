@@ -20,7 +20,7 @@ func _ready() -> void:
 	add_child(atmosphere_probe)
 	await get_tree().process_frame
 	var fog_probe := atmosphere_probe.get_node_or_null("DriftingFogDepth_0") as Sprite2D
-		var leaves_probe := atmosphere_probe.get_node_or_null("WindblownParkLeaves") as CPUParticles2D
+	var leaves_probe := atmosphere_probe.get_node_or_null("WindblownParkLeaves") as CPUParticles2D
 	var light_probe := atmosphere_probe.get_node_or_null("EnvironmentalBounceLight_00") as PointLight2D
 	var occluder_probe := atmosphere_probe.get_node_or_null("TreeCanopyOccluder_00") as LightOccluder2D
 	if not _check(atmosphere_probe.z_index == 300 and fog_probe != null and fog_probe.material is ShaderMaterial and leaves_probe != null and leaves_probe.emitting and light_probe != null and light_probe.range_item_cull_mask == 2 and light_probe.shadow_enabled and light_probe.shadow_item_cull_mask == 2 and occluder_probe != null and occluder_probe.occluder_light_mask == 2, "The atmosphere must instantiate visible shader-driven rolling mist, park leaves, real masked tree shadows, and scenery-only lights."): return
