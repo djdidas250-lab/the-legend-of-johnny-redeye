@@ -158,20 +158,18 @@ Do not invent that a screenshot was seen. Do not tell the user the fog looks imp
 
 ## 9. Current immediate task list (ordered)
 
-1. Inspect Build #143 failure details and correct the actual cause with the smallest safe change.
-2. Inspect the current visual capture workflow step and test script. Make the screenshot pipeline genuinely reliable and fatal on capture failure.
-3. Retrieve and inspect actual rendered game frames without involving the user.
-4. Fix the fog based on those rendered frames—not shader speculation. Keep character/pickup/UI exclusions intact.
-5. Re-run capture and compare multiple animation moments and scenes.
-6. Run the complete Godot validation, gameplay smoke tests, visual capture tests, Android export and APK package/signature checks.
-7. Only after a green verified build and a verified current APK release asset, provide the direct APK link.
-8. Update this handoff document after each meaningful milestone, including commit SHA, build run number/status, test outcomes, and next action.
+1. The title-screen artwork replacement and atmosphere pass is implemented and verified. Do not reopen that task unless the user requests further changes.
+2. Continue completing Stage One gameplay as directed by the user, preserving the working gameplay baseline and avoiding unrelated edits.
+3. Before future code changes, verify the current repository head, latest Android workflow run and `android-latest` release asset.
+4. Preserve the reusable Stage One design systems: map/mission select, unlockable street progression, transition screens, and the shared mission-start briefing panel.
+5. Do not begin Stage Two prematurely. When the user says Stage One is complete, reuse the established systems for Stage Two's map, mission select and unlockable streets.
+6. Update this handoff document after meaningful milestones, including commit SHA, workflow run/status, test outcomes and APK details.
 
 ## 10. How to resume in a new conversation
 
 User can say:
 
-> Continue The Legend of Johnny Redeye. Read `PROJECT_MASTER_CONTEXT.md` in the private GitHub repository `djdidas250-lab/the-legend-of-johnny-redeye` on `main`. Verify the latest commit, latest Actions run and release asset before doing anything. Continue with the current priority: diagnose failed Build #143, make the automated rendered-frame capture pipeline genuinely work, inspect actual game frames yourself (no uploads from me), and fix the blocky fog without affecting characters or pickups.
+> Continue The Legend of Johnny Redeye. Read `PROJECT_MASTER_CONTEXT.md` in the private GitHub repository `djdidas250-lab/the-legend-of-johnny-redeye` on `main`. Verify the latest commit, latest Android Actions run and current `android-latest` APK asset before making changes. The new title artwork and animated title atmosphere were implemented in commit `64e5eea6753a06ca6f19df108e615818789c6cc7` and passed full workflow run `45767558036`; the verified APK link and SHA-256 are recorded in section 7. Continue with Stage One completion, carrying forward the approved briefing/map/mission-select design systems for later stages. Do not ask me to re-upload the title image or repeat project history.
 
 Start by fetching this document and checking live GitHub state. Never ask the user to restate the project history or send screenshots.
 
@@ -193,9 +191,9 @@ The user confirmed the current development focus is completing Stage One's core 
 
 ### Verification status
 
-- Do not claim this change is fully verified until workflow run #160 completes.
-- Run #160 is the relevant full workflow for the latest source commit. Confirm Godot script validation, startup/gameplay smoke tests, atmosphere capture, Android APK export/package verification and release publication.
-- The source-level test update is committed; no claim of actual rendered visual inspection has been made yet.
+- The redesign and its smoke tests are included in the verified Android workflow run `45767558036` (commit `64e5eea6753a06ca6f19df108e615818789c6cc7`), which completed successfully.
+- The full run passed Godot validation, startup/gameplay smoke tests, four-cutscene atmosphere capture, Android APK export, package verification and signature verification.
+- The Stage One briefing redesign is now an approved, verified reusable baseline for later stages.
 - No Stage Two content or map has been implemented. This change only establishes a reusable Stage briefing layout for later use.
 
 
