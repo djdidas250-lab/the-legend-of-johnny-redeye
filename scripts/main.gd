@@ -2093,12 +2093,15 @@ func _update_rivals(delta: float) -> void:
 func _make_character(at: Vector2, shirt: Color, rival: bool, rival_variant: int = 0) -> CharacterBody2D:
 	var body := CharacterBody2D.new()
 	body.set_script(FIGHTER_BASE)
+	# Actors stay on the unlit character mask; environmental lights target mask 2.
+	body.light_mask = 1
 	body.position = at
 	# Character bodies only collide with street obstacles, not one another.
 	body.collision_layer = 4 if rival else 2
 	body.collision_mask = 1
 	var visual := Sprite2D.new()
 	visual.set_script(CHARACTER_VISUAL)
+	visual.light_mask = 1
 	visual.position = Vector2(0, -46)
 	visual.scale = Vector2(0.5, 0.5)
 	visual.set("is_rival", rival)
