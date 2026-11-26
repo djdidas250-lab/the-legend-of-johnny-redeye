@@ -1017,6 +1017,8 @@ func _show_newleaf_checkpoint_from_map() -> void:
 	street_panorama = STREET_PANORAMA_IMAGE
 	world_end = float(street_panorama.get_width())
 	current_street = "NEWLEAF CRESCENT"
+	# Rebuild the full-world atmosphere for Newleaf before revealing the panorama.
+	_setup_horror_atmosphere()
 	active_slot_area = "Newleaf Crescent"
 	_save_slot_progress()
 	_start_game(55.0, 475.0)
@@ -1044,6 +1046,8 @@ func _show_woodlawn_checkpoint_from_map() -> void:
 	street_panorama = _make_woodlawn_park_panorama()
 	world_end = float(street_panorama.get_width())
 	current_street = "WOODLAWN PARK"
+	# Rebuild fog, lighting and canopy shadows for the road-to-park panorama.
+	_setup_horror_atmosphere()
 	active_slot_area = "Woodlawn Park"
 	_save_slot_progress()
 	_start_game(world_end - 320.0, 475.0)
@@ -2603,6 +2607,7 @@ func _begin_mcrae_transition() -> void:
 	forward_view.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	forward_view.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	forward_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	forward_view.material = ENVIRONMENTAL_ATMOSPHERE.create_cutscene_atmosphere_material()
 	transition_layer.add_child(forward_view)
 
 	# Reusable street-entry briefing: consistent with the game's navy HUD,
@@ -2775,6 +2780,7 @@ func _begin_newleaf_transition() -> void:
 	forward_view.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	forward_view.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	forward_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	forward_view.material = ENVIRONMENTAL_ATMOSPHERE.create_cutscene_atmosphere_material()
 	transition_layer.add_child(forward_view)
 
 	# Reusable street-entry briefing: consistent with the game's navy HUD,
@@ -2928,6 +2934,7 @@ func _begin_woodlawn_park_transition() -> void:
 	forward_view.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	forward_view.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	forward_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	forward_view.material = ENVIRONMENTAL_ATMOSPHERE.create_cutscene_atmosphere_material()
 	transition_layer.add_child(forward_view)
 
 	# Reusable street-entry briefing: consistent with the game's navy HUD,
@@ -3390,6 +3397,7 @@ func _begin_woodlawn_playground_transition() -> void:
 	forward_view.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	forward_view.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	forward_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	forward_view.material = ENVIRONMENTAL_ATMOSPHERE.create_cutscene_atmosphere_material()
 	transition_layer.add_child(forward_view)
 
 	# Match the established navy-and-gold street briefing template.
@@ -3455,6 +3463,8 @@ func _begin_woodlawn_playground_transition() -> void:
 	street_panorama = _make_woodlawn_playground_panorama()
 	world_end = float(street_panorama.get_width())
 	current_street = "WOODLAWN PARK PLAYGROUND"
+	# This is a separate panorama: give it its own complete atmosphere coverage.
+	_setup_horror_atmosphere()
 	active_slot_area = "Woodlawn Park Playground"
 	# The separate park checkpoint unlocks only when the player reaches the
 	# actual park/playground section, not when entering Leaside Drive B.
