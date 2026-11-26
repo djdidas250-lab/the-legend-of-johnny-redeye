@@ -801,6 +801,7 @@ void fragment() {
 	# setup used two different rectangles, which made the flame and lettering
 	# appear doubled/offset. A single shader now keys the black field and adds
 	# a restrained amber halo around the source artwork without a second copy.
+	# Keep the same authored rectangle for every one of the five intro frames.
 	var loading := TextureRect.new()
 	loading.name = "IntroLoadingGraphic"
 	loading.texture = INTRO_LOADING_IMAGE
