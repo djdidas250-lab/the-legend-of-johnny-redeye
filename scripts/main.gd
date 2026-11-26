@@ -703,14 +703,12 @@ func _make_title_particle_texture(size: int = 48) -> Texture2D:
 			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
 	return ImageTexture.create_from_image(image)
 
-func _make_title_particle_ramp(first: Color, middle: Color, last: Color) -> Texture2D:
-	var gradient := Gradient.new()
-	gradient.set_color(0, first)
-	gradient.add_point(0.46, middle)
-	gradient.set_color(gradient.get_point_count() - 1, last)
-	var texture := GradientTexture1D.new()
-	texture.gradient = gradient
-	return texture
+func _make_title_particle_ramp(first: Color, middle: Color, last: Color) -> Gradient:
+	var ramp := Gradient.new()
+	ramp.set_color(0, first)
+	ramp.add_point(0.46, middle)
+	ramp.set_color(ramp.get_point_count() - 1, last)
+	return ramp
 
 func _add_title_particles(layer: CanvasLayer, viewport_size: Vector2) -> void:
 	var soft_particle := _make_title_particle_texture()
