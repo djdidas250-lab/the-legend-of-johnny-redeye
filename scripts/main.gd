@@ -168,6 +168,8 @@ var intro_audio_player: AudioStreamPlayer
 var intro_image_current: TextureRect
 var intro_image_next: TextureRect
 var intro_transition_flare: ColorRect
+var intro_effect_overlay: ColorRect
+var intro_effect_material: ShaderMaterial
 var intro_progress_fill: ColorRect
 var intro_active := false
 var intro_elapsed := 0.0
@@ -678,6 +680,105 @@ func _start_intro_sequence() -> void:
 	intro_image_next.visible = false
 	intro_layer.add_child(intro_image_next)
 
+	# Image-specific blade and ground-fire lighting. Coordinates below are traced
+	# from each original 1584x672 source frame, then converted to the covered viewport.
+	intro_effect_overlay = ColorRect.new()
+	intro_effect_overlay.name = "IntroSwordAndFireRingEffects"
+	intro_effect_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	intro_effect_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	intro_effect_overlay.z_index = 3
+	var intro_effect_shader := Shader.new()
+	intro_effect_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_add;
+uniform vec2 current_blade_a = vec2(0.0);
+uniform vec2 current_blade_b = vec2(0.0);
+uniform vec2 current_blade_c = vec2(0.0);
+uniform vec2 current_blade_d = vec2(0.0);
+uniform vec2 current_blade_e = vec2(0.0);
+uniform int current_blade_segment_count = 0;
+uniform vec2 current_ring_center = vec2(0.5, 0.8);
+uniform vec2 current_ring_radius = vec2(0.1, 0.08);
+uniform float current_weight = 1.0;
+uniform vec2 next_blade_a = vec2(0.0);
+uniform vec2 next_blade_b = vec2(0.0);
+uniform vec2 next_blade_c = vec2(0.0);
+uniform vec2 next_blade_d = vec2(0.0);
+uniform vec2 next_blade_e = vec2(0.0);
+uniform int next_blade_segment_count = 0;
+uniform vec2 next_ring_center = vec2(0.5, 0.8);
+uniform vec2 next_ring_radius = vec2(0.1, 0.08);
+uniform float next_weight = 0.0;
+float hash_value(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+float segment_distance(vec2 p, vec2 a, vec2 b) {
+	vec2 pa = p - a;
+	vec2 ba = b - a;
+	float h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.000001), 0.0, 1.0);
+	return length(pa - ba * h);
+}
+vec4 profile_effect(vec2 uv, vec2 a, vec2 b, vec2 c, vec2 d, vec2 e,
+		int segment_count, vec2 ring_center, vec2 ring_radius, float weight, float seed_offset) {
+	float aspect = SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x;
+	vec2 p = vec2(uv.x * aspect, uv.y);
+	float blade_d = 10.0;
+	if (segment_count > 0) blade_d = min(blade_d, segment_distance(p, vec2(a.x * aspect, a.y), vec2(b.x * aspect, b.y)));
+	if (segment_count > 1) blade_d = min(blade_d, segment_distance(p, vec2(b.x * aspect, b.y), vec2(c.x * aspect, c.y)));
+	if (segment_count > 2) blade_d = min(blade_d, segment_distance(p, vec2(c.x * aspect, c.y), vec2(d.x * aspect, d.y)));
+	if (segment_count > 3) blade_d = min(blade_d, segment_distance(p, vec2(d.x * aspect, d.y), vec2(e.x * aspect, e.y)));
+	float pulse = 0.5 + 0.5 * sin(TIME * 2.0 + seed_offset);
+	float flicker = 0.5 + 0.5 * sin(TIME * 10.2 + sin(TIME * 4.3 + seed_offset));
+	float blade_halo = exp(-blade_d * 115.0) * (0.16 + pulse * 0.10) * (0.72 + flicker * 0.28);
+	float blade_core = exp(-blade_d * 310.0) * 0.13;
+	float blade_tip = 0.0;
+	if (segment_count > 0) blade_tip = exp(-length(p - vec2(a.x * aspect, a.y)) * 115.0) * (0.13 + pulse * 0.08);
+	vec2 ring_q = (uv - ring_center) / max(ring_radius, vec2(0.0001));
+	float ring_radial = length(ring_q);
+	float ring_distance = abs(ring_radial - 1.0) * min(ring_radius.x * aspect, ring_radius.y);
+	float ring_halo = exp(-ring_distance * 112.0) * (0.13 + pulse * 0.055) * (0.82 + flicker * 0.18);
+	float ring_bloom = exp(-ring_distance * 48.0) * 0.025;
+	float ember_sum = 0.0;
+	for (int i = 0; i < 18; i++) {
+		float fi = float(i);
+		float seed = hash_value(vec2(fi + seed_offset * 7.0, 19.3));
+		float phase = fract(TIME * (0.095 + seed * 0.085) + seed);
+		float angle = seed * 6.2831853;
+		vec2 ring_point = ring_center + vec2(cos(angle) * ring_radius.x, sin(angle) * ring_radius.y);
+		vec2 spark_pos = ring_point + vec2(sin(TIME * 1.7 + fi * 2.1) * 0.003, -phase * 0.060);
+		float life = smoothstep(0.02, 0.16, phase) * (1.0 - smoothstep(0.72, 1.0, phase));
+		float spark_d = length((uv - spark_pos) * vec2(aspect, 1.0));
+		float spark = exp(-spark_d * 460.0) * life * (0.35 + 0.65 * hash_value(vec2(fi, seed_offset + 4.0)));
+		float tail_d = segment_distance(p, vec2(spark_pos.x * aspect, spark_pos.y), vec2(spark_pos.x * aspect, spark_pos.y + 0.010));
+		float tail = exp(-tail_d * 390.0) * life * 0.22;
+		ember_sum += spark + tail;
+	}
+	vec3 amber = vec3(1.0, 0.24, 0.025);
+	vec3 gold = vec3(1.0, 0.72, 0.24);
+	vec3 rgb = amber * (blade_halo + blade_core + blade_tip + ring_halo + ring_bloom + ember_sum * 0.70)
+		+ gold * (blade_core * 0.38 + ember_sum * 0.16);
+	float alpha = clamp(blade_halo + blade_core + blade_tip + ring_halo + ring_bloom + ember_sum * 0.65, 0.0, 0.65);
+	return vec4(rgb * weight, alpha * weight);
+}
+void fragment() {
+	vec4 current_fx = profile_effect(UV, current_blade_a, current_blade_b, current_blade_c,
+		current_blade_d, current_blade_e, current_blade_segment_count,
+		current_ring_center, current_ring_radius, current_weight, 0.0);
+	vec4 next_fx = profile_effect(UV, next_blade_a, next_blade_b, next_blade_c,
+		next_blade_d, next_blade_e, next_blade_segment_count,
+		next_ring_center, next_ring_radius, next_weight, 3.7);
+	COLOR = current_fx + next_fx;
+}
+"""
+	intro_effect_material = ShaderMaterial.new()
+	intro_effect_material.shader = intro_effect_shader
+	intro_effect_overlay.material = intro_effect_material
+	intro_layer.add_child(intro_effect_overlay)
+	_set_intro_effect_profile("current_", 0)
+	_set_intro_effect_profile("next_", 1)
+	intro_effect_material.set_shader_parameter("current_weight", 1.0)
+	intro_effect_material.set_shader_parameter("next_weight", 0.0)
+
 	# A restrained blue-grey atmospheric veil and warm practical-light spill
 	# reproduce the title screen's drifting haze and carnival/fire illumination.
 	var haze := ColorRect.new()
@@ -915,6 +1016,47 @@ void fragment() {
 	intro_audio_player.play()
 	_update_intro_sequence()
 
+func _intro_source_to_screen_uv(source_uv: Vector2) -> Vector2:
+	# The source artwork is 1584x672. Match TextureRect's uniform cover crop exactly.
+	var viewport_size := get_viewport_rect().size
+	var source_ratio := 1584.0 / 672.0
+	var viewport_ratio := viewport_size.x / maxf(viewport_size.y, 1.0)
+	var result := source_uv
+	if viewport_ratio > source_ratio:
+		var visible_fraction := source_ratio / viewport_ratio
+		result.y = (source_uv.y - (1.0 - visible_fraction) * 0.5) / visible_fraction
+	else:
+		var visible_fraction := viewport_ratio / source_ratio
+		result.x = (source_uv.x - (1.0 - visible_fraction) * 0.5) / visible_fraction
+	return result
+
+func _set_intro_effect_profile(prefix: String, image_index: int) -> void:
+	if intro_effect_material == null:
+		return
+	var profiles := [
+		{"ring": Vector2(798, 540), "radius": Vector2(162, 57), "blade": []},
+		{"ring": Vector2(794, 551), "radius": Vector2(163, 54), "blade": [Vector2(615, 515), Vector2(648, 487), Vector2(681, 459), Vector2(711, 438), Vector2(739, 423)]},
+		{"ring": Vector2(506, 553), "radius": Vector2(164, 54), "blade": [Vector2(763, 292), Vector2(722, 326), Vector2(680, 358), Vector2(638, 388), Vector2(596, 413)]},
+		{"ring": Vector2(340, 555), "radius": Vector2(164, 55), "blade": [Vector2(546, 265), Vector2(509, 304), Vector2(472, 342), Vector2(437, 378), Vector2(402, 410)]},
+		{"ring": Vector2(680, 527), "radius": Vector2(126, 47), "blade": [Vector2(815, 315), Vector2(787, 354), Vector2(760, 391), Vector2(729, 429)]}
+	]
+	var profile: Dictionary = profiles[clampi(image_index, 0, profiles.size() - 1)]
+	var ring_center_px: Vector2 = profile["ring"]
+	var ring_radius_px: Vector2 = profile["radius"]
+	var ring_center := _intro_source_to_screen_uv(ring_center_px / Vector2(1584.0, 672.0))
+	var ring_edge := _intro_source_to_screen_uv((ring_center_px + ring_radius_px) / Vector2(1584.0, 672.0))
+	var ring_radius := ring_edge - ring_center
+	intro_effect_material.set_shader_parameter(prefix + "ring_center", ring_center)
+	intro_effect_material.set_shader_parameter(prefix + "ring_radius", ring_radius)
+	var blade_points: Array = profile["blade"]
+	var uniform_names := ["blade_a", "blade_b", "blade_c", "blade_d", "blade_e"]
+	for point_index in range(uniform_names.size()):
+		var point_uv := Vector2.ZERO
+		if point_index < blade_points.size():
+			point_uv = _intro_source_to_screen_uv(blade_points[point_index] / Vector2(1584.0, 672.0))
+		intro_effect_material.set_shader_parameter(prefix + uniform_names[point_index], point_uv)
+	intro_effect_material.set_shader_parameter(prefix + "blade_segment_count", maxi(blade_points.size() - 1, 0))
+
 func _make_intro_image(texture: Texture2D, node_name: String) -> TextureRect:
 	var image := TextureRect.new()
 	image.name = node_name
@@ -941,6 +1083,8 @@ func _update_intro_sequence() -> void:
 		intro_image_index = next_index
 		intro_image_current.texture = INTRO_IMAGES[intro_image_index]
 		intro_image_current.modulate = Color.WHITE
+		_set_intro_effect_profile("current_", intro_image_index)
+		_set_intro_effect_profile("next_", mini(intro_image_index + 1, INTRO_IMAGES.size() - 1))
 		intro_image_next.visible = false
 		intro_image_next.material = null
 		if intro_image_index < INTRO_IMAGES.size() - 1:
@@ -977,6 +1121,12 @@ void fragment() {
 	var local_time := intro_elapsed - float(intro_image_index) * INTRO_SLIDE_DURATION
 	var transition_start := INTRO_SLIDE_DURATION - INTRO_TRANSITION_DURATION
 	var transitioning := intro_image_index < INTRO_IMAGES.size() - 1 and local_time >= transition_start
+	if intro_effect_material != null:
+		var effect_progress := 0.0
+		if transitioning:
+			effect_progress = clampf((local_time - transition_start) / INTRO_TRANSITION_DURATION, 0.0, 1.0)
+		intro_effect_material.set_shader_parameter("current_weight", 1.0 - effect_progress)
+		intro_effect_material.set_shader_parameter("next_weight", effect_progress)
 	if transitioning:
 		var progress := clampf((local_time - transition_start) / INTRO_TRANSITION_DURATION, 0.0, 1.0)
 		intro_image_next.texture = INTRO_IMAGES[intro_image_index + 1]
