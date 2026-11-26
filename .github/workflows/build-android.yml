@@ -178,9 +178,9 @@ jobs:
           mkdir -p build/atmosphere-captures
           xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 godot --path . --script res://tests/atmosphere_visual_capture.gd --audio-driver Dummy 2>&1 | tee atmosphere-capture.log
           grep -q "ATMOSPHERE_VISUAL_CAPTURE_COMPLETE" atmosphere-capture.log
-          grep -q "ATMOSPHERE_CAPTURE_COUNT=3" atmosphere-capture.log
-          test "$(find build/atmosphere-captures -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 3
-          for frame in build/atmosphere-captures/newleaf_00.png build/atmosphere-captures/newleaf_01.png build/atmosphere-captures/newleaf_02.png; do
+          grep -q "MCRAE_CAPTURE_COUNT=3" atmosphere-capture.log
+          test "$(find build/atmosphere-captures -maxdepth 1 -type f -name 'mcrae_entrance_*.png' | wc -l)" -eq 3
+          for frame in build/atmosphere-captures/mcrae_entrance_00.png build/atmosphere-captures/mcrae_entrance_01.png build/atmosphere-captures/mcrae_entrance_02.png; do
             test -s "$frame"
           done
 
