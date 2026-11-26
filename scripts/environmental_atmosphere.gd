@@ -99,17 +99,23 @@ void fragment() {
 """
 
 var _world_width := 960.0
+var _street_name := ""
+var _park_mode := false
 var _dust: CPUParticles2D
+var _leaves: CPUParticles2D
 var _lights: Array[PointLight2D] = []
 var _elapsed := 0.0
 
-func configure(world_width: float) -> void:
+func configure(world_width: float, street_name: String = "") -> void:
     _world_width = maxf(world_width, 960.0)
+    _street_name = street_name.to_upper()
+    _park_mode = _street_name.contains("WOODLAWN")
     z_index = 300
     _build_fog_banks()
     _build_canopy_shadows()
     _build_ambient_lights()
     _build_dust_field()
+    _build_falling_leaves()
 
 func _white_pixel() -> Texture2D:
     var image := Image.create(1, 1, false, Image.FORMAT_RGBA8)
@@ -118,10 +124,21 @@ func _white_pixel() -> Texture2D:
 
 func _build_fog_banks() -> void:
     var pixel := _white_pixel()
+    var density := 1.0
+    var fog_palette := [Color("#8a96a8"), Color("#697486"), Color("#a0a5ad")]
+    if _park_mode:
+        density = 1.38
+        fog_palette = [Color("#7d8da7"), Color("#56677f"), Color("#9ba7b7")]
+    elif _street_name.contains("LEASIDE"):
+        density = 1.18
+        fog_palette = [Color("#8792a4"), Color("#665b70"), Color("#b0a2a0")]
+    elif _street_name.contains("MCRAE"):
+        density = 0.92
+        fog_palette = [Color("#8b9aaa"), Color("#667589"), Color("#aab2b8")]
     var settings := [
-        {"speed": 0.010, "opacity": 0.105, "sx": 7.0, "sy": 3.0, "offset": 0.00, "tint": Color("#8a96a8"), "z": 0},
-        {"speed": -0.016, "opacity": 0.078, "sx": 12.0, "sy": 4.1, "offset": -0.045, "tint": Color("#697486"), "z": 2},
-        {"speed": 0.023, "opacity": 0.045, "sx": 18.0, "sy": 5.0, "offset": 0.035, "tint": Color("#a0a5ad"), "z": 4}
+        {"speed": 0.010, "opacity": 0.105 * density, "sx": 7.0, "sy": 3.0, "offset": 0.00, "tint": fog_palette[0], "z": 0},
+        {"speed": -0.016, "opacity": 0.078 * density, "sx": 12.0, "sy": 4.1, "offset": -0.045, "tint": fog_palette[1], "z": 2},
+        {"speed": 0.023, "opacity": 0.045 * density, "sx": 18.0, "sy": 5.0, "offset": 0.035, "tint": fog_palette[2], "z": 4}
     ]
     for setting in settings:
         var bank := Sprite2D.new()
@@ -150,7 +167,7 @@ func _make_fog_shader() -> Shader:
 
 func _build_canopy_shadows() -> void:
     var pixel := _white_pixel()
-    var anchors := [0.16, 0.43, 0.72, 0.91]
+    var anchors := [0.12, 0.30, 0.52, 0.74, 0.90] if _park_mode else [0.16, 0.43, 0.72, 0.91]
     for i in range(anchors.size()):
         var shadow := Sprite2D.new()
         shadow.name = "SwayingTreeShadow_%02d" % i
@@ -170,17 +187,24 @@ func _build_canopy_shadows() -> void:
 
 func _build_ambient_lights() -> void:
     var light_texture := _make_organic_light_texture()
-    var positions := [0.20, 0.51, 0.82]
+    var positions := [0.15, 0.40, 0.67, 0.88] if _park_mode else [0.20, 0.51, 0.82]
     for i in range(positions.size()):
         var light := PointLight2D.new()
         light.name = "EnvironmentalBounceLight_%02d" % i
         light.texture = light_texture
-        light.texture_scale = 1.75 if i == 1 else 1.45
-        light.color = Color("#9aacc5") if i != 1 else Color("#c1a58d")
-        light.energy = 0.20 if i != 1 else 0.16
+        light.texture_scale = 1.75 if i % 2 == 1 else 1.45
+        if _park_mode:
+            light.color = Color("#8fa7c8") if i % 2 == 0 else Color("#a8b3c4")
+            light.energy = 0.18 if i % 2 == 0 else 0.14
+        elif _street_name.contains("LEASIDE"):
+            light.color = Color("#a6a6bd") if i != 1 else Color("#c1a58d")
+            light.energy = 0.18 if i != 1 else 0.15
+        else:
+            light.color = Color("#9aacc5") if i != 1 else Color("#c1a58d")
+            light.energy = 0.20 if i != 1 else 0.16
         light.range_item_cull_mask = 2
         light.shadow_enabled = false
-        light.position = Vector2(_world_width * float(positions[i]), 275.0 if i != 1 else 310.0)
+        light.position = Vector2(_world_width * float(positions[i]), 275.0 if i % 2 == 0 else 310.0)
         add_child(light)
         _lights.append(light)
 
@@ -212,7 +236,7 @@ func _make_dust_texture() -> Texture2D:
 func _build_dust_field() -> void:
     _dust = CPUParticles2D.new()
     _dust.name = "DriftingEnvironmentalDust"
-    _dust.amount = 34
+    _dust.amount = 44 if _park_mode else 30
     _dust.lifetime = 9.0
     _dust.preprocess = 3.0
     _dust.emitting = true
@@ -228,16 +252,58 @@ func _build_dust_field() -> void:
     _dust.angular_velocity_max = 12.0
     _dust.scale_amount_min = 0.45
     _dust.scale_amount_max = 1.25
-    _dust.color = Color(0.70, 0.77, 0.86, 0.22)
+    _dust.color = Color(0.76, 0.70, 0.58, 0.24) if _park_mode else Color(0.70, 0.77, 0.86, 0.22)
     _dust.texture = _make_dust_texture()
     _dust.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
     _dust.visibility_rect = Rect2(-700.0, -400.0, 1400.0, 800.0)
     _dust.z_index = 50
     add_child(_dust)
 
+func _make_leaf_texture() -> Texture2D:
+    var image := Image.create(24, 12, false, Image.FORMAT_RGBA8)
+    for y in range(12):
+        for x in range(24):
+            var px := absf((float(x) - 11.5) / 11.5)
+            var py := absf((float(y) - 5.5) / 5.5)
+            var half_width := 0.04 + 0.82 * (1.0 - px) * (0.45 + 0.55 * px)
+            var edge := half_width - py
+            var alpha := smoothstep(-0.12, 0.12, edge)
+            image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
+    return ImageTexture.create_from_image(image)
+
+func _build_falling_leaves() -> void:
+    if not _park_mode:
+        return
+    _leaves = CPUParticles2D.new()
+    _leaves.name = "WindblownParkLeaves"
+    _leaves.amount = 13
+    _leaves.lifetime = 7.5
+    _leaves.preprocess = 2.0
+    _leaves.emitting = true
+    _leaves.local_coords = false
+    _leaves.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+    _leaves.emission_rect_extents = Vector2(580.0, 150.0)
+    _leaves.direction = Vector2(-1.0, 0.20)
+    _leaves.spread = 28.0
+    _leaves.gravity = Vector2(-0.3, 8.0)
+    _leaves.initial_velocity_min = 5.0
+    _leaves.initial_velocity_max = 16.0
+    _leaves.angular_velocity_min = -42.0
+    _leaves.angular_velocity_max = 42.0
+    _leaves.scale_amount_min = 0.55
+    _leaves.scale_amount_max = 1.1
+    _leaves.color = Color(0.68, 0.48, 0.27, 0.34)
+    _leaves.texture = _make_leaf_texture()
+    _leaves.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+    _leaves.visibility_rect = Rect2(-720.0, -300.0, 1440.0, 600.0)
+    _leaves.z_index = 49
+    add_child(_leaves)
+
 func follow_camera(camera_position: Vector2) -> void:
     if is_instance_valid(_dust):
         _dust.global_position = camera_position
+    if is_instance_valid(_leaves):
+        _leaves.global_position = camera_position
 
 func _process(delta: float) -> void:
     _elapsed += delta
