@@ -89,7 +89,7 @@ float noise2(vec2 p) {
 float fbm(vec2 p) {
     float value = 0.0;
     float amplitude = 0.5;
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 3; i++) {
         value += noise2(p) * amplitude;
         p = p * 2.03 + vec2(13.7, 7.1);
         amplitude *= 0.5;
@@ -102,7 +102,7 @@ void fragment() {
     float t = TIME * drift_speed;
     vec2 field = uv * vec2(scale_x, scale_y);
     float broad = fbm(field + vec2(t, sin(uv.x * 8.0 + t) * 0.10));
-    float fine = fbm(field * 2.15 + vec2(-t * 1.42, t * 0.24));
+    float fine = noise2(field * 2.15 + vec2(-t * 1.42, t * 0.24));
     float rolling_density = smoothstep(0.47, 0.76, broad * 0.66 + fine * 0.34);
     float lower_bank = smoothstep(0.58 + vertical_offset, 0.78 + vertical_offset, uv.y);
     lower_bank *= 1.0 - smoothstep(0.91, 0.995, uv.y);
