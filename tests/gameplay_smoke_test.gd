@@ -16,14 +16,15 @@ func _ready() -> void:
 	if not _check(atmosphere_source.contains("DriftingFogDepth") and atmosphere_source.contains("SwayingTreeShadow") and atmosphere_source.contains("DriftingEnvironmentalDust") and atmosphere_source.contains("PointLight2D") and atmosphere_source.contains("range_item_cull_mask = 2"), "The environment must use moving fog, animated canopy shadows, particles, and isolated 2D lighting."): return
 	if not _check(davy_script_text.contains("light_mask = 2") and davy_script_text.contains("player.z_index = clampi") and davy_script_text.contains("rival.z_index = clampi") and not davy_script_text.contains("CanvasModulate.new()") and not davy_script_text.contains("NightmareWorldGrade"), "Environmental lighting must target the scenery only, with no global darkening overlay."): return
 	var atmosphere_probe := atmosphere_script.new() as Node2D
-	atmosphere_probe.call("configure", 3600.0)
+	atmosphere_probe.call("configure", 3600.0, "WOODLAWN PARK PLAYGROUND")
 	add_child(atmosphere_probe)
 	await get_tree().process_frame
 	var fog_probe := atmosphere_probe.get_node_or_null("DriftingFogDepth_0") as Sprite2D
 	var shadow_probe := atmosphere_probe.get_node_or_null("SwayingTreeShadow_00") as Sprite2D
 	var dust_probe := atmosphere_probe.get_node_or_null("DriftingEnvironmentalDust") as CPUParticles2D
+	var leaves_probe := atmosphere_probe.get_node_or_null("WindblownParkLeaves") as CPUParticles2D
 	var light_probe := atmosphere_probe.get_node_or_null("EnvironmentalBounceLight_00") as PointLight2D
-	if not _check(atmosphere_probe.z_index == 300 and fog_probe != null and shadow_probe != null and dust_probe != null and dust_probe.emitting and light_probe != null and light_probe.range_item_cull_mask == 2, "The atmosphere must instantiate its depth-separated moving effects and scenery-only lights."): return
+	if not _check(atmosphere_probe.z_index == 300 and fog_probe != null and shadow_probe != null and dust_probe != null and dust_probe.emitting and leaves_probe != null and leaves_probe.emitting and light_probe != null and light_probe.range_item_cull_mask == 2, "The atmosphere must instantiate its depth-separated moving effects and scenery-only lights."): return
 	var actor_probe := game.call("_make_character", Vector2(200.0, 475.0), Color.WHITE, false) as CharacterBody2D
 	var actor_sprite_probe := actor_probe.get_child(0) as Sprite2D
 	if not _check(actor_probe.light_mask == 1 and actor_sprite_probe.light_mask == 1 and actor_probe.z_index == 0, "Player and enemy character canvases must remain excluded from environmental lights."): return
