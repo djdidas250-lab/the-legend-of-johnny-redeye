@@ -1581,7 +1581,7 @@ func _setup_horror_atmosphere() -> void:
 	light_mask = 2
 	horror_atmosphere = ENVIRONMENTAL_ATMOSPHERE.new()
 	horror_atmosphere.name = "WorldOnlyHorrorAtmosphere"
-	horror_atmosphere.call("configure", world_end)
+	horror_atmosphere.call("configure", world_end, current_street)
 	add_child(horror_atmosphere)
 
 func _process(delta: float) -> void:
