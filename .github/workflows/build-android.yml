@@ -35,7 +35,7 @@ jobs:
           test -s "images/intro_assets/intro 6.jpeg"
           test -s "images/intro_assets/01 Intro.mp3"
 
-      - name: Match cinematic intro loudness to Leeside stage music
+      - name: Verify cinematic intro playback loudness against Leeside
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
@@ -47,7 +47,16 @@ jobs:
 
           intro = Path("images/intro_assets/01 Intro.mp3")
           stage = Path("images/7. Soldier.mp3")
-          temporary = intro.with_name("01 Intro matched.mp3")
+          script = Path("scripts/main.gd").read_text()
+
+          def setting(name):
+              match = re.search(rf"const {name} := (-?[0-9]+(?:\\.[0-9]+)?)", script)
+              if not match:
+                  raise RuntimeError(f"Missing audio setting: {name}")
+              return float(match.group(1))
+
+          intro_volume = setting("INTRO_MUSIC_VOLUME_DB")
+          stage_volume = setting("STAGE_ONE_MUSIC_VOLUME_DB")
 
           def measure(path):
               result = subprocess.run(
@@ -57,30 +66,25 @@ jobs:
               )
               if result.returncode != 0:
                   raise RuntimeError(f"FFmpeg could not measure {path}: {result.stderr.strip()}")
-              matches = re.findall(r'\{\s*"input_i".*?\}', result.stderr, re.S)
+              matches = re.findall(r'\\{\\s*"input_i".*?\\}', result.stderr, re.S)
               if not matches:
                   raise RuntimeError(f"Could not read loudness measurement for {path}")
-              stats = json.loads(matches[-1])
-              integrated = float(stats["input_i"])
-              if not (-70.0 < integrated < 0.0):
-                  raise RuntimeError(f"Invalid integrated loudness for {path}: {integrated}")
-              return integrated
+              return float(json.loads(matches[-1])["input_i"])
 
-          target_lufs = measure(stage)
-          print(f"LEASIDE_STAGE_INTEGRATED_LUFS={target_lufs:.2f}")
-          subprocess.run(
-              ["ffmpeg", "-y", "-hide_banner", "-i", str(intro), "-af",
-               f"loudnorm=I={target_lufs:.2f}:TP=-1.5:LRA=11",
-               "-c:a", "libmp3lame", "-b:a", "256k", str(temporary)],
-              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True
-          )
-          temporary.replace(intro)
-          matched_lufs = measure(intro)
-          print(f"CINEMATIC_INTRO_MATCHED_LUFS={matched_lufs:.2f}")
-          difference = abs(matched_lufs - target_lufs)
-          print(f"INTRO_VS_LEASIDE_LOUDNESS_DIFFERENCE_DB={difference:.2f}")
-          if difference > 1.0:
-              raise RuntimeError(f"Intro loudness did not match Leeside music: {difference:.2f} LU")
+          stage_lufs = measure(stage)
+          intro_lufs = measure(intro)
+          stage_playback = stage_lufs + stage_volume
+          intro_playback = intro_lufs + intro_volume
+          difference = abs(stage_playback - intro_playback)
+
+          print(f"LEASIDE_SOURCE_LUFS={stage_lufs:.2f}")
+          print(f"INTRO_SOURCE_LUFS={intro_lufs:.2f}")
+          print(f"LEASIDE_PLAYBACK_LEVEL_DB={stage_playback:.2f}")
+          print(f"INTRO_PLAYBACK_LEVEL_DB={intro_playback:.2f}")
+          print(f"INTRO_PLAYBACK_VOLUME_DB={intro_volume:.2f}")
+          print(f"INTRO_VS_LEASIDE_PLAYBACK_DIFFERENCE_DB={difference:.2f}")
+          if difference > 0.5:
+              raise RuntimeError(f"Intro playback level does not match Leeside: {difference:.2f} dB")
           PY
 
       - name: Upload original intro frames for visual coordinate inspection
