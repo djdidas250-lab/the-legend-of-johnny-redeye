@@ -24,24 +24,24 @@ void fragment() {
     float blue_sky = clamp((source.b - source.r) * 2.8, 0.0, 1.0);
 
     vec3 night_sky = mix(
-        vec3(0.012, 0.018, 0.043),
-        source * vec3(0.19, 0.27, 0.48),
+        vec3(0.006, 0.009, 0.024),
+        source * vec3(0.14, 0.20, 0.37),
         smoothstep(0.14, 0.72, brightness)
     );
-    night_sky = mix(night_sky, vec3(0.052, 0.070, 0.112), blue_sky * 0.24);
+    night_sky = mix(night_sky, vec3(0.032, 0.044, 0.078), blue_sky * 0.24);
 
-    vec3 cool_surface = source * vec3(0.32, 0.39, 0.53);
+    vec3 cool_surface = source * vec3(0.24, 0.31, 0.44);
     cool_surface = mix(
         cool_surface,
-        source * vec3(0.47, 0.53, 0.65),
+        source * vec3(0.37, 0.44, 0.57),
         smoothstep(0.36, 0.86, brightness) * 0.30
     );
-    vec3 night_foliage = source * vec3(0.23, 0.38, 0.39);
+    vec3 night_foliage = source * vec3(0.16, 0.28, 0.30);
     vec3 night_ground = mix(cool_surface, night_foliage, foliage_region * 0.66);
 
     // A narrow horizon haze gives distant houses and tree lines separation.
     float horizon_haze = exp(-pow((UV.y - 0.535) * 13.0, 2.0)) * 0.17;
-    night_ground = mix(night_ground, vec3(0.095, 0.115, 0.16), horizon_haze);
+    night_ground = mix(night_ground, vec3(0.060, 0.074, 0.112), horizon_haze);
 
     vec3 graded = mix(night_ground, night_sky, sky_region);
 
@@ -60,14 +60,14 @@ void fragment() {
 
 const FOG_SHADER := """
 shader_type canvas_item;
-render_mode unshaded;
+render_mode unshaded, blend_mix;
 
 uniform float drift_speed = 0.012;
-uniform float opacity = 0.12;
-uniform float scale_x = 8.0;
-uniform float scale_y = 3.0;
+uniform float opacity = 0.38;
+uniform float scale_x = 4.2;
+uniform float scale_y = 2.1;
 uniform float vertical_offset = 0.0;
-uniform vec3 fog_tint : source_color = vec3(0.55, 0.61, 0.69);
+uniform vec3 fog_tint : source_color = vec3(0.48, 0.54, 0.64);
 
 float hash21(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
@@ -89,9 +89,9 @@ float noise2(vec2 p) {
 float fbm(vec2 p) {
     float value = 0.0;
     float amplitude = 0.5;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         value += noise2(p) * amplitude;
-        p = p * 2.03 + vec2(13.7, 7.1);
+        p = p * 2.01 + vec2(17.3, 9.2);
         amplitude *= 0.5;
     }
     return value;
@@ -101,25 +101,34 @@ void fragment() {
     vec2 uv = UV;
     float t = TIME * drift_speed;
     vec2 field = uv * vec2(scale_x, scale_y);
-    // Low-frequency warping makes the banks roll and fold instead of sliding
-    // as uniform horizontal bands. The fine field breaks their edges into wisps.
+
+    // Broad, smoothly blended noise produces cloud-shaped mist banks.
+    // A second low-frequency field bends the banks and gives them slow,
+    // organic rolling motion instead of pixel-like horizontal streaks.
     vec2 warp = vec2(
-        noise2(field * 0.43 + vec2(t * 0.42, -t * 0.18)),
-        noise2(field * 0.39 + vec2(-t * 0.31, t * 0.22))
+        fbm(field * 0.48 + vec2(t * 0.32, -t * 0.13)),
+        fbm(field * 0.42 + vec2(-t * 0.24, t * 0.17))
     ) - vec2(0.5);
-    vec2 warped_field = field + warp * vec2(1.25, 0.52);
-    float broad = fbm(warped_field + vec2(t, sin(uv.x * 8.0 + t) * 0.14));
-    float fine = noise2(warped_field * 2.15 + vec2(-t * 1.42, t * 0.24));
-    float streaks = noise2(warped_field * vec2(0.72, 1.65) + vec2(t * 0.68, -t * 0.16));
-    float rolling_density = smoothstep(0.405, 0.735, broad * 0.58 + fine * 0.27 + streaks * 0.15);
-    float lower_bank = smoothstep(0.46 + vertical_offset, 0.73 + vertical_offset, uv.y);
-    lower_bank *= 1.0 - smoothstep(0.88, 0.985, uv.y);
-    float wispy_breakup = smoothstep(0.22, 0.76, fine * 0.72 + streaks * 0.28);
-    float alpha = rolling_density * lower_bank * wispy_breakup * opacity;
-    float low_curl = smoothstep(0.68, 0.94, uv.y) * smoothstep(0.36, 0.69, broad);
-    float drifting_ribbon = smoothstep(0.48, 0.76, streaks) * smoothstep(0.52, 0.78, uv.y);
-    alpha += low_curl * opacity * 0.30 + drifting_ribbon * opacity * 0.12;
-    COLOR = vec4(fog_tint, clamp(alpha, 0.0, 0.22));
+    vec2 cloud_field = field + warp * vec2(1.65, 0.72);
+    float broad_cloud = fbm(cloud_field + vec2(t, sin(uv.x * 5.4 + t) * 0.16));
+    float mid_cloud = fbm(cloud_field * 1.55 + vec2(-t * 0.72, t * 0.20));
+    float fine_cloud = noise2(cloud_field * 3.1 + vec2(t * 0.44, -t * 0.16));
+    float cloud_density = broad_cloud * 0.62 + mid_cloud * 0.28 + fine_cloud * 0.10;
+
+    float rolling_bank = smoothstep(0.405, 0.585, cloud_density);
+    float uneven_horizon = sin(uv.x * 7.0 + t * 0.55) * 0.035;
+    float ground_band = smoothstep(0.43 + vertical_offset + uneven_horizon,
+        0.61 + vertical_offset + uneven_horizon, uv.y);
+    ground_band *= 1.0 - smoothstep(0.86, 0.985, uv.y);
+
+    // Soft feathering keeps the mist volumetric; denser cores remain visible
+    // while the edges dissolve gradually into the street scene.
+    float soft_edge = smoothstep(0.30, 0.72, mid_cloud * 0.72 + broad_cloud * 0.28);
+    float low_rolling_lobe = smoothstep(0.64, 0.91, uv.y)
+        * smoothstep(0.40, 0.62, broad_cloud);
+    float alpha = rolling_bank * ground_band * (0.58 + soft_edge * 0.42) * opacity;
+    alpha += low_rolling_lobe * opacity * 0.22;
+    COLOR = vec4(fog_tint, clamp(alpha, 0.0, 0.46));
 }
 """
 
@@ -133,7 +142,6 @@ static func create_background_grade_material() -> ShaderMaterial:
 var _world_width := 960.0
 var _street_name := ""
 var _park_mode := false
-var _dust: CPUParticles2D
 var _leaves: CPUParticles2D
 var _lights: Array[PointLight2D] = []
 var _occluders: Array[LightOccluder2D] = []
@@ -148,7 +156,6 @@ func configure(world_width: float, street_name: String = "") -> void:
     _build_fog_banks()
     _build_tree_occluders()
     _build_ambient_lights()
-    _build_dust_field()
     _build_falling_leaves()
 
 func _white_pixel() -> Texture2D:
@@ -159,20 +166,20 @@ func _white_pixel() -> Texture2D:
 func _build_fog_banks() -> void:
     var pixel := _white_pixel()
     var density := 1.0
-    var fog_palette := [Color("#8a96a8"), Color("#697486"), Color("#a0a5ad")]
+    var fog_palette := [Color("#778398"), Color("#667287"), Color("#929baa")]
     if _park_mode:
-        density = 1.38
-        fog_palette = [Color("#7d8da7"), Color("#56677f"), Color("#9ba7b7")]
+        density = 1.16
+        fog_palette = [Color("#71839d"), Color("#596a83"), Color("#8998ad")]
     elif _street_name.contains("LEASIDE"):
-        density = 1.18
-        fog_palette = [Color("#8792a4"), Color("#665b70"), Color("#b0a2a0")]
+        density = 1.08
+        fog_palette = [Color("#778398"), Color("#665d70"), Color("#a19a9d")]
     elif _street_name.contains("MCRAE"):
-        density = 0.92
-        fog_palette = [Color("#8b9aaa"), Color("#667589"), Color("#aab2b8")]
+        density = 0.96
+        fog_palette = [Color("#7b899c"), Color("#657286"), Color("#9aa4ad")]
     var settings := [
-        {"speed": 0.018, "opacity": 0.142 * density, "sx": 7.0, "sy": 3.0, "offset": 0.00, "tint": fog_palette[0], "z": 0},
-        {"speed": -0.026, "opacity": 0.104 * density, "sx": 12.0, "sy": 4.1, "offset": -0.045, "tint": fog_palette[1], "z": 2},
-        {"speed": 0.034, "opacity": 0.066 * density, "sx": 18.0, "sy": 5.0, "offset": 0.035, "tint": fog_palette[2], "z": 4}
+        {"speed": 0.010, "opacity": 0.40 * density, "sx": 3.8, "sy": 2.0, "offset": 0.00, "tint": fog_palette[0], "z": 0},
+        {"speed": -0.014, "opacity": 0.31 * density, "sx": 5.6, "sy": 2.7, "offset": -0.075, "tint": fog_palette[1], "z": 2},
+        {"speed": 0.019, "opacity": 0.22 * density, "sx": 8.2, "sy": 3.4, "offset": 0.055, "tint": fog_palette[2], "z": 4}
     ]
     for setting in settings:
         var bank := Sprite2D.new()
@@ -277,41 +284,6 @@ func _make_organic_light_texture() -> Texture2D:
             image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
     return ImageTexture.create_from_image(image)
 
-func _make_dust_texture() -> Texture2D:
-    var image := Image.create(16, 16, false, Image.FORMAT_RGBA8)
-    var center := Vector2(7.5, 7.5)
-    for y in range(16):
-        for x in range(16):
-            var radius := center.distance_to(Vector2(float(x), float(y))) / 7.5
-            var alpha := pow(maxf(0.0, 1.0 - smoothstep(0.10, 1.0, radius)), 2.0)
-            image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
-    return ImageTexture.create_from_image(image)
-
-func _build_dust_field() -> void:
-    _dust = CPUParticles2D.new()
-    _dust.name = "DriftingEnvironmentalDust"
-    _dust.amount = 54 if _park_mode else 40
-    _dust.lifetime = 9.0
-    _dust.preprocess = 3.0
-    _dust.emitting = true
-    _dust.local_coords = false
-    _dust.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-    _dust.emission_rect_extents = Vector2(560.0, 245.0)
-    _dust.direction = Vector2(-0.25, -0.12)
-    _dust.spread = 58.0
-    _dust.gravity = Vector2(-0.18, -0.10)
-    _dust.initial_velocity_min = 2.0
-    _dust.initial_velocity_max = 7.5
-    _dust.angular_velocity_min = -12.0
-    _dust.angular_velocity_max = 12.0
-    _dust.scale_amount_min = 0.45
-    _dust.scale_amount_max = 1.25
-    _dust.color = Color(0.82, 0.74, 0.61, 0.30) if _park_mode else Color(0.73, 0.80, 0.91, 0.27)
-    _dust.texture = _make_dust_texture()
-    _dust.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-    _dust.z_index = 50
-    add_child(_dust)
-
 func _make_leaf_texture() -> Texture2D:
     var image := Image.create(24, 12, false, Image.FORMAT_RGBA8)
     for y in range(12):
@@ -352,8 +324,6 @@ func _build_falling_leaves() -> void:
     add_child(_leaves)
 
 func follow_camera(camera_position: Vector2) -> void:
-    if is_instance_valid(_dust):
-        _dust.global_position = camera_position
     if is_instance_valid(_leaves):
         _leaves.global_position = camera_position
 
