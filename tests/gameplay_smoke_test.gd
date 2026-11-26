@@ -49,7 +49,6 @@ func _ready() -> void:
 	var art_ratio := float(title_art.texture.get_width()) / float(title_art.texture.get_height())
 	var displayed_ratio := title_art.size.x / maxf(title_art.size.y, 1.0)
 	var visible_size: Vector2 = (game as Node2D).get_viewport_rect().size
-	print("TITLE_ART_LAYOUT source_ratio=", art_ratio, " displayed_ratio=", displayed_ratio, " size=", title_art.size, " viewport=", visible_size)
 	if not _check(absf(art_ratio - displayed_ratio) < 0.01, "Title artwork must preserve its source aspect ratio."): return
 	if not _check(title_art.size.x <= visible_size.x + 1.0 and title_art.size.y <= visible_size.y + 1.0, "Title artwork must remain fully inside the screen without cropping."): return
 	var backdrop := title_layer.find_child("TitleArtworkBackdrop", true, false) as TextureRect
