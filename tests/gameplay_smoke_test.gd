@@ -670,10 +670,26 @@ func _ready() -> void:
 	if not _check(returned_map.get_node_or_null("JohnHouseCheckpointHitbox") != null and returned_map.get_node_or_null("McRaeCheckpointMarker") != null, "Returning to Mission Select must restore the correct unlocked mission markers."): return
 	if not _check(bool(returned_cfg.get_value("slot_2", "available", false)) and bool(returned_cfg.get_value("slot_3", "available", false)) and bool(returned_cfg.get_value("slot_3", "unlocked_mcrae", false)), "Returning to Mission Select must leave the other save slots and their progress untouched."): return
 	if not _check(game.get("rivals").is_empty() and game.get("slingshot_projectiles").is_empty() and game.get("slingshot_pickup") == null and game.get("baggy_pickup") == null and game.get("touch_direction_by_finger").is_empty() and game.get("direction_touch_buttons").is_empty(), "Returning to Mission Select must clear enemies, projectiles, pickups, and stale touch controls."): return
-	# Enter Leaside directly to verify the new pickup's real world placement,
-	# transparent crop, and both health outcomes through the collision handler.
+	# Enter Leaside through the actual first-mission briefing. The game pauses
+	# while its dedicated intro player runs; wait on rendering rather than
+	# forcing this test controller (and its gameplay child) to process while paused.
 	game.call("_begin_stage_one_mission")
-	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	var opening_audio := game.get("first_stage_intro_player") as AudioStreamPlayer
+	var opening_music := game.get("music_player") as AudioStreamPlayer
+	if not _check(bool(game.get("first_stage_intro_active")) and get_tree().paused and opening_audio != null and opening_audio.playing and opening_audio.stream.resource_path == "res://images/John game intro.mp3" and opening_music != null and not opening_music.playing, "The supplied John game intro audio must play alone while first-stage gameplay is paused."):
+		return
+	if not _check(ResourceLoader.exists("res://images/John game intro.mp3") and game_script.source_code.contains("_start_game(55.0, 475.0, true)") and game_script.source_code.contains("play_first_stage_intro: bool = false"), "The opening audio must be installed and enabled only for the first-mission start path."):
+		return
+	game.set("attack_cooldown", 0.0)
+	game.call("_try_punch")
+	if not _check(is_equal_approx(float(game.get("attack_cooldown")), 0.0), "PUNCH must remain disabled while the opening audio is playing."):
+		return
+	game.call("_try_fire_slingshot")
+	game.call("_on_first_stage_intro_finished")
+	if not _check(not get_tree().paused and not bool(game.get("first_stage_intro_active")) and game.get("first_stage_intro_player") == null and opening_music.playing, "Stage One music must start and gameplay must resume only after the opening audio finishes."):
+		return
 	var baggy: Sprite2D = game.get("baggy_pickup")
 	if not _check(baggy != null and baggy.name == "LeasideBaggyHealthPickup" and is_equal_approx(baggy.position.y, 475.0) and is_equal_approx(baggy.scale.x, 0.12), "The baggy pickup must be small and lie in the middle of the Leaside roadway."): return
 	var baggy_image := baggy.texture.get_image()
@@ -724,7 +740,15 @@ func _ready() -> void:
 	game.set("player_bonus_heart", true)
 	game.call("_reset_player_health")
 	if not _check(int(game.get("player_health")) == 5 and not bool(game.get("player_bonus_heart")), "A depleted six-heart set must reset to five hearts on the next life."): return
-	print("Dorval quality checks passed: title, Mission Select, gameplay, baggy health power-up, extended briefings, McRae, Newleaf, Woodlawn Park, and in-game menu navigation.")
+	# The generic restart/checkpoint entry uses the default false flag and must
+	# never replay the first-mission-only opening audio.
+	game.call("_start_game", 55.0, 475.0)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	var restart_music := game.get("music_player") as AudioStreamPlayer
+	if not _check(not bool(game.get("first_stage_intro_active")) and game.get("first_stage_intro_player") == null and not get_tree().paused and restart_music != null and restart_music.playing, "A generic restart/checkpoint start must skip the first-mission opening audio."):
+		return
+	print("Dorval quality checks passed: title, Mission Select, gameplay, opening audio handoff, restart audio exclusion, baggy health power-up, extended briefings, McRae, Newleaf, Woodlawn Park, and in-game menu navigation.")
 	get_tree().quit(0)
 
 func _frame_baseline(texture: Texture2D) -> int:
