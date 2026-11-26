@@ -826,7 +826,7 @@ render_mode unshaded, blend_mix;
 void fragment() {
 	vec4 src = texture(TEXTURE, UV);
 	float lum = max(max(src.r, src.g), src.b);
-	float source_alpha = src.a * smoothstep(0.035, 0.12, lum);
+	float source_alpha = src.a * smoothstep(0.14, 0.30, lum);
 	float nearby_brightness = 0.0;
 	for (int x = -2; x <= 2; x++) {
 		for (int y = -2; y <= 2; y++) {
@@ -836,7 +836,7 @@ void fragment() {
 			vec2 sample_uv = UV + vec2(float(x), float(y)) * TEXTURE_PIXEL_SIZE * 3.0;
 			vec4 sample_color = texture(TEXTURE, sample_uv);
 			float sample_lum = max(max(sample_color.r, sample_color.g), sample_color.b);
-			float sample_alpha = sample_color.a * smoothstep(0.008, 0.12, sample_lum);
+			float sample_alpha = sample_color.a * smoothstep(0.14, 0.30, sample_lum);
 			nearby_brightness = max(nearby_brightness, sample_alpha);
 		}
 	}
