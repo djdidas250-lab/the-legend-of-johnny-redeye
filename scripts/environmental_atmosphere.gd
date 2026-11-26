@@ -232,6 +232,7 @@ func _build_ambient_lights() -> void:
         light.name = "EnvironmentalBounceLight_%02d" % i
         light.texture = light_texture
         light.texture_scale = 2.2
+        light.offset = Vector2(0.0, 58.0)
         if _park_mode:
             light.color = Color("#8fa7c8") if i % 2 == 0 else Color("#a8b3c4")
             light.energy = 0.18 if i % 2 == 0 else 0.14
