@@ -4212,6 +4212,26 @@ func _show_slingshot_notification() -> void:
 	# Reuse the original slingshot item artwork already used by the world pickup.
 	# The obsolete composite notice image is no longer displayed.
 	artwork.texture = SLINGSHOT_PICKUP_IMAGE
+	# The source JPG has a gray/white checkerboard baked into its background.
+	# Key out only bright, low-saturation pixels so the popup's black panel shows
+	# through while preserving the wooden slingshot and its dark bands.
+	var slingshot_key_shader := Shader.new()
+	slingshot_key_shader.code = """
+shader_type canvas_item;
+void fragment() {
+	vec4 texel = texture(TEXTURE, UV);
+	float hi = max(max(texel.r, texel.g), texel.b);
+	float lo = min(min(texel.r, texel.g), texel.b);
+	float saturation = hi - lo;
+	float luminance = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
+	float checkerboard = smoothstep(0.56, 0.78, luminance)
+		* (1.0 - smoothstep(0.07, 0.17, saturation));
+	COLOR = vec4(texel.rgb, texel.a * (1.0 - checkerboard));
+}
+"""
+	var slingshot_key_material := ShaderMaterial.new()
+	slingshot_key_material.shader = slingshot_key_shader
+	artwork.material = slingshot_key_material
 	artwork.custom_minimum_size = Vector2(280.0, 170.0)
 	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
