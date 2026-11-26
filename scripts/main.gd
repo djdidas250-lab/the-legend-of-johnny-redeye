@@ -33,6 +33,7 @@ const WOODLAWN_BRIEFING_IMAGE := preload("res://images/Gemini_Generated_Image_hk
 const WOODLAWN_PARK_IMAGE := preload("res://images/image_4e2da26f.jpg")
 const WOODLAWN_PLAYGROUND_BRIEFING_IMAGE := preload("res://images/Gemini_Generated_Image_glbu70glbu70glbu.jpeg")
 const WOODLAWN_PLAYGROUND_IMAGE := preload("res://images/Gemini_Generated_Image_pn9mnhpn9mnhpn9m.jpeg")
+const ENVIRONMENTAL_ATMOSPHERE := preload("res://scripts/environmental_atmosphere.gd")
 const CHARACTER_VISUAL := preload("res://scripts/character_visual.gd")
 const FIGHTER_BASE := preload("res://scripts/fighter_base.gd")
 const DAVY_VISUAL := preload("res://scripts/davy_jones_visual.gd")
@@ -173,8 +174,7 @@ var baggy_notice: Control
 var brick_coke_notice: Control
 var brick_coke_notice_texture: Texture2D
 var slingshot_notice: Control
-var horror_light_nodes: Array[PointLight2D] = []
-var horror_light_time := 0.0
+var horror_atmosphere: Node2D
 var slingshot_projectiles: Array[Dictionary] = []
 var slingshot_cooldown := 0.0
 var slingshot_shoot_button: Button
@@ -1447,6 +1447,11 @@ func _complete_return_to_mission_select() -> void:
 	brick_coke_notice = null
 	slingshot_shoot_button = null
 	slingshot_cooldown = 0.0
+	if is_instance_valid(horror_atmosphere):
+		remove_child(horror_atmosphere)
+		horror_atmosphere.free()
+	horror_atmosphere = null
+	light_mask = 1
 	_show_map_screen()
 	queue_redraw()
 
@@ -1561,109 +1566,24 @@ func _build_game(start_x: float, start_y: float) -> void:
 	_save_game()
 
 func _setup_horror_atmosphere() -> void:
-	# Darken the actual world canvas, then restore selective visibility with
-	# spatially-localized 2D light pools. Source art is never modified.
-	var world_grade := CanvasModulate.new()
-	world_grade.name = "NightmareWorldGrade"
-	world_grade.color = Color("#393744")
-	add_child(world_grade)
-
-	var light_gradient := Gradient.new()
-	light_gradient.offsets = PackedFloat32Array([0.0, 0.34, 1.0])
-	light_gradient.colors = PackedColorArray([
-		Color(1.0, 0.88, 0.70, 0.82),
-		Color(0.68, 0.30, 0.28, 0.34),
-		Color(0.28, 0.06, 0.12, 0.0)
-	])
-	var light_texture := GradientTexture2D.new()
-	light_texture.gradient = light_gradient
-	light_texture.fill = GradientTexture2D.FILL_RADIAL
-	light_texture.fill_from = Vector2(0.5, 0.5)
-	light_texture.fill_to = Vector2(0.5, 0.0)
-	light_texture.width = 256
-	light_texture.height = 256
-
-	horror_light_nodes.clear()
-	for i in range(4):
-		var pool := PointLight2D.new()
-		pool.name = "StreetLightPool_%02d" % i
-		pool.texture = light_texture
-		pool.texture_scale = 1.55 if i % 2 == 0 else 1.35
-		pool.color = Color("#b99a83") if i % 2 == 0 else Color("#76506b")
-		pool.energy = 0.66 if i % 2 == 0 else 0.42
-		pool.position = Vector2(world_end * (0.13 + float(i) * 0.245), 365.0)
-		pool.shadow_enabled = false
-		add_child(pool)
-		horror_light_nodes.append(pool)
-
-	# Two independent fog sheets move at different speeds and depths. They are
-	# rendered over the unchanged street art, not baked into or painted onto it.
-	var fog_shader := Shader.new()
-	fog_shader.code = """
-shader_type canvas_item;
-uniform float drift_speed = 0.012;
-uniform float fog_strength = 1.0;
-float hash21(vec2 p) {
-	p = fract(p * vec2(123.34, 456.21));
-	p += dot(p, p + 45.32);
-	return fract(p.x * p.y);
-}
-float noise2(vec2 p) {
-	vec2 i = floor(p);
-	vec2 f = fract(p);
-	f = f * f * (3.0 - 2.0 * f);
-	return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), f.x),
-		mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), f.x), f.y);
-}
-float fbm(vec2 p) {
-	float value = 0.0;
-	float amplitude = 0.5;
-	for (int i = 0; i < 4; i++) {
-		value += noise2(p) * amplitude;
-		p = p * 2.03 + vec2(13.7, 7.1);
-		amplitude *= 0.5;
-	}
-	return value;
-}
-void fragment() {
-	vec2 uv = UV;
-	float drift = TIME * drift_speed;
-	float broad = fbm(uv * vec2(5.2, 2.5) + vec2(drift, -drift * 0.16));
-	float detail = fbm(uv * vec2(13.0, 5.0) + vec2(-drift * 1.7, drift * 0.28));
-	float low_band = smoothstep(0.43, 0.82, uv.y);
-	float rolling_edge = smoothstep(0.42, 0.77, broad * 0.72 + detail * 0.28);
-	float wisps = smoothstep(0.36, 0.76, broad * 0.62 + detail * 0.38);
-	float alpha = low_band * rolling_edge * wisps * 0.19 * fog_strength;
-	float middle_haze = smoothstep(0.48, 0.74, uv.y) * smoothstep(0.58, 0.86, detail) * 0.055 * fog_strength;
-	float vignette = smoothstep(0.34, 0.92, distance(uv, vec2(0.5)) * 1.18) * 0.13;
-	vec3 fog_color = mix(vec3(0.075, 0.065, 0.105), vec3(0.16, 0.045, 0.075), smoothstep(0.35, 0.82, detail));
-	COLOR = vec4(fog_color, clamp(alpha + middle_haze + vignette, 0.0, 0.26));
-}
-"""
-	var fog_layer := CanvasLayer.new()
-	fog_layer.name = "LayeredGroundFog"
-	fog_layer.layer = 1
-	add_child(fog_layer)
-	for i in range(2):
-		var fog := ColorRect.new()
-		fog.name = "FogDepth_%d" % i
-		fog.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		fog.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var fog_material := ShaderMaterial.new()
-		fog_material.shader = fog_shader
-		fog_material.set_shader_parameter("drift_speed", 0.010 if i == 0 else -0.017)
-		fog_material.set_shader_parameter("fog_strength", 1.0 if i == 0 else 0.62)
-		fog.material = fog_material
-		fog_layer.add_child(fog)
+	# The panorama is the only canvas item that receives environmental lights.
+	# Actors retain their normal light mask and render above the atmosphere layers.
+	if is_instance_valid(horror_atmosphere):
+		remove_child(horror_atmosphere)
+		horror_atmosphere.free()
+	horror_atmosphere = null
+	light_mask = 2
+	horror_atmosphere = ENVIRONMENTAL_ATMOSPHERE.new()
+	horror_atmosphere.name = "WorldOnlyHorrorAtmosphere"
+	horror_atmosphere.configure(world_end)
+	add_child(horror_atmosphere)
 
 func _process(delta: float) -> void:
-	horror_light_time += delta
-	for i in range(horror_light_nodes.size()):
-		var pool := horror_light_nodes[i]
-		if is_instance_valid(pool):
-			var slow_pulse := sin(horror_light_time * (1.25 + float(i) * 0.09) + float(i) * 1.7)
-			var quick_flicker := sin(horror_light_time * (7.1 + float(i)) + float(i) * 2.4)
-			pool.energy = (0.66 if i % 2 == 0 else 0.42) + slow_pulse * 0.025 + quick_flicker * 0.012
+	if not is_instance_valid(horror_atmosphere):
+		return
+	var active_camera := get_viewport().get_camera_2d()
+	if active_camera != null:
+		horror_atmosphere.call("follow_camera", active_camera.global_position)
 
 func _make_hud_label(caption: String, at: Vector2, font_size: int) -> Label:
 	var label := Label.new()
