@@ -826,6 +826,8 @@ render_mode unshaded, blend_mix;
 void fragment() {
 	vec4 src = texture(TEXTURE, UV);
 	float lum = max(max(src.r, src.g), src.b);
+	// The source is a JPEG, so its nominally black matte contains compression noise.
+	// Use a higher key threshold for both the artwork and halo samples to fully clear it.
 	float source_alpha = src.a * smoothstep(0.14, 0.30, lum);
 	float nearby_brightness = 0.0;
 	for (int x = -2; x <= 2; x++) {
