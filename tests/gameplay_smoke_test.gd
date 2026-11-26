@@ -151,20 +151,21 @@ func _ready() -> void:
 	if not _check(map_sfx != null and map_sfx.stream.resource_path == "res://images/sword-shine.mp3", "Red X sword click sound missing."): return
 	var splash: CanvasLayer = game.get("splash_layer")
 	if not _check(splash != null and not bool(game.get("game_started")), "John's House briefing missing."): return
-	var house_art := splash.get_child(1) as TextureRect
+	var house_art := splash.get_node_or_null("StageOneBackground") as TextureRect
+	var house_material := house_art.material as ShaderMaterial if house_art != null else null
 	if not _check(house_art != null and house_art.texture.resource_path == "res://images/image_a06e5bc7.jpg", "New John's House briefing artwork missing."): return
-	if not _check(house_art.stretch_mode == TextureRect.STRETCH_SCALE and house_art.offset_left == 3 and house_art.offset_top == 3 and house_art.offset_right == -3 and house_art.offset_bottom == -3, "Stage artwork must fill widescreen inside its thin white frame."): return
-	var stage_heading := splash.get_child(4) as Label
+	if not _check(house_art.stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_COVERED and house_material != null and house_material.shader.code.contains("fog_alpha") and game.get_script().source_code.contains("ENVIRONMENTAL_ATMOSPHERE.create_cutscene_atmosphere_material()"), "Stage One house artwork must use the shared transition-screen framing and atmospheric treatment."): return
+	var stage_panel := splash.get_node_or_null("StageOneBriefingPanel") as PanelContainer
+	var stage_heading := stage_panel.find_child("StageOneHeading", true, false) as Label if stage_panel != null else null
 	if not _check(stage_heading != null and stage_heading.text == "STAGE 1  —  JOHN'S HOUSE", "Stage heading incorrect."): return
-	var mission_text := splash.get_child(5) as Label
+	var mission_text := stage_panel.find_child("StageOneObjective", true, false) as Label if stage_panel != null else null
 	if not _check(mission_text != null and mission_text.text == "Make your way along Leaside Drive to Woodlawn Park.", "Mission description incorrect."): return
-	var start_panel := splash.get_child(7) as Panel
-	var begin_hitbox := splash.get_child(8) as Button
-	if not _check(start_panel != null and begin_hitbox != null and begin_hitbox.text == "" and is_equal_approx(begin_hitbox.modulate.a, 0.0), "Visible Start Mission panel must have a separate invisible click target."): return
-	if not _check(begin_hitbox.anchor_left == 0.5 and begin_hitbox.anchor_right == 0.5 and begin_hitbox.offset_left == -210 and begin_hitbox.offset_right == 210 and begin_hitbox.offset_top == -68 and begin_hitbox.offset_bottom == -10, "Invisible Start Mission hitbox must exactly cover the visible button."): return
-	if not _check(splash.get_child_count() == 9, "Stage briefing layout is missing a visual element or invisible hit target."): return
-
-	begin_hitbox.emit_signal("pressed")
+	var begin_button := stage_panel.find_child("StageOneBeginButton", true, false) as Button if stage_panel != null else null
+	if not _check(stage_panel != null and begin_button != null and begin_button.text == "CLICK HERE TO BEGIN MISSION", "Stage briefing must use the shared transition panel and a visible, functional begin button."): return
+	if not _check(splash.get_child_count() == 2 and game.get_script().source_code.contains("func _create_transition_briefing_panel("), "Stage One must use the reusable transition briefing layout intended for future stages."): return
+	var stage_panel_style := stage_panel.get_theme_stylebox("panel") as StyleBoxFlat
+	if not _check(stage_panel_style != null and stage_panel_style.bg_color == Color("#08070c") and stage_panel_style.border_color == Color("#b10e2d") and stage_panel_style.get_corner_radius(0) == 9, "Stage One briefing panel must match the established dark crimson transition-screen frame."): return
+	begin_button.emit_signal("pressed")
 	var start_sfx := game.get("sfx_player") as AudioStreamPlayer
 	if not _check(start_sfx != null and start_sfx.stream.resource_path == "res://images/freesound_community-game-start-6104.mp3", "Start Mission must use the title-screen game-start click sound."): return
 	if start_sfx.playing:
