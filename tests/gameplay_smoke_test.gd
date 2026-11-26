@@ -3,6 +3,8 @@ extends Node
 const LEASIDE_PANORAMA_TEST_TEXTURE := preload("res://images/image_928e623e.jpg")
 
 func _ready() -> void:
+	# Keep the test controller running while a gameplay sequence intentionally pauses the scene tree.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	var game: Node = load("res://scenes/main.tscn").instantiate()
 	add_child(game)
 	await get_tree().process_frame
@@ -674,6 +676,18 @@ func _ready() -> void:
 	# transparent crop, and both health outcomes through the collision handler.
 	game.call("_begin_stage_one_mission")
 	await get_tree().process_frame
+	var opening_audio := game.get("first_stage_intro_player") as AudioStreamPlayer
+	var opening_music := game.get("music_player") as AudioStreamPlayer
+	if not _check(bool(game.get("first_stage_intro_active")) and get_tree().paused and opening_audio != null and opening_audio.playing and opening_music != null and not opening_music.playing, "The supplied opening audio must play alone while the complete first-stage gameplay scene is paused."):
+		return
+	if not _check(ResourceLoader.exists("res://images/John game intro.mp3") and (game.get_script() as GDScript).source_code.contains("_start_game(55.0, 475.0, true)"), "The opening audio must be installed and triggered only by the first-mission starting checkpoint."):
+		return
+	game.call("_try_punch")
+	if not _check(is_equal_approx(float(game.get("attack_cooldown")), 0.0), "Attacks must remain disabled during the first-stage opening audio."):
+		return
+	game.call("_on_first_stage_intro_finished")
+	if not _check(not get_tree().paused and not bool(game.get("first_stage_intro_active")) and opening_music.playing, "Stage One music must start and gameplay must resume immediately when the opening audio finishes."):
+		return
 	var baggy: Sprite2D = game.get("baggy_pickup")
 	if not _check(baggy != null and baggy.name == "LeasideBaggyHealthPickup" and is_equal_approx(baggy.position.y, 475.0) and is_equal_approx(baggy.scale.x, 0.12), "The baggy pickup must be small and lie in the middle of the Leaside roadway."): return
 	var baggy_image := baggy.texture.get_image()
