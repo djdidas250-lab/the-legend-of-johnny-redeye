@@ -47,7 +47,11 @@ func _ready() -> void:
 	var title_art := title_layer.find_child("TitleArtwork", true, false) as TextureRect
 	if not _check(title_art != null and title_art.texture.resource_path == "res://images/file_000000005268822f8114c8d6d185d9e5.png" and title_art.texture.get_width() > 1000 and title_art.texture.get_height() > 400, "The newly supplied Johnny Redeye title artwork must be installed."): return
 	var art_ratio := float(title_art.texture.get_width()) / float(title_art.texture.get_height())
-	if not _check(is_equal_approx(art_ratio, title_art.size.x / title_art.size.y) and title_art.size.x <= game.get_viewport_rect().size.x + 1.0 and title_art.size.y <= game.get_viewport_rect().size.y + 1.0, "Title artwork must preserve its source aspect ratio without cropping."): return
+	var displayed_ratio := title_art.size.x / maxf(title_art.size.y, 1.0)
+	var visible_size: Vector2 = game.get_viewport().get_visible_rect().size
+	print("TITLE_ART_LAYOUT source_ratio=", art_ratio, " displayed_ratio=", displayed_ratio, " size=", title_art.size, " viewport=", visible_size)
+	if not _check(absf(art_ratio - displayed_ratio) < 0.01, "Title artwork must preserve its source aspect ratio."): return
+	if not _check(title_art.size.x <= visible_size.x + 1.0 and title_art.size.y <= visible_size.y + 1.0, "Title artwork must remain fully inside the screen without cropping."): return
 	var backdrop := title_layer.find_child("TitleArtworkBackdrop", true, false) as TextureRect
 	if not _check(backdrop != null and backdrop.texture == title_art.texture and backdrop.material is ShaderMaterial, "Aspect-preserving title art must use a softened full-screen artwork extension instead of black bars."): return
 	var sword_glow := title_layer.find_child("TitleSwordGlow", true, false) as ColorRect
