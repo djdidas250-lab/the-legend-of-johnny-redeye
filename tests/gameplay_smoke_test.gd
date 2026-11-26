@@ -90,8 +90,18 @@ func _ready() -> void:
 
 	game.call("_start_new_game")
 	await get_tree().process_frame
+	var intro_layer: CanvasLayer = game.get("intro_layer")
+	var intro_audio := game.get("intro_audio_player") as AudioStreamPlayer
+	if not _check(intro_layer != null and intro_layer.name == "CinematicIntroLayer" and intro_audio != null and intro_audio.stream != null and bool(game.get("intro_active")), "New Game must play the supplied cinematic intro before Mission Select."): return
+	var intro_current := intro_layer.find_child("IntroImageCurrent", true, false) as TextureRect
+	var intro_loading := intro_layer.find_child("IntroLoadingGraphic", true, false) as TextureRect
+	var intro_progress := intro_layer.find_child("IntroProgressFill", true, false) as ColorRect
+	if not _check(intro_current != null and intro_current.texture.resource_path == "res://images/intro_assets/Intro1.jpg" and intro_loading != null and intro_progress != null, "Cinematic intro must start with the first supplied image, loading graphic and progress bar."): return
+	if not _check(intro_layer.find_child("IntroAtmosphericHaze", true, false) != null and intro_layer.find_child("IntroPracticalLightSpill", true, false) != null and intro_layer.find_child("TitleRisingEmbers", true, false) != null and intro_layer.find_child("TitleDriftingSmoke", true, false) != null, "Cinematic intro must carry over the title screen's haze, light spill, embers and smoke."): return
+	game.call("_finish_intro_sequence")
+	await get_tree().create_timer(0.55).timeout
 	var map_layer: CanvasLayer = game.get("map_layer")
-	if not _check(map_layer != null and not bool(game.get("game_started")), "New Game did not open Mission Select."): return
+	if not _check(map_layer != null and not bool(game.get("game_started")) and game.get("intro_layer") == null, "New Game must open Mission Select after the cinematic intro finishes."): return
 	var map_art := map_layer.get_child(0) as TextureRect
 	if not _check(map_art != null and map_art.texture.resource_path == "res://images/Gemini_Generated_Image_3urpcr3urpcr3urp.jpeg", "New Mission Select artwork missing."): return
 	if not _check(map_art.stretch_mode == TextureRect.STRETCH_SCALE and map_art.anchor_left == 0.0 and map_art.anchor_top == 0.0 and map_art.anchor_right == 1.0 and map_art.anchor_bottom == 1.0, "Mission artwork must fill widescreen without cropping."): return
