@@ -921,9 +921,10 @@ func _make_intro_image(texture: Texture2D, node_name: String) -> TextureRect:
 	image.texture = texture
 	image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# The supplied story art is 2.35:1. Fit the complete image without stretching
-	# or cropping; the black cinematic letterbox remains behind the artwork.
-	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	# Cover the entire viewport with the original artwork at uniform scale.
+	# This intentionally trims only the excess dimension; it never distorts the image
+	# and never exposes letterbox bars at either screen edge.
+	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	image.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return image
