@@ -44,26 +44,38 @@ func _ready() -> void:
 	if not _check(not bool(game.call("_lose_life_or_end_run")) and bool(game.get("game_over_pending")), "After three lives are consumed, the fourth depleted heart set must enter game-over state."): return
 	game.set("player_lives", 3)
 	game.set("game_over_pending", false)
-	var title_art := title_layer.get_child(0) as TextureRect
-	if not _check(title_art != null and title_art.texture.resource_path == "res://images/Gemini_Generated_Image_dddnf6dddnf6dddn.jpeg" and title_art.texture.get_width() == 1584 and title_art.texture.get_height() == 672, "The new 1584x672 Johnny Redeye title artwork must be installed."): return
-	if not _check(title_art.stretch_mode == TextureRect.STRETCH_SCALE, "Title artwork must fill the complete screen as one image."): return
-	var sword_glow := title_layer.get_child(2) as ColorRect
+	var title_art := title_layer.find_child("TitleArtwork", true, false) as TextureRect
+	if not _check(title_art != null and title_art.texture.resource_path == "res://images/file_000000005268822f8114c8d6d185d9e5.png" and title_art.texture.get_width() > 1000 and title_art.texture.get_height() > 400, "The newly supplied Johnny Redeye title artwork must be installed."): return
+	var art_ratio := float(title_art.texture.get_width()) / float(title_art.texture.get_height())
+	if not _check(is_equal_approx(art_ratio, title_art.size.x / title_art.size.y) and title_art.size.x <= game.get_viewport_rect().size.x + 1.0 and title_art.size.y <= game.get_viewport_rect().size.y + 1.0, "Title artwork must preserve its source aspect ratio without cropping."): return
+	var backdrop := title_layer.find_child("TitleArtworkBackdrop", true, false) as TextureRect
+	if not _check(backdrop != null and backdrop.texture == title_art.texture and backdrop.material is ShaderMaterial, "Aspect-preserving title art must use a softened full-screen artwork extension instead of black bars."): return
+	var sword_glow := title_layer.find_child("TitleSwordGlow", true, false) as ColorRect
 	var sword_material := sword_glow.material as ShaderMaterial if sword_glow != null else null
-	if not _check(sword_material != null and sword_material.shader.code.contains("blend_add") and sword_material.shader.code.contains("0.68 + pulse * 0.27") and sword_material.shader.code.contains("0.48 + pulse * 0.32") and sword_material.shader.code.contains("blade_d") and sword_material.shader.code.contains("vec2(0.682, 0.315)") and sword_material.shader.code.contains("vec2(0.588, 0.573)") and sword_material.shader.code.contains("vec2((p.x - 0.505) / 0.138, (p.y - 0.887) / 0.098)") and sword_material.shader.code.contains("trouser_occlusion") and sword_material.shader.code.contains("ring_visibility") and sword_material.shader.code.contains("title_texture") and sword_material.get_shader_parameter("title_texture") == title_art.texture and not sword_material.shader.code.contains("SCREEN_UV"), "Sword glow must run from the inspected blade tip to 85% of the blade and the fire-ring glow must match the artwork."): return
-	var logo_glow := title_layer.get_child(1) as ColorRect
+	if not _check(sword_material != null and sword_material.shader.code.contains("blend_add") and sword_material.shader.code.contains("0.68 + pulse * 0.27") and sword_material.shader.code.contains("0.48 + pulse * 0.32") and sword_material.shader.code.contains("blade_d") and sword_material.shader.code.contains("vec2(0.682, 0.315)") and sword_material.shader.code.contains("vec2(0.588, 0.573)") and sword_material.shader.code.contains("vec2((p.x - 0.505) / 0.138, (p.y - 0.887) / 0.098)") and sword_material.shader.code.contains("trouser_occlusion") and sword_material.shader.code.contains("ring_visibility") and sword_material.shader.code.contains("title_texture") and sword_material.get_shader_parameter("title_texture") == title_art.texture and not sword_material.shader.code.contains("SCREEN_UV"), "Sword glow must run along the inspected blade and the animated fire-ring glow must match the new artwork."): return
+	var logo_glow := title_layer.find_child("TitleLogoFireGlow", true, false) as ColorRect
 	var logo_material := logo_glow.material as ShaderMaterial if logo_glow != null else null
-	if not _check(logo_material != null and logo_material.shader.code.contains("gold_mask") and logo_material.shader.code.contains("blend_add") and logo_material.shader.code.contains("subtitle_halo") and logo_material.shader.code.contains("letter_glow") and logo_material.shader.code.contains("title_texture") and logo_material.shader.code.contains("core * 0.22 + aura * 0.17") and logo_material.shader.code.contains("0.0, 0.40") and logo_material.get_shader_parameter("title_texture") == title_art.texture, "Title illumination must sample the new artwork's gold lettering."): return
-	if not _check(title_layer.get_child_count() == 7, "Title screen must contain artwork, logo glow, sword glow, and four invisible menu hitboxes."): return
+	if not _check(logo_material != null and logo_material.shader.code.contains("gold_mask") and logo_material.shader.code.contains("blend_add") and logo_material.shader.code.contains("subtitle_halo") and logo_material.shader.code.contains("letter_glow") and logo_material.shader.code.contains("title_texture") and logo_material.get_shader_parameter("title_texture") == title_art.texture, "Title illumination must sample the new artwork's gold lettering."): return
+	var haze := title_layer.find_child("TitleAtmosphericHaze", true, false) as ColorRect
+	var light_spill := title_layer.find_child("TitlePracticalLightSpill", true, false) as ColorRect
+	var embers := title_layer.find_child("TitleRisingEmbers", true, false) as CPUParticles2D
+	var smoke := title_layer.find_child("TitleDriftingSmoke", true, false) as CPUParticles2D
+	if not _check(haze != null and haze.material is ShaderMaterial and (haze.material as ShaderMaterial).shader.code.contains("wisps") and light_spill != null and light_spill.material is ShaderMaterial and (light_spill.material as ShaderMaterial).shader.code.contains("moon"), "The title screen must include animated haze and practical-light spill."): return
+	if not _check(embers != null and embers.emitting and embers.amount >= 35 and smoke != null and smoke.emitting and smoke.amount >= 10, "The title screen must include animated ember and smoke particle layers."): return
+	var viewport_size := game.get_viewport_rect().size
+	var art_rect := Rect2(title_art.position, title_art.size)
 	var expected_hitboxes := [
 		["NewGameHitbox", 0.810, 0.445, 0.960, 0.540],
 		["ContinueHitbox", 0.810, 0.555, 0.960, 0.655],
 		["SettingsHitbox", 0.815, 0.660, 0.960, 0.760],
 		["ExitGameHitbox", 0.810, 0.770, 0.960, 0.875]
 	]
-	for i in range(expected_hitboxes.size()):
-		var hitbox := title_layer.get_child(i + 3) as Button
-		var expected: Array = expected_hitboxes[i]
-		if not _check(hitbox != null and hitbox.name == expected[0] and is_equal_approx(hitbox.anchor_left, expected[1]) and is_equal_approx(hitbox.anchor_top, expected[2]) and is_equal_approx(hitbox.anchor_right, expected[3]) and is_equal_approx(hitbox.anchor_bottom, expected[4]) and hitbox.modulate.a == 0.0, "Invisible title hitbox must precisely cover its corresponding new menu label: " + str(expected[0])): return
+	for expected in expected_hitboxes:
+		var hitbox := title_layer.find_child(str(expected[0]), true, false) as Button
+		var expected_top_left: Vector2 = game.call("_title_art_anchor", art_rect, viewport_size, float(expected[1]), float(expected[2]))
+		var expected_bottom_right: Vector2 = game.call("_title_art_anchor", art_rect, viewport_size, float(expected[3]), float(expected[4]))
+		if not _check(hitbox != null and is_equal_approx(hitbox.anchor_left, expected_top_left.x) and is_equal_approx(hitbox.anchor_top, expected_top_left.y) and is_equal_approx(hitbox.anchor_right, expected_bottom_right.x) and is_equal_approx(hitbox.anchor_bottom, expected_bottom_right.y) and hitbox.modulate.a == 0.0, "Invisible title hitbox must remain aligned to the corresponding artwork label: " + str(expected[0])): return
+
 	var title_music := game.get("music_player") as AudioStreamPlayer
 	if not _check(title_music != null and title_music.stream != null, "Title music missing."): return
 	var title_script := game.get_script() as GDScript
