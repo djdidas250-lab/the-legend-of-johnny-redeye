@@ -2670,6 +2670,9 @@ func _begin_mcrae_transition() -> void:
 	street_panorama = MCRAE_PANORAMA_IMAGE
 	world_end = float(street_panorama.get_width())
 	current_street = "McRAE DRIVE"
+	# Rebuild all street-sized atmosphere layers while the transition is still black.
+	# McRae has a different panorama width and street profile from Leaside.
+	_setup_horror_atmosphere()
 	active_slot_unlocked_mcrae = true
 	active_slot_area = "McRae Drive"
 	_save_slot_progress()
