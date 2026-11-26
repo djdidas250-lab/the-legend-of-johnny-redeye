@@ -213,7 +213,7 @@ func _ready() -> void:
 	if not _check(cutscene_dialogue != null and cutscene_dialogue.text == "Welland's a sweaty demon orgy and the big top's burning—so clench up, cocksuckers, because I'm turning this whole circus into a fucking bloodbath.", "The Stage One dialogue popup must display the user's exact spoken line."): return
 	var cutscene_panel := cutscene_layer.get_node_or_null("StageOneCutsceneDialoguePanel") as PanelContainer
 	var cutscene_panel_style := cutscene_panel.get_theme_stylebox("panel") as StyleBoxFlat if cutscene_panel != null else null
-	if not _check(cutscene_panel != null and is_equal_approx(cutscene_panel.anchor_top, 0.035) and is_equal_approx(cutscene_panel.anchor_bottom, 0.27) and cutscene_panel_style != null and cutscene_panel_style.bg_color == Color("#07060b") and cutscene_panel_style.border_color == Color("#b10e2d"), "The opening dialogue must use the established top-of-screen boss dialogue panel styling."): return
+	if not _check(cutscene_panel != null and is_equal_approx(cutscene_panel.anchor_top, 0.025) and is_equal_approx(cutscene_panel.anchor_bottom, 0.225) and cutscene_panel_style != null and cutscene_panel_style.bg_color == Color("#07060b") and cutscene_panel_style.border_color == Color("#b10e2d"), "The opening dialogue must use the established top-of-screen boss dialogue panel styling."): return
 	# Wait for the actual MP3 finished signal; no timer or guessed duration may start gameplay.
 	await cutscene_audio.finished
 	await get_tree().process_frame
