@@ -74,25 +74,27 @@ void fragment() {
     float t = TIME * drift_speed;
     float x = uv.x * scale_x;
 
-    // Continuous, overlapping wave fields replace value-noise completely.
-    // Their long wavelengths create broad wisps without pixel/cell artifacts.
-    float swell_a = sin(x * 5.1 + t * 1.00 + sin(uv.y * 3.2 - t * 0.24) * 0.72);
-    float swell_b = sin(x * 8.3 - t * 0.67 + sin(uv.y * 2.1 + t * 0.18) * 0.58);
-    float swell_c = sin(x * 2.7 + t * 0.43 + sin(uv.y * 4.0 - t * 0.14) * 0.46);
-    float wisps = swell_a * 0.48 + swell_b * 0.22 + swell_c * 0.30;
+    // Broad, smoothly blended cloud masses. No cellular/value noise or hard
+    // thresholds: layered low-frequency waves create continuous mist banks.
+    float wave_a = sin(x * 3.2 + t * 1.00 + sin(uv.y * 2.4 - t * 0.19) * 0.82);
+    float wave_b = sin(x * 5.0 - t * 0.62 + sin(uv.y * 1.7 + t * 0.14) * 0.68);
+    float wave_c = cos(x * 1.75 + t * 0.38 + sin(uv.y * 3.1 - t * 0.11) * 0.52);
+    float cloud_form = wave_a * 0.46 + wave_b * 0.25 + wave_c * 0.29;
+    float cloud_density = 0.56 + cloud_form * 0.38;
 
-    // A broad ground-hugging body with feathered upper and lower edges.
-    float rolling_center = 0.61 + vertical_offset
-        + sin(uv.x * 3.1 + t * 0.38) * 0.035
-        + sin(uv.x * 6.4 - t * 0.23) * 0.014;
-    float lower = smoothstep(0.405 + vertical_offset, 0.535 + vertical_offset, uv.y);
-    float upper = 1.0 - smoothstep(rolling_center + 0.055, rolling_center + 0.235, uv.y);
-    float body = lower * upper;
+    // The mist body hugs the road, with a gently undulating upper boundary.
+    float center = 0.585 + vertical_offset
+        + sin(uv.x * 2.2 + t * 0.31) * 0.045
+        + sin(uv.x * 4.1 - t * 0.21) * 0.020;
+    float ground_edge = smoothstep(0.385 + vertical_offset, 0.505 + vertical_offset, uv.y);
+    float top_edge = 1.0 - smoothstep(center + 0.035, center + 0.255, uv.y);
+    float body = ground_edge * top_edge;
 
-    // Wisps gently modulate opacity only; they never cut hard holes in the fog.
-    float modulation = 0.88 + wisps * 0.075;
-    float alpha = body * modulation * opacity;
-    COLOR = vec4(fog_tint, clamp(alpha, 0.0, 0.30));
+    // Preserve a soft continuous base while allowing broad banks to gather
+    // and thin naturally. Density never forms isolated pixel-like patches.
+    float density = mix(0.34, 1.0, smoothstep(0.20, 0.86, cloud_density));
+    float alpha = body * density * opacity * 1.18;
+    COLOR = vec4(fog_tint, clamp(alpha, 0.0, 0.34));
 }
 """
 
