@@ -146,7 +146,7 @@ Do not invent that a screenshot was seen. Do not tell the user the fog looks imp
 - The project contains a stable Android debug keystore cache.
 - Workflow also generates/publishes Davy Jones and Matt-ijuana animation previews as release assets.
 - Historical user-facing APKs mentioned in recent conversation: Build #99/#100, then builds described as #133 and #143. Do not assume those labels correspond to current release asset without checking.
-- **Latest verified GitHub Actions state at handoff:** run **#143**, ID **45745943643**, commit `f198cdeb95c484d5b34acc78bbe17ecf9be98af5`, display title “Improve fog visibility using smooth rolling cloud masses”, status completed, conclusion **failure** (API updated 2026-11-26 03:00:54Z). This is the latest run observed in the Actions API during handoff. Do not tell user it passed. Inspect job/step logs to identify failure before making any new build claims.
+- **Latest verified GitHub Actions state (2026-11-26 06:24 UTC):** run ID `45767558036`, commit `64e5eea6753a06ca6f19df108e615818789c6cc7`, status completed, conclusion **success**. Script validation, startup smoke test, core gameplay test, four-cutscene atmosphere capture, Android APK export, package verification and signature verification all passed. The `android-latest` release asset `TheLegendOfJohnnyRedeye.apk` was updated at `2026-11-26T06:24:28Z`, size `127,916,435` bytes, SHA-256 `95e8239e468ecf42e5048967a874a2bdbd2e1d16c2ba3115013ee0b75ad60131`. Direct URL: `https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/releases/download/android-latest/TheLegendOfJohnnyRedeye.apk`.
 - The rolling `android-latest` release exists and includes many animation preview assets; inspect its asset list and latest APK upload time/size before treating it as a valid install for current source.
 - Historical previous assistant messages sometimes claimed green builds/APK sizes without verifiable evidence. Trust live repository/API data over those messages.
 
@@ -197,3 +197,31 @@ The user confirmed the current development focus is completing Stage One's core 
 - Run #160 is the relevant full workflow for the latest source commit. Confirm Godot script validation, startup/gameplay smoke tests, atmosphere capture, Android APK export/package verification and release publication.
 - The source-level test update is committed; no claim of actual rendered visual inspection has been made yet.
 - No Stage Two content or map has been implemented. This change only establishes a reusable Stage briefing layout for later use.
+
+
+## 12. Title screen artwork and animated atmosphere (2026-11-26)
+
+### User-supplied artwork
+
+- The user added `images/file_000000005268822f8114c8d6d185d9e5.png` to the repository. Its GitHub blob SHA at retrieval was `b19aba931143ac0ad5f2fbcac83c13c4eb5441ee`.
+- This is now the active `TITLE_IMAGE` in `scripts/main.gd`; the previous title JPEG remains in the repository but is no longer the active title artwork.
+- The new artwork's imported dimensions are `1672 x 941` (source aspect ratio approximately `1.776833`, effectively 16:9).
+- The image was retrieved and inspected directly from GitHub workflow output; the user was not asked to re-upload it.
+
+### Implemented on main
+
+- Commit `64e5eea6753a06ca6f19df108e615818789c6cc7`: install the new PNG as the active title image, preserve its aspect ratio, and add animated title atmosphere.
+- Main title artwork is aspect-fitted to the actual game canvas. A darkened, blurred extension of the same artwork fills unused edges so the display has no black bars, while the main image is not stretched or cropped.
+- Existing title menu actions and label hit areas are preserved and the invisible hitboxes are recalculated relative to the aspect-fitted artwork, keeping them aligned on different screen ratios.
+- Added a subtle procedural drifting-haze pass, animated moon/carnival/ground light spill, soft rising ember particles, and drifting smoke particles.
+- Retained and applied the existing localized animated sword glow and fire-ring glow, plus the gold title-letter glow, to the new artwork texture.
+- The title-screen particle effects are decorative only; they do not alter gameplay entities or mission flow.
+- Temporary GitHub Actions image-preview code and its Pillow installation were removed from `.github/workflows/export-stage-assets.yml` after the artwork was inspected.
+
+### Verification
+
+- Commits during implementation included `1c9cb5e1e59d9dedee2098c5deccdecc497b61a5` (CPU particle ramp type fix), `d15e533326c72e5f004bdd791b7d98594e48b98c` (smoke-test viewport type fix), `51d0435578d1a9e8d6b0d329056535a21e97eb63` (temporary layout diagnostics), `b0cc9b298302c495b74d7defbaeee7e0724352ea` (compare against game canvas bounds), and `64e5eea6753a06ca6f19df108e615818789c6cc7` (ensure TextureRect respects aspect-fitted bounds).
+- Earlier failed runs were used to identify and fix the CPU particle ramp type and a TextureRect sizing issue. Do not describe those intermediate runs as successful.
+- Latest run `45767558036` completed successfully with all 20 build/export steps successful, including Godot script validation, startup and gameplay smoke tests, four-cutscene visual capture, Android APK export, package verification and signature verification.
+- The latest verified APK is the `android-latest` release asset described in section 8 above.
+- No claim has been made that the user has personally tested this APK on-device yet.
