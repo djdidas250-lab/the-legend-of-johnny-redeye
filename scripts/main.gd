@@ -3677,6 +3677,7 @@ func _create_baggy_pickup() -> void:
 	baggy_pickup.position = Vector2(pickup_x, 475.0)
 	baggy_pickup.scale = Vector2(0.12, 0.12)
 	baggy_pickup.z_index = 460
+	baggy_pickup.use_parent_material = false
 	add_child(baggy_pickup)
 
 func _create_brick_stash_pickup() -> void:
@@ -3702,6 +3703,7 @@ func _create_brick_stash_pickup() -> void:
 	# on-road footprint roughly 2–3 times the baggy's visible size.
 	brick_stash_pickup.scale = Vector2(0.09, 0.09)
 	brick_stash_pickup.z_index = 460
+	brick_stash_pickup.use_parent_material = false
 	add_child(brick_stash_pickup)
 
 
@@ -4074,6 +4076,7 @@ func _create_slingshot_pickup() -> void:
 	slingshot_pickup.position = Vector2(1190.0, 475.0)
 	slingshot_pickup.scale = Vector2(0.12, 0.12)
 	slingshot_pickup.z_index = 0
+	slingshot_pickup.use_parent_material = false
 	add_child(slingshot_pickup)
 
 func _update_slingshot_pickup() -> void:
