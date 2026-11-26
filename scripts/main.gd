@@ -3062,10 +3062,12 @@ func _create_mattijuana_waiting() -> void:
 	if is_instance_valid(mattijuana_boss):
 		mattijuana_boss.queue_free()
 	mattijuana_boss = Node2D.new()
+	mattijuana_boss.light_mask = 1
 	mattijuana_boss.name = "MattijuanaFinalBoss"
 	mattijuana_boss.position = Vector2(110.0, 360.0)
 	mattijuana_boss.z_index = 360
 	mattijuana_boss_visual = Sprite2D.new()
+	mattijuana_boss_visual.light_mask = 1
 	mattijuana_boss_visual.set_script(MATTIJUANA_VISUAL)
 	mattijuana_boss_visual.position = Vector2(0.0, -105.0)
 	mattijuana_boss_visual.scale = Vector2(0.62, 0.62)
@@ -3145,6 +3147,7 @@ func _begin_mattijuana_entrance() -> void:
 	if is_instance_valid(mattijuana_boss_visual):
 		mattijuana_boss_visual.queue_free()
 	mattijuana_boss_visual = Sprite2D.new()
+	mattijuana_boss_visual.light_mask = 1
 	mattijuana_boss_visual.set_script(MATTIJUANA_HUMAN_VISUAL)
 	mattijuana_boss_visual.position = Vector2(0.0, -105.0)
 	mattijuana_boss_visual.scale = Vector2(0.62, 0.62)
@@ -3162,6 +3165,7 @@ func _transition_mattijuana_to_joint() -> void:
 	if is_instance_valid(mattijuana_boss_visual):
 		mattijuana_boss_visual.queue_free()
 	mattijuana_boss_visual = Sprite2D.new()
+	mattijuana_boss_visual.light_mask = 1
 	mattijuana_boss_visual.set_script(MATTIJUANA_TRANSFORM_VISUAL)
 	mattijuana_boss_visual.position = Vector2(0.0, -105.0)
 	mattijuana_boss_visual.scale = Vector2(0.82, 0.82)
@@ -3174,6 +3178,7 @@ func _transition_mattijuana_to_joint() -> void:
 	if is_instance_valid(mattijuana_boss_visual):
 		mattijuana_boss_visual.queue_free()
 	mattijuana_boss_visual = Sprite2D.new()
+	mattijuana_boss_visual.light_mask = 1
 	mattijuana_boss_visual.set_script(MATTIJUANA_JOINT_VISUAL)
 	mattijuana_boss_visual.position = Vector2(0.0, -105.0)
 	mattijuana_boss_visual.scale = Vector2(0.82, 0.82)
@@ -3199,6 +3204,7 @@ func _transition_mattijuana_to_monster() -> void:
 		mattijuana_boss_visual.queue_free()
 	# Play the supplied wrapping sequence before revealing the final monster form.
 	mattijuana_boss_visual = Sprite2D.new()
+	mattijuana_boss_visual.light_mask = 1
 	mattijuana_boss_visual.set_script(MATTIJUANA_MONSTER_TRANSFORM_VISUAL)
 	mattijuana_boss_visual.position = Vector2(0.0, -108.0)
 	mattijuana_boss_visual.scale = Vector2(0.82, 0.82)
@@ -3211,6 +3217,7 @@ func _transition_mattijuana_to_monster() -> void:
 	if is_instance_valid(mattijuana_boss_visual):
 		mattijuana_boss_visual.queue_free()
 	mattijuana_boss_visual = Sprite2D.new()
+	mattijuana_boss_visual.light_mask = 1
 	mattijuana_boss_visual.set_script(MATTIJUANA_MONSTER_VISUAL)
 	mattijuana_boss_visual.position = Vector2(0.0, -108.0)
 	mattijuana_boss_visual.scale = Vector2(0.88, 0.88)
