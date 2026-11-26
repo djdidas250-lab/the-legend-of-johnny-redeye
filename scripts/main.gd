@@ -1117,122 +1117,111 @@ func _show_stage_one_splash() -> void:
 		title_layer.queue_free()
 		title_layer = null
 	splash_layer = CanvasLayer.new()
+	splash_layer.name = "StageOneMissionBriefing"
 	splash_layer.layer = 10
 	add_child(splash_layer)
 
-	# Thin white frame around the complete widescreen briefing artwork.
-	var image_frame := ColorRect.new()
-	image_frame.color = Color("#f0f0f0")
-	image_frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	image_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	splash_layer.add_child(image_frame)
-
+	# Keep the supplied house artwork, but present it like every later
+	# transition scene: full-screen, aspect-covered, and atmospherically graded.
 	var artwork := TextureRect.new()
+	artwork.name = "StageOneBackground"
 	artwork.texture = STAGE_ONE_IMAGE
-	artwork.anchor_left = 0.0
-	artwork.anchor_top = 0.0
-	artwork.anchor_right = 1.0
-	artwork.anchor_bottom = 1.0
-	artwork.offset_left = 3
-	artwork.offset_top = 3
-	artwork.offset_right = -3
-	artwork.offset_bottom = -3
+	artwork.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	artwork.stretch_mode = TextureRect.STRETCH_SCALE
+	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	artwork.material = ENVIRONMENTAL_ATMOSPHERE.create_cutscene_atmosphere_material()
 	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	splash_layer.add_child(artwork)
 
-	var heading_backing := ColorRect.new()
-	heading_backing.color = Color(0.025, 0.03, 0.04, 0.88)
-	heading_backing.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	heading_backing.offset_bottom = 116
-	heading_backing.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	splash_layer.add_child(heading_backing)
+	# This shared briefing builder is intentionally reusable for later stages:
+	# each stage can supply its own title, objective, prompt and start action
+	# while retaining the same established transition-screen visual language.
+	_create_transition_briefing_panel(
+		splash_layer,
+		"STAGE 1  —  JOHN'S HOUSE",
+		"Make your way along Leaside Drive to Woodlawn Park.",
+		"CLICK HERE TO BEGIN MISSION",
+		_begin_stage_one_mission
+	)
 
-	var heading_accent := ColorRect.new()
-	heading_accent.color = Color("#d71927")
-	heading_accent.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	heading_accent.offset_top = 112
-	heading_accent.offset_bottom = 116
-	heading_accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	splash_layer.add_child(heading_accent)
 
-	var heading := _make_hud_label("STAGE 1  —  JOHN'S HOUSE", Vector2.ZERO, 30)
-	heading.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	heading.offset_left = 24
-	heading.offset_top = 14
-	heading.offset_right = -24
-	heading.offset_bottom = 58
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	heading.add_theme_color_override("font_color", Color("#ffffff"))
-	heading.add_theme_font_size_override("font_size", 30)
-	splash_layer.add_child(heading)
-
-	var mission := _make_hud_label("Make your way along Leaside Drive to Woodlawn Park.", Vector2.ZERO, 20)
-	mission.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	mission.offset_left = 24
-	mission.offset_top = 62
-	mission.offset_right = -24
-	mission.offset_bottom = 104
-	mission.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	mission.add_theme_color_override("font_color", Color("#eeeeee"))
-	mission.add_theme_font_size_override("font_size", 20)
-	splash_layer.add_child(mission)
-
-	var start_backing := ColorRect.new()
-	start_backing.color = Color(0.025, 0.03, 0.04, 0.88)
-	start_backing.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	start_backing.offset_top = -90
-	start_backing.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	splash_layer.add_child(start_backing)
-
-	# Visible gunmetal button treatment; the transparent button below is its hit target.
-	var start_panel := Panel.new()
-	start_panel.anchor_left = 0.5
-	start_panel.anchor_right = 0.5
-	start_panel.anchor_top = 1.0
-	start_panel.anchor_bottom = 1.0
-	start_panel.offset_left = -210
-	start_panel.offset_top = -68
-	start_panel.offset_right = 210
-	start_panel.offset_bottom = -10
+func _create_transition_briefing_panel(
+	layer: CanvasLayer,
+	heading_text: String,
+	objective_text: String,
+	prompt_text: String,
+	action: Callable
+) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.name = "StageOneBriefingPanel" if heading_text.begins_with("STAGE 1") else "StageBriefingPanel"
+	panel.anchor_left = 0.10
+	panel.anchor_right = 0.90
+	panel.anchor_top = 0.68
+	panel.anchor_bottom = 0.97
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color("#202329")
-	panel_style.border_color = Color("#f0f0f0")
+	panel_style.bg_color = Color("#08070c")
+	panel_style.border_color = Color("#b10e2d")
 	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(3)
-	panel_style.shadow_color = Color(0, 0, 0, 0.65)
-	panel_style.shadow_size = 5
-	start_panel.add_theme_stylebox_override("panel", panel_style)
-	splash_layer.add_child(start_panel)
+	panel_style.set_corner_radius_all(9)
+	panel_style.shadow_color = Color(0, 0, 0, 0.55)
+	panel_style.shadow_size = 8
+	panel.add_theme_stylebox_override("panel", panel_style)
+	layer.add_child(panel)
 
-	var start_accent := ColorRect.new()
-	start_accent.color = Color("#d71927")
-	start_accent.anchor_left = 0.0
-	start_accent.anchor_top = 0.0
-	start_accent.anchor_right = 1.0
-	start_accent.anchor_bottom = 0.0
-	start_accent.offset_bottom = 4
-	start_accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	start_panel.add_child(start_accent)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 18)
+	margin.add_theme_constant_override("margin_right", 18)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	panel.add_child(margin)
 
-	var start_label := _make_hud_label("START MISSION", Vector2.ZERO, 21)
-	start_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	start_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	start_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	start_label.add_theme_color_override("font_color", Color("#ffffff"))
-	start_label.add_theme_font_size_override("font_size", 21)
-	start_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	start_panel.add_child(start_label)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 4)
+	margin.add_child(content)
 
-	# Invisible tap target exactly overlays the visible START MISSION panel.
-	var start_hitbox := _make_title_hitbox(0.5, 1.0, 0.5, 1.0)
-	start_hitbox.offset_left = -210
-	start_hitbox.offset_top = -68
-	start_hitbox.offset_right = 210
-	start_hitbox.offset_bottom = -10
-	start_hitbox.pressed.connect(func() -> void: _run_title_button_action(start_hitbox, _begin_stage_one_mission))
-	splash_layer.add_child(start_hitbox)
+	var heading := Label.new()
+	heading.name = "StageOneHeading" if heading_text.begins_with("STAGE 1") else "StageHeading"
+	heading.text = heading_text
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", 25)
+	heading.add_theme_color_override("font_color", Color("#ffffff"))
+	content.add_child(heading)
+
+	var objective := Label.new()
+	objective.name = "StageOneObjective" if heading_text.begins_with("STAGE 1") else "StageObjective"
+	objective.text = objective_text
+	objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	objective.add_theme_font_size_override("font_size", 18)
+	objective.add_theme_color_override("font_color", Color("#fff4d5"))
+	content.add_child(objective)
+
+	var prompt := Button.new()
+	prompt.name = "StageOneBeginButton" if heading_text.begins_with("STAGE 1") else "StageBeginButton"
+	prompt.text = prompt_text
+	prompt.custom_minimum_size = Vector2(0, 42)
+	prompt.focus_mode = Control.FOCUS_NONE
+	prompt.add_theme_font_size_override("font_size", 17)
+	prompt.add_theme_color_override("font_color", Color("#ffffff"))
+	prompt.add_theme_color_override("font_hover_color", Color("#fff4d5"))
+	var prompt_style := StyleBoxFlat.new()
+	prompt_style.bg_color = Color("#10080d")
+	prompt_style.border_color = Color("#b10e2d")
+	prompt_style.set_border_width_all(1)
+	prompt_style.set_corner_radius_all(6)
+	prompt.add_theme_stylebox_override("normal", prompt_style)
+	var prompt_hover: StyleBoxFlat = prompt_style.duplicate() as StyleBoxFlat
+	prompt_hover.bg_color = Color("#261019")
+	prompt.add_theme_stylebox_override("hover", prompt_hover)
+	var prompt_pressed: StyleBoxFlat = prompt_style.duplicate() as StyleBoxFlat
+	prompt_pressed.bg_color = Color("#4a1424")
+	prompt.add_theme_stylebox_override("pressed", prompt_pressed)
+	prompt.pressed.connect(func() -> void:
+		_run_title_button_action(prompt, action)
+	)
+	content.add_child(prompt)
+	return panel
 
 func _begin_stage_one_mission() -> void:
 	# Stage One now begins at the far end of Leaside, away from McRae.
