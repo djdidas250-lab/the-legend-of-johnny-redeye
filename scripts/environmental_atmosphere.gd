@@ -282,7 +282,10 @@ func _build_tree_occluders() -> void:
 
 func _build_ambient_lights() -> void:
     var light_texture := _make_organic_light_texture()
-    var positions := [0.15, 0.40, 0.67, 0.88] if _park_mode else [0.20, 0.51, 0.82]
+    var positions := [0.18, 0.48, 0.82] if _park_mode else (
+        [0.36, 0.61, 0.76] if _street_name.contains("NEWLEAF") else (
+        [0.43, 0.76] if _street_name.contains("MCRAE") else (
+        [0.39, 0.67] if _street_name.contains("LEASIDE") else [0.20, 0.51, 0.82])))
     for i in range(positions.size()):
         var light := PointLight2D.new()
         light.name = "EnvironmentalBounceLight_%02d" % i
