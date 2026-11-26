@@ -4,7 +4,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [main, "build/*"]
+    branches: [main, "build/*", "feature/cinematic-new-game-intro"]
   workflow_dispatch:
 
 concurrency:
