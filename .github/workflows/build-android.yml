@@ -184,13 +184,25 @@ jobs:
             test -s "$frame"
           done
 
-      - name: Upload rendered atmosphere frames
-        uses: actions/upload-artifact@v4
-        with:
-          name: atmosphere-visual-captures
-          path: build/atmosphere-captures/*.png
-          if-no-files-found: error
-          retention-days: 3
+      - name: Publish compact rendered frames to workflow log
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import base64
+          capture_dir = Path("build/atmosphere-captures")
+          for path in sorted(capture_dir.glob("*.png")):
+              image = Image.open(path).convert("RGB")
+              image.thumbnail((640, 360), Image.Resampling.LANCZOS)
+              import io
+              buffer = io.BytesIO()
+              image.save(buffer, format="JPEG", quality=68, optimize=True)
+              encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+              print(f"ATMOSPHERE_JPEG_BEGIN={path.stem}")
+              for offset in range(0, len(encoded), 4000):
+                  print("ATMOSPHERE_JPEG_DATA=" + encoded[offset:offset + 4000])
+              print(f"ATMOSPHERE_JPEG_END={path.stem} bytes={len(buffer.getvalue())} size={image.size}")
+          PY
 
       - name: Export Android APK
         run: |
