@@ -64,8 +64,8 @@ render_mode unshaded, blend_mix;
 
 uniform float drift_speed = 0.012;
 uniform float opacity = 0.38;
-uniform float scale_x = 4.2;
-uniform float scale_y = 2.1;
+uniform float scale_x = 2.2;
+uniform float scale_y = 1.25;
 uniform float vertical_offset = 0.0;
 uniform vec3 fog_tint : source_color = vec3(0.48, 0.54, 0.64);
 
@@ -78,7 +78,9 @@ float hash21(vec2 p) {
 float noise2(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
+    // Quintic interpolation removes the visible grid-like transitions
+    // that can appear in low-resolution value-noise fields.
+    f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
     float a = hash21(i);
     float b = hash21(i + vec2(1.0, 0.0));
     float c = hash21(i + vec2(0.0, 1.0));
@@ -86,15 +88,17 @@ float noise2(vec2 p) {
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
-float fbm(vec2 p) {
+float fbm_soft(vec2 p) {
     float value = 0.0;
-    float amplitude = 0.5;
-    for (int i = 0; i < 4; i++) {
-        value += noise2(p) * amplitude;
-        p = p * 2.01 + vec2(17.3, 9.2);
-        amplitude *= 0.5;
-    }
-    return value;
+    float amplitude = 0.58;
+    value += noise2(p) * amplitude;
+    p = p * 1.93 + vec2(13.7, 8.4);
+    amplitude *= 0.29;
+    value += noise2(p) * amplitude;
+    p = p * 1.91 + vec2(7.1, 19.6);
+    amplitude *= 0.22;
+    value += noise2(p) * amplitude;
+    return value / 0.76;
 }
 
 void fragment() {
@@ -102,33 +106,30 @@ void fragment() {
     float t = TIME * drift_speed;
     vec2 field = uv * vec2(scale_x, scale_y);
 
-    // Broad, smoothly blended noise produces cloud-shaped mist banks.
-    // A second low-frequency field bends the banks and gives them slow,
-    // organic rolling motion instead of pixel-like horizontal streaks.
+    // Only broad, low-frequency fields are used. The warp gently bends
+    // the mist sheet; it does not carve it into separate noisy blobs.
     vec2 warp = vec2(
-        fbm(field * 0.48 + vec2(t * 0.32, -t * 0.13)),
-        fbm(field * 0.42 + vec2(-t * 0.24, t * 0.17))
+        fbm_soft(field * 0.42 + vec2(t * 0.24, -t * 0.10)),
+        fbm_soft(field * 0.36 + vec2(-t * 0.18, t * 0.12))
     ) - vec2(0.5);
-    vec2 cloud_field = field + warp * vec2(1.65, 0.72);
-    float broad_cloud = fbm(cloud_field + vec2(t, sin(uv.x * 5.4 + t) * 0.16));
-    float mid_cloud = fbm(cloud_field * 1.55 + vec2(-t * 0.72, t * 0.20));
-    float fine_cloud = noise2(cloud_field * 3.1 + vec2(t * 0.44, -t * 0.16));
-    float cloud_density = broad_cloud * 0.62 + mid_cloud * 0.28 + fine_cloud * 0.10;
+    vec2 cloud_field = field + warp * vec2(0.72, 0.30);
+    float broad_density = fbm_soft(cloud_field * 0.78 + vec2(t, 0.0));
+    float secondary_density = fbm_soft(cloud_field * 0.53 + vec2(-t * 0.58, 2.7));
+    float density = broad_density * 0.62 + secondary_density * 0.38;
 
-    float rolling_bank = smoothstep(0.405, 0.585, cloud_density);
-    float uneven_horizon = sin(uv.x * 7.0 + t * 0.55) * 0.035;
-    float ground_band = smoothstep(0.43 + vertical_offset + uneven_horizon,
-        0.61 + vertical_offset + uneven_horizon, uv.y);
-    ground_band *= 1.0 - smoothstep(0.86, 0.985, uv.y);
+    // A continuous atmospheric sheet is the foundation. Density variation
+    // is deliberately restrained so the result reads as mist, not patches.
+    float horizontal_roll = sin(uv.x * 4.2 + t * 0.42) * 0.018
+        + sin(uv.x * 8.1 - t * 0.27) * 0.009;
+    float lower_edge = 0.425 + vertical_offset + horizontal_roll;
+    float upper_edge = 0.79 + vertical_offset * 0.35 + horizontal_roll * 0.6;
+    float ground_band = smoothstep(lower_edge, lower_edge + 0.16, uv.y)
+        * (1.0 - smoothstep(upper_edge - 0.12, upper_edge + 0.10, uv.y));
 
-    // Soft feathering keeps the mist volumetric; denser cores remain visible
-    // while the edges dissolve gradually into the street scene.
-    float soft_edge = smoothstep(0.30, 0.72, mid_cloud * 0.72 + broad_cloud * 0.28);
-    float low_rolling_lobe = smoothstep(0.64, 0.91, uv.y)
-        * smoothstep(0.40, 0.62, broad_cloud);
-    float alpha = rolling_bank * ground_band * (0.58 + soft_edge * 0.42) * opacity;
-    alpha += low_rolling_lobe * opacity * 0.22;
-    COLOR = vec4(fog_tint, clamp(alpha, 0.0, 0.46));
+    float soft_density = 0.82 + (density - 0.5) * 0.22;
+    float low_curl = smoothstep(0.57, 0.73, secondary_density) * 0.045;
+    float alpha = ground_band * (soft_density + low_curl) * opacity;
+    COLOR = vec4(fog_tint, clamp(alpha, 0.0, 0.34));
 }
 """
 
