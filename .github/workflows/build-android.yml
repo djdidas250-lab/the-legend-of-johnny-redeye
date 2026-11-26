@@ -22,6 +22,14 @@ jobs:
       - name: Check out game
         uses: actions/checkout@v4
 
+      - name: Extract Stage One opening cutscene assets
+        run: |
+          test -s "images/cutscene stage 1.zip"
+          mkdir -p images/stage1_cutscene
+          unzip -o "images/cutscene stage 1.zip" -d images/stage1_cutscene
+          test -s "images/stage1_cutscene/cutscene stage 1.jpeg"
+          test -s "images/stage1_cutscene/John game intro.mp3"
+
       - name: Extract supplied cinematic intro assets
         run: |
           test -s images/introscreen.zip
@@ -39,6 +47,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
+          mkdir -p build
+          CUTSCENE_DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "images/stage1_cutscene/John game intro.mp3")
+          python3 - "$CUTSCENE_DURATION" <<'PY'
+          import sys
+          duration = float(sys.argv[1])
+          if duration <= 0:
+              raise RuntimeError(f"Invalid Stage One cutscene audio duration: {duration}")
+          print(f"STAGE_ONE_CUTSCENE_AUDIO_DURATION_SECONDS={duration:.3f}")
+          PY
           python3 - <<'PY'
           import json
           import re
@@ -256,12 +273,20 @@ jobs:
           mkdir -p build/atmosphere-captures
           xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 godot --path . --script res://tests/atmosphere_visual_capture.gd --audio-driver Dummy 2>&1 | tee atmosphere-capture.log
           grep -q "ATMOSPHERE_VISUAL_CAPTURE_COMPLETE" atmosphere-capture.log
-          grep -q "CUTSCENE_CAPTURE_COUNT=4" atmosphere-capture.log
+          grep -q "CUTSCENE_CAPTURE_COUNT=5" atmosphere-capture.log
           grep -q "STREET_ATMOSPHERE_HANDOFF_COUNT=4" atmosphere-capture.log
-          test "$(find build/atmosphere-captures -maxdepth 1 -type f -name 'cutscene_*.png' | wc -l)" -eq 4
-          for frame in build/atmosphere-captures/cutscene_mcrae.png build/atmosphere-captures/cutscene_newleaf.png build/atmosphere-captures/cutscene_woodlawn_road.png build/atmosphere-captures/cutscene_woodlawn_park.png; do
+          test "$(find build/atmosphere-captures -maxdepth 1 -type f -name 'cutscene_*.png' | wc -l)" -eq 5
+          for frame in build/atmosphere-captures/cutscene_stage_one_intro.png build/atmosphere-captures/cutscene_mcrae.png build/atmosphere-captures/cutscene_newleaf.png build/atmosphere-captures/cutscene_woodlawn_road.png build/atmosphere-captures/cutscene_woodlawn_park.png; do
             test -s "$frame"
           done
+
+      - name: Upload rendered cutscene frames for visual inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage-one-cutscene-visual-qa
+          path: build/atmosphere-captures/*.png
+          retention-days: 3
+          if-no-files-found: error
 
       - name: Publish compact rendered frames to workflow log
         run: |
