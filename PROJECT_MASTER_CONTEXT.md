@@ -223,3 +223,29 @@ The user confirmed the current development focus is completing Stage One's core 
 - Latest run `45767558036` completed successfully with all 20 build/export steps successful, including Godot script validation, startup and gameplay smoke tests, four-cutscene visual capture, Android APK export, package verification and signature verification.
 - The latest verified APK is the `android-latest` release asset described in section 8 above.
 - No claim has been made that the user has personally tested this APK on-device yet.
+
+
+## 13. Recovery checkpoint — build #244 restored (2026-11-26)
+
+This section supersedes any older "latest build" or "current immediate task" notes above.
+
+### Authoritative rollback point
+- User explicitly selected **Android build #244** as the last successful build containing all desired changes before work began on the first-level opening audio.
+- Build #244 GitHub Actions run: \`45875852901\`.
+- Run result: **completed / success**.
+- Build #244 source commit: \`58948db0cf3ad58035618551dc3f4dd8ce51e3c6\`.
+- Commit message: "Attach mission select atmosphere directly to map image".
+- This is the exact approved source tree to restore. It includes the mission-select atmospheric effects attached directly to the map artwork and all gameplay/assets as they existed at build #244.
+- The later first-level opening-audio implementation is intentionally excluded. Do not reintroduce it unless the user asks again.
+- No other changes are authorized as part of this rollback.
+
+### Recovery procedure and current build
+- Restore the repository's \`main\` branch source tree to commit \`58948db0cf3ad58035618551dc3f4dd8ce51e3c6\`, retaining this handoff document as the only additional file change.
+- Trigger a fresh Android APK build from that restored source.
+- Record the new rollback commit SHA, workflow run number/ID, final conclusion, APK release asset timestamp/size, and direct download URL below once verified.
+- Do not give the user an APK link until the new workflow is completed successfully and the release asset is confirmed to belong to the rollback build.
+- Build #244 itself was green; the fresh rebuild is being performed so the user can download the APK again.
+
+### Next conversation handoff
+Start by reading this file, then verify the live \`main\` commit and latest Android workflow run. The project is intentionally reset to the build #244 state. The immediate next task is to let the user install and test the rebuilt APK. Do not resume the opening-audio change or make unrelated edits. Preserve this restored checkpoint unless the user explicitly requests a new change.
+

@@ -94,9 +94,10 @@ func _ready() -> void:
 	var intro_audio := game.get("intro_audio_player") as AudioStreamPlayer
 	if not _check(intro_layer != null and intro_layer.name == "CinematicIntroLayer" and intro_audio != null and intro_audio.stream != null and bool(game.get("intro_active")), "New Game must play the supplied cinematic intro before Mission Select."): return
 	var intro_current := intro_layer.find_child("IntroImageCurrent", true, false) as TextureRect
-	var intro_loading := intro_layer.find_child("IntroLoadingGraphic", true, false) as TextureRect
+	var intro_loading_text := intro_layer.find_child("LoadingText", true, false) as Label
+	var intro_flame_spinner := intro_layer.find_child("LoadingFlameSpinner", true, false) as Control
 	var intro_progress := intro_layer.find_child("IntroProgressFill", true, false) as ColorRect
-	if not _check(intro_current != null and intro_current.texture.resource_path == "res://images/intro_assets/Intro1.jpg" and intro_loading != null and intro_progress != null, "Cinematic intro must start with the first supplied image, loading graphic and progress bar."): return
+	if not _check(intro_current != null and intro_current.texture.resource_path == "res://images/intro_assets/Intro1.jpg" and intro_loading_text != null and intro_loading_text.text == "LOADING" and intro_flame_spinner != null and intro_flame_spinner.get_class() == "Control" and intro_progress != null and intro_layer.find_child("IntroLoadingGraphic", true, false) == null, "Cinematic intro must show the first supplied image, native LOADING text, animated flame spinner and progress bar without the old loading artwork."): return
 	if not _check(intro_layer.find_child("IntroAtmosphericHaze", true, false) != null and intro_layer.find_child("IntroPracticalLightSpill", true, false) != null and intro_layer.find_child("TitleRisingEmbers", true, false) != null and intro_layer.find_child("TitleDriftingSmoke", true, false) != null, "Cinematic intro must carry over the title screen's haze, light spill, embers and smoke."): return
 	game.call("_finish_intro_sequence")
 	await get_tree().create_timer(0.55).timeout

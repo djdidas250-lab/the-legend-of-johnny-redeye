@@ -14,7 +14,6 @@ const INTRO_IMAGES: Array[Texture2D] = [
 	preload("res://images/intro_assets/Intro4.jpg"),
 	preload("res://images/intro_assets/Intro5.jpeg")
 ]
-const INTRO_LOADING_IMAGE := preload("res://images/intro_assets/intro 6.jpeg")
 const INTRO_MUSIC := preload("res://images/intro_assets/01 Intro.mp3")
 const INTRO_TRACK_DURATION := 81.690256
 const INTRO_SLIDE_DURATION := INTRO_TRACK_DURATION / 5.0
@@ -24,6 +23,8 @@ const MAP_IMAGE := preload("res://images/Gemini_Generated_Image_3urpcr3urpcr3urp
 const MAP_CHECKPOINT_MARKER := preload("res://images/map_checkpoint_x.svg")
 const MAP_MUSIC := preload("res://images/28. Holy Sanctuary.wav")
 const STAGE_ONE_MUSIC := preload("res://images/7. Soldier.mp3")
+const STAGE_ONE_MUSIC_VOLUME_DB := -15.0
+const INTRO_MUSIC_VOLUME_DB := -9.09
 const MAP_CLICK_SOUND := preload("res://images/sword-shine.mp3")
 const SLINGSHOT_PICKUP_IMAGE := preload("res://images/pngtree-slingshot-tool-childhood-toy-png-image_3901241.jpg")
 const BAGGY_PICKUP_IMAGE := preload("res://images/polyethylene-bag-dose-cocaine-concept-260nw-1056752228.jpg")
@@ -46,6 +47,7 @@ const WOODLAWN_PARK_IMAGE := preload("res://images/image_4e2da26f.jpg")
 const WOODLAWN_PLAYGROUND_BRIEFING_IMAGE := preload("res://images/Gemini_Generated_Image_glbu70glbu70glbu.jpeg")
 const WOODLAWN_PLAYGROUND_IMAGE := preload("res://images/Gemini_Generated_Image_pn9mnhpn9mnhpn9m.jpeg")
 const ENVIRONMENTAL_ATMOSPHERE := preload("res://scripts/environmental_atmosphere.gd")
+const MISSION_SELECT_ATMOSPHERE := preload("res://scripts/mission_select_atmosphere.gd")
 const CHARACTER_VISUAL := preload("res://scripts/character_visual.gd")
 const FIGHTER_BASE := preload("res://scripts/fighter_base.gd")
 const DAVY_VISUAL := preload("res://scripts/davy_jones_visual.gd")
@@ -82,6 +84,38 @@ var active_slot_unlocked_woodlawn_park_checkpoint := false
 var active_slot_area := "Newleaf Crescent"
 var save_slot_layer: CanvasLayer
 var overwrite_slot_pending := -1
+
+class IntroFlameSpinner extends Control:
+	var spin_angle := 0.0
+
+	func _process(delta: float) -> void:
+		spin_angle = fposmod(spin_angle + delta * 3.8, TAU)
+		queue_redraw()
+
+	func _draw() -> void:
+		var center := size * 0.5
+		# A rotating broken ring of tapered ember/flame shapes reads as a
+		# small fiery loading wheel rather than a static icon.
+		for i in range(12):
+			var angle := spin_angle + float(i) * TAU / 12.0
+			var radius := 13.0
+			var points := PackedVector2Array([
+				Vector2(0.0, -radius - 7.0),
+				Vector2(-4.0, -radius - 1.0),
+				Vector2(-3.0, -radius + 5.0),
+				Vector2(0.0, -radius + 2.0),
+				Vector2(3.0, -radius + 5.0),
+				Vector2(4.0, -radius - 1.0)
+			])
+			var rotated := PackedVector2Array()
+			for point in points:
+				rotated.append(center + point.rotated(angle))
+			var strength := 0.38 + 0.62 * (float(i) / 11.0)
+			var ember := Color("#ff4b12").lerp(Color("#ffd36a"), float(i) / 11.0)
+			ember.a = strength
+			draw_colored_polygon(rotated, ember)
+		draw_arc(center, 9.0, spin_angle, spin_angle + TAU * 0.72, 32, Color(1.0, 0.31, 0.035, 0.72), 2.0, true)
+
 
 class HeartMeter extends Control:
 	var health := 5
@@ -797,84 +831,67 @@ void fragment() {
 
 	_add_title_particles(intro_layer, viewport_size)
 
-	# The supplied loading artwork has a black field. Two keyed passes remove
-	# that field: a soft additive amber aura underneath and crisp original flame
-	# lettering/wheel above, without covering the story artwork with a black box.
-	var loading_glow := TextureRect.new()
-	loading_glow.name = "IntroLoadingGraphicGlow"
-	loading_glow.texture = INTRO_LOADING_IMAGE
-	loading_glow.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	loading_glow.anchor_left = 1.0
-	loading_glow.anchor_top = 1.0
-	loading_glow.anchor_right = 1.0
-	loading_glow.anchor_bottom = 1.0
-	loading_glow.offset_left = -252.0
-	loading_glow.offset_top = -148.0
-	loading_glow.offset_right = -6.0
-	loading_glow.offset_bottom = -12.0
-	loading_glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	loading_glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	loading_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	loading_glow.z_index = 29
-	var loading_glow_shader := Shader.new()
-	loading_glow_shader.code = """
-shader_type canvas_item;
-render_mode unshaded, blend_add;
-void fragment() {
-	vec4 src = texture(TEXTURE, UV);
-	float lum = max(max(src.r, src.g), src.b);
-	float alpha = smoothstep(0.008, 0.34, lum) * 0.56;
-	COLOR = vec4(vec3(1.0, 0.25, 0.025) * alpha, alpha);
-}
-"""
-	var loading_glow_material := ShaderMaterial.new()
-	loading_glow_material.shader = loading_glow_shader
-	loading_glow.material = loading_glow_material
-	intro_layer.add_child(loading_glow)
+	# Native loading indicator: no source image or matte is layered over the
+	# five cinematic backgrounds. The flame ring is drawn procedurally and rotates.
+	var loading_indicator := HBoxContainer.new()
+	loading_indicator.name = "IntroLoadingIndicator"
+	loading_indicator.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	loading_indicator.anchor_left = 1.0
+	loading_indicator.anchor_top = 1.0
+	loading_indicator.anchor_right = 1.0
+	loading_indicator.anchor_bottom = 1.0
+	loading_indicator.offset_left = -202.0
+	loading_indicator.offset_top = -66.0
+	loading_indicator.offset_right = -14.0
+	loading_indicator.offset_bottom = -14.0
+	loading_indicator.alignment = BoxContainer.ALIGNMENT_END
+	loading_indicator.add_theme_constant_override("separation", 8)
+	loading_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	loading_indicator.z_index = 30
+	intro_layer.add_child(loading_indicator)
 
-	var loading := TextureRect.new()
-	loading.name = "IntroLoadingGraphic"
-	loading.texture = INTRO_LOADING_IMAGE
-	loading.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	loading.anchor_left = 1.0
-	loading.anchor_top = 1.0
-	loading.anchor_right = 1.0
-	loading.anchor_bottom = 1.0
-	loading.offset_left = -246.0
-	loading.offset_top = -142.0
-	loading.offset_right = -12.0
-	loading.offset_bottom = -18.0
-	loading.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	loading.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	loading.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	loading.z_index = 30
-	var loading_key_shader := Shader.new()
-	loading_key_shader.code = """
-shader_type canvas_item;
-render_mode unshaded, blend_mix;
-void fragment() {
-	vec4 src = texture(TEXTURE, UV);
-	float lum = max(max(src.r, src.g), src.b);
-	float alpha = smoothstep(0.012, 0.16, lum);
-	COLOR = vec4(src.rgb, src.a * alpha);
-}
-"""
-	var loading_key_material := ShaderMaterial.new()
-	loading_key_material.shader = loading_key_shader
-	loading.material = loading_key_material
-	intro_layer.add_child(loading)
+	var loading_text := Label.new()
+	loading_text.name = "LoadingText"
+	loading_text.text = "LOADING"
+	loading_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	loading_text.add_theme_font_size_override("font_size", 19)
+	loading_text.add_theme_color_override("font_color", Color("#ffb04a"))
+	loading_text.add_theme_color_override("font_shadow_color", Color("#6d1d08"))
+	loading_text.add_theme_constant_override("shadow_offset_x", 2)
+	loading_text.add_theme_constant_override("shadow_offset_y", 2)
+	loading_indicator.add_child(loading_text)
 
-	# Fine amber bloom below the progress track makes it read like a lit ember.
+	var loading_spinner := IntroFlameSpinner.new()
+	loading_spinner.name = "LoadingFlameSpinner"
+	loading_spinner.custom_minimum_size = Vector2(44.0, 44.0)
+	loading_indicator.add_child(loading_spinner)
+
+
+	# One soft ember bloom, centered directly behind the progress track.
+	# Its vertical falloff prevents a second hard-edged stripe from appearing.
 	var progress_glow := ColorRect.new()
 	progress_glow.name = "IntroProgressGlow"
-	progress_glow.color = Color(1.0, 0.22, 0.025, 0.22)
 	progress_glow.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	progress_glow.offset_left = 0
 	progress_glow.offset_right = 0
-	progress_glow.offset_top = -15
-	progress_glow.offset_bottom = -1
+	progress_glow.offset_top = -19
+	progress_glow.offset_bottom = 5
 	progress_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	progress_glow.z_index = 39
+	var progress_glow_shader := Shader.new()
+	progress_glow_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_add;
+void fragment() {
+	float vertical = exp(-pow((UV.y - 0.5) * 2.6, 2.0));
+	float flicker = 0.92 + 0.08 * sin(TIME * 7.0 + UV.x * 19.0);
+	float alpha = vertical * flicker * 0.82;
+	COLOR = vec4(vec3(1.0, 0.19, 0.012), alpha);
+}
+"""
+	var progress_glow_material := ShaderMaterial.new()
+	progress_glow_material.shader = progress_glow_shader
+	progress_glow.material = progress_glow_material
 	intro_layer.add_child(progress_glow)
 
 	var progress_track := ColorRect.new()
@@ -908,7 +925,7 @@ void fragment() {
 	intro_audio_player = AudioStreamPlayer.new()
 	intro_audio_player.name = "IntroSoundtrack"
 	intro_audio_player.stream = INTRO_MUSIC
-	intro_audio_player.volume_db = -8.0
+	intro_audio_player.volume_db = INTRO_MUSIC_VOLUME_DB
 	intro_audio_player.bus = "Master"
 	add_child(intro_audio_player)
 	intro_audio_player.finished.connect(_finish_intro_sequence, CONNECT_ONE_SHOT)
@@ -932,9 +949,13 @@ func _make_intro_image(texture: Texture2D, node_name: String) -> TextureRect:
 func _update_intro_sequence() -> void:
 	if not intro_active or not is_instance_valid(intro_audio_player) or not is_instance_valid(intro_layer):
 		return
+	# AudioStreamPlayer can report playback position 0 on the frame after
+	# the stream ends but before its finished signal is dispatched. Never feed
+	# that reset position back into the slide index: it briefly reloaded Intro1.
+	if not intro_audio_player.playing:
+		return
 	var playback_time := intro_audio_player.get_playback_position()
-	if intro_audio_player.playing:
-		playback_time += AudioServer.get_time_since_last_mix()
+	playback_time += AudioServer.get_time_since_last_mix()
 	intro_elapsed = clampf(playback_time, 0.0, INTRO_TRACK_DURATION)
 	var next_index := mini(int(floor(intro_elapsed / INTRO_SLIDE_DURATION)), INTRO_IMAGES.size() - 1)
 	if next_index != intro_image_index:
@@ -984,13 +1005,13 @@ void fragment() {
 		var mat := intro_image_next.material as ShaderMaterial
 		if mat != null:
 			mat.set_shader_parameter("progress", progress)
-			mat.set_shader_parameter("transition_style", intro_image_index)
+			mat.set_shader_parameter("transition_style", 0)
 		if is_instance_valid(intro_transition_flare):
 			intro_transition_flare.visible = true
 			var flare_mat := intro_transition_flare.material as ShaderMaterial
 			flare_mat.set_shader_parameter("progress", progress)
 			var pulse := sin(progress * PI)
-			flare_mat.set_shader_parameter("strength", pulse * (0.70 if intro_image_index == 1 else 0.48))
+			flare_mat.set_shader_parameter("strength", pulse * 0.48)
 	else:
 		intro_image_next.visible = false
 		if is_instance_valid(intro_transition_flare):
@@ -1390,6 +1411,11 @@ func _show_map_screen() -> void:
 	map_art.stretch_mode = TextureRect.STRETCH_SCALE
 	map_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	map_layer.add_child(map_art)
+	# Attach atmosphere to the map image itself; checkpoint markers remain siblings above it.
+	var map_atmosphere := MISSION_SELECT_ATMOSPHERE.new()
+	map_atmosphere.name = "MissionSelectAtmosphere"
+	map_atmosphere.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	map_art.add_child(map_atmosphere)
 
 	# John's X is centred in the gap between the fourth and fifth houses
 	# to the right of the SILVAN DR label. The hitbox shares its bounds.
@@ -1921,7 +1947,7 @@ func _start_game(start_x: float, start_y: float) -> void:
 	if music_player:
 		music_player.stop()
 		music_player.stream = STAGE_ONE_MUSIC
-		music_player.volume_db = -15.0
+		music_player.volume_db = STAGE_ONE_MUSIC_VOLUME_DB
 		music_player.finished.connect(func() -> void:
 			if game_started:
 				music_player.play()

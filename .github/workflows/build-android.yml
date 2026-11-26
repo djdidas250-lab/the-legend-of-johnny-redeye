@@ -35,6 +35,58 @@ jobs:
           test -s "images/intro_assets/intro 6.jpeg"
           test -s "images/intro_assets/01 Intro.mp3"
 
+      - name: Verify cinematic intro playback loudness against Leeside
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python3 - <<'PY'
+          import json
+          import re
+          import subprocess
+          from pathlib import Path
+
+          intro = Path("images/intro_assets/01 Intro.mp3")
+          stage = Path("images/7. Soldier.mp3")
+          script = Path("scripts/main.gd").read_text()
+
+          def setting(name):
+              match = re.search(rf"const {name} := (-?[0-9]+(?:\.[0-9]+)?)", script)
+              if not match:
+                  raise RuntimeError(f"Missing audio setting: {name}")
+              return float(match.group(1))
+
+          intro_volume = setting("INTRO_MUSIC_VOLUME_DB")
+          stage_volume = setting("STAGE_ONE_MUSIC_VOLUME_DB")
+
+          def measure(path):
+              result = subprocess.run(
+                  ["ffmpeg", "-v", "info", "-i", str(path), "-af",
+                   "loudnorm=print_format=json", "-f", "null", "-"],
+                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+              )
+              if result.returncode != 0:
+                  raise RuntimeError(f"FFmpeg could not measure {path}: {result.stderr.strip()}")
+              matches = re.findall(r'\{\s*"input_i".*?\}', result.stderr, re.S)
+              if not matches:
+                  raise RuntimeError(f"Could not read loudness measurement for {path}")
+              return float(json.loads(matches[-1])["input_i"])
+
+          stage_lufs = measure(stage)
+          intro_lufs = measure(intro)
+          stage_playback = stage_lufs + stage_volume
+          intro_playback = intro_lufs + intro_volume
+          difference = abs(stage_playback - intro_playback)
+
+          print(f"LEASIDE_SOURCE_LUFS={stage_lufs:.2f}")
+          print(f"INTRO_SOURCE_LUFS={intro_lufs:.2f}")
+          print(f"LEASIDE_PLAYBACK_LEVEL_DB={stage_playback:.2f}")
+          print(f"INTRO_PLAYBACK_LEVEL_DB={intro_playback:.2f}")
+          print(f"INTRO_PLAYBACK_VOLUME_DB={intro_volume:.2f}")
+          print(f"INTRO_VS_LEASIDE_PLAYBACK_DIFFERENCE_DB={difference:.2f}")
+          if difference > 0.5:
+              raise RuntimeError(f"Intro playback level does not match Leeside: {difference:.2f} dB")
+          PY
+
       - name: Upload original intro frames for visual coordinate inspection
         uses: actions/upload-artifact@v4
         with:
