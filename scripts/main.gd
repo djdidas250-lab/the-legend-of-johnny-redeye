@@ -23,6 +23,7 @@ const MAP_IMAGE := preload("res://images/Gemini_Generated_Image_3urpcr3urpcr3urp
 const MAP_CHECKPOINT_MARKER := preload("res://images/map_checkpoint_x.svg")
 const MAP_MUSIC := preload("res://images/28. Holy Sanctuary.wav")
 const STAGE_ONE_MUSIC := preload("res://images/7. Soldier.mp3")
+const STAGE_ONE_MUSIC_VOLUME_DB := -15.0
 const MAP_CLICK_SOUND := preload("res://images/sword-shine.mp3")
 const SLINGSHOT_PICKUP_IMAGE := preload("res://images/pngtree-slingshot-tool-childhood-toy-png-image_3901241.jpg")
 const BAGGY_PICKUP_IMAGE := preload("res://images/polyethylene-bag-dose-cocaine-concept-260nw-1056752228.jpg")
@@ -922,7 +923,7 @@ void fragment() {
 	intro_audio_player = AudioStreamPlayer.new()
 	intro_audio_player.name = "IntroSoundtrack"
 	intro_audio_player.stream = INTRO_MUSIC
-	intro_audio_player.volume_db = -8.0
+	intro_audio_player.volume_db = STAGE_ONE_MUSIC_VOLUME_DB
 	intro_audio_player.bus = "Master"
 	add_child(intro_audio_player)
 	intro_audio_player.finished.connect(_finish_intro_sequence, CONNECT_ONE_SHOT)
@@ -1939,7 +1940,7 @@ func _start_game(start_x: float, start_y: float) -> void:
 	if music_player:
 		music_player.stop()
 		music_player.stream = STAGE_ONE_MUSIC
-		music_player.volume_db = -15.0
+		music_player.volume_db = STAGE_ONE_MUSIC_VOLUME_DB
 		music_player.finished.connect(func() -> void:
 			if game_started:
 				music_player.play()
