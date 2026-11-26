@@ -1845,13 +1845,10 @@ func _start_stage_one_cutscene() -> void:
 	# The source artwork is wider than the 16:9 game viewport. A darkened,
 	# aspect-covered copy fills the margins while the foreground keeps the
 	# complete original image visible without stretching or cropping it.
-	var backdrop := TextureRect.new()
+	var backdrop := ColorRect.new()
 	backdrop.name = "StageOneCutsceneBackdrop"
-	backdrop.texture = STAGE_ONE_CUTSCENE_IMAGE
+	backdrop.color = Color("#08070b")
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	backdrop.modulate = Color(0.18, 0.12, 0.13, 1.0)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage_one_cutscene_layer.add_child(backdrop)
 
@@ -1871,8 +1868,8 @@ func _start_stage_one_cutscene() -> void:
 	panel.name = "StageOneCutsceneDialoguePanel"
 	panel.anchor_left = 0.06
 	panel.anchor_right = 0.94
-	panel.anchor_top = 0.035
-	panel.anchor_bottom = 0.27
+	panel.anchor_top = 0.025
+	panel.anchor_bottom = 0.225
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("#07060b")
 	style.border_color = Color("#b10e2d")
@@ -1894,12 +1891,12 @@ func _start_stage_one_cutscene() -> void:
 	content.add_theme_constant_override("separation", 5)
 	margin.add_child(content)
 
-	var heading := _make_hud_label("STAGE 1 — OPENING CUTSCENE", Vector2.ZERO, 19)
+	var heading := _make_hud_label("STAGE 1 — OPENING CUTSCENE", Vector2.ZERO, 17)
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.add_theme_color_override("font_color", Color("#ffffff"))
 	content.add_child(heading)
 
-	var dialogue := _make_hud_label(STAGE_ONE_CUTSCENE_DIALOGUE, Vector2.ZERO, 14)
+	var dialogue := _make_hud_label(STAGE_ONE_CUTSCENE_DIALOGUE, Vector2.ZERO, 13)
 	dialogue.name = "StageOneCutsceneDialogue"
 	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
