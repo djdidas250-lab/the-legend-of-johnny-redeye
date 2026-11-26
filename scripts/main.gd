@@ -415,16 +415,20 @@ func _show_title() -> void:
 shader_type canvas_item;
 render_mode unshaded;
 void fragment() {
-	vec2 blur = TEXTURE_PIXEL_SIZE * 10.0;
-	vec3 color = texture(TEXTURE, UV).rgb * 0.30;
-	color += texture(TEXTURE, UV + vec2(blur.x, 0.0)).rgb * 0.12;
-	color += texture(TEXTURE, UV - vec2(blur.x, 0.0)).rgb * 0.12;
-	color += texture(TEXTURE, UV + vec2(0.0, blur.y)).rgb * 0.12;
-	color += texture(TEXTURE, UV - vec2(0.0, blur.y)).rgb * 0.12;
-	color += texture(TEXTURE, UV + blur).rgb * 0.11;
-	color += texture(TEXTURE, UV - blur).rgb * 0.11;
-	float vignette = smoothstep(0.30, 0.92, length((UV - vec2(0.5)) * vec2(1.18, 1.0)));
-	color *= mix(0.48, 0.28, vignette);
+	// Extend only the outermost image pixels into any aspect-ratio margins.
+	// This keeps the fitted artwork untouched and avoids the old blurred,
+	// desaturated side bands that looked like grey bars on wide displays.
+	float source_ratio = TEXTURE_PIXEL_SIZE.y / TEXTURE_PIXEL_SIZE.x;
+	float viewport_ratio = SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x;
+	vec2 sample_uv = UV;
+	if (viewport_ratio > source_ratio) {
+		float fitted_width = source_ratio / viewport_ratio;
+		sample_uv.x = clamp((UV.x - (1.0 - fitted_width) * 0.5) / fitted_width, 0.0, 1.0);
+	} else {
+		float fitted_height = viewport_ratio / source_ratio;
+		sample_uv.y = clamp((UV.y - (1.0 - fitted_height) * 0.5) / fitted_height, 0.0, 1.0);
+	}
+	vec3 color = texture(TEXTURE, sample_uv).rgb;
 	COLOR = vec4(color, 1.0);
 }
 """
@@ -558,8 +562,9 @@ void fragment() {
 	logo_glow.material = logo_material
 	title_layer.add_child(logo_glow)
 
-	# A localized animated amber shader follows 85% of the blade from its tip,
-	# and enhances the circular fire ring around Johnny’s feet.
+	# A localized animated amber shader follows the blade from its tip down
+	# its centerline, stopping at the crossguard before reaching Johnny's hands.
+	# It also adds a soft bounce to the existing fire ring without drawing a new one.
 	var sword_glow := ColorRect.new()
 	sword_glow.name = "TitleSwordGlow"
 	sword_glow.position = art_rect.position
@@ -576,17 +581,17 @@ float segment_distance(vec2 p, vec2 a, vec2 b) {
 	return length(pa - ba * h);
 }
 void fragment() {
-	// The visible blade runs diagonally from the hand at its lower-left base
-	// to the upper-right tip. Use a five-point centerline traced over the blade
-	// itself, rather than the old straight chord that rode along its upper edge.
+	// The source image is 1584x672. These points trace the visible blade's
+	// center from its tip (upper-right) down to the crossguard (lower-left).
+	// The endpoint deliberately stops above the hands and grip.
 	vec2 p = UV;
 	float pulse = 0.5 + 0.5 * sin(TIME * 2.1);
 	float flicker = 0.5 + 0.5 * sin(TIME * 10.5 + sin(TIME * 4.7));
 	float blade_d = min(
-		min(segment_distance(p, vec2(0.520, 0.566), vec2(0.542, 0.515)),
-			segment_distance(p, vec2(0.542, 0.515), vec2(0.570, 0.458))),
-		min(segment_distance(p, vec2(0.570, 0.458), vec2(0.601, 0.390)),
-			segment_distance(p, vec2(0.601, 0.390), vec2(0.633, 0.312)))
+		min(segment_distance(p, vec2(0.636, 0.310), vec2(0.616, 0.365)),
+			segment_distance(p, vec2(0.616, 0.365), vec2(0.592, 0.432))),
+		min(segment_distance(p, vec2(0.592, 0.432), vec2(0.565, 0.500)),
+			segment_distance(p, vec2(0.565, 0.500), vec2(0.539, 0.558)))
 	);
 	float blade_halo = exp(-blade_d * 58.0) * (0.68 + pulse * 0.27) * (0.68 + flicker * 0.32);
 	float blade_edge = exp(-abs(blade_d - 0.006) * 145.0) * (0.34 + flicker * 0.24);
