@@ -202,8 +202,7 @@ func _ready() -> void:
 	if not _check(start_sfx != null and start_sfx.stream.resource_path == "res://images/freesound_community-game-start-6104.mp3", "Start Mission must use the title-screen game-start click sound."): return
 	if start_sfx.playing:
 		await start_sfx.finished
-	await RenderingServer.frame_post_draw
-	await get_tree().create_timer(0.05, true).timeout
+	await get_tree().process_frame
 	if not _check(bool(game.get("game_started")), "Invisible Start Mission click target did not start Stage One."): return
 	var opening_audio := game.get("first_stage_intro_player") as AudioStreamPlayer
 	var opening_music := game.get("music_player") as AudioStreamPlayer

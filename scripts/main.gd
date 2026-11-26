@@ -1975,21 +1975,20 @@ func _start_game(start_x: float, start_y: float, play_first_stage_intro: bool = 
 	_build_game(start_x, start_y)
 	queue_redraw()
 	if play_first_stage_intro:
-		# Pause the complete gameplay scene while the supplied opening audio plays.
-		# This dedicated player remains active during the pause; stage music stays stopped.
+		# The level is built; freeze gameplay immediately and let this dedicated
+		# audio player continue independently of the paused scene tree.
 		first_stage_intro_player = AudioStreamPlayer.new()
 		first_stage_intro_player.name = "FirstStageOpeningAudio"
 		first_stage_intro_player.stream = FIRST_STAGE_OPENING_AUDIO
 		first_stage_intro_player.process_mode = Node.PROCESS_MODE_ALWAYS
 		add_child(first_stage_intro_player)
 		first_stage_intro_player.finished.connect(_on_first_stage_intro_finished, CONNECT_ONE_SHOT)
-	# Let Godot render the newly initialized level before starting its intro audio.
-	# Pause only after that frame, so the audio-start coroutine can resume reliably.
-	await RenderingServer.frame_post_draw
-	if game_started and first_stage_intro_active and is_instance_valid(first_stage_intro_player):
 		get_tree().paused = true
 		first_stage_intro_player.play()
-	elif game_started and is_instance_valid(music_player):
+		return
+	# For all other starts, preserve the existing post-render Stage One music start.
+	await RenderingServer.frame_post_draw
+	if game_started and is_instance_valid(music_player):
 		music_player.play()
 
 func _on_first_stage_intro_finished() -> void:
