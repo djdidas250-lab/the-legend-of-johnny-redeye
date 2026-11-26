@@ -203,6 +203,7 @@ func _build_ambient_lights() -> void:
             light.color = Color("#9aacc5") if i != 1 else Color("#c1a58d")
             light.energy = 0.20 if i != 1 else 0.16
         light.range_item_cull_mask = 2
+        light.set_meta("base_energy", light.energy)
         light.shadow_enabled = false
         light.position = Vector2(_world_width * float(positions[i]), 275.0 if i % 2 == 0 else 310.0)
         add_child(light)
@@ -313,4 +314,5 @@ func _process(delta: float) -> void:
             continue
         var slow_breath := sin(_elapsed * (0.31 + float(i) * 0.07) + float(i) * 1.9)
         var gentle_flicker := sin(_elapsed * (2.7 + float(i) * 0.8) + float(i) * 2.4)
-        light.energy = (0.20 if i != 1 else 0.16) + slow_breath * 0.012 + gentle_flicker * 0.006
+        var base_energy := float(light.get_meta("base_energy", 0.20))
+        light.energy = base_energy + slow_breath * 0.012 + gentle_flicker * 0.006
