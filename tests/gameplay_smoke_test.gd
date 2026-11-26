@@ -3,7 +3,11 @@ extends Node
 const LEASIDE_PANORAMA_TEST_TEXTURE := preload("res://images/image_928e623e.jpg")
 
 func _ready() -> void:
+	# Keep the smoke-test controller alive during the intentional audio pause,
+	# while the game subtree itself remains PAUSABLE and truly frozen.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	var game: Node = load("res://scenes/main.tscn").instantiate()
+	game.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(game)
 	await get_tree().process_frame
 	var title_layer: CanvasLayer = game.get("title_layer")
@@ -199,6 +203,7 @@ func _ready() -> void:
 	if start_sfx.playing:
 		await start_sfx.finished
 	await RenderingServer.frame_post_draw
+	await get_tree().create_timer(0.05, true).timeout
 	if not _check(bool(game.get("game_started")), "Invisible Start Mission click target did not start Stage One."): return
 	var opening_audio := game.get("first_stage_intro_player") as AudioStreamPlayer
 	var opening_music := game.get("music_player") as AudioStreamPlayer
