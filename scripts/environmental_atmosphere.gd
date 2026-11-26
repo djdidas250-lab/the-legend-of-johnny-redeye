@@ -106,7 +106,7 @@ static func create_background_grade_material() -> ShaderMaterial:
     return grade
 
 
-static func create_cutscene_atmosphere_material() -> ShaderMaterial:
+static func create_cutscene_atmosphere_material(sword_glow: bool = false) -> ShaderMaterial:
     # Apply the same cool night grade and low drifting mist to transition artwork.
     # The material is attached only to the full-screen background TextureRect;
     # briefing panels and all gameplay actors remain unaffected.
@@ -114,6 +114,7 @@ static func create_cutscene_atmosphere_material() -> ShaderMaterial:
     shader.code = """
 shader_type canvas_item;
 render_mode unshaded;
+uniform bool sword_glow_enabled = false;
 float luma(vec3 c) {
     return dot(c, vec3(0.2126, 0.7152, 0.0722));
 }
@@ -141,11 +142,31 @@ void fragment() {
     float top_edge = 1.0 - smoothstep(center, center + 0.25, UV.y);
     float fog_alpha = ground_edge * top_edge * mix(0.035, 0.12, smoothstep(0.2, 0.86, cloud));
     graded = mix(graded, vec3(0.39, 0.45, 0.56), fog_alpha);
+
+    // The sword's fiery blade runs diagonally from the protagonist's hands
+    // toward the upper-right corner of the supplied 1584x672 artwork.
+    // Add only a soft, pulsing amber halo around that existing blade; the
+    // source pixels remain intact and the effect is disabled on other scenes.
+    if (sword_glow_enabled) {
+        const float SOURCE_ASPECT = 2.3571429;
+        vec2 sword_point = vec2(UV.x * SOURCE_ASPECT, UV.y);
+        vec2 blade_start = vec2(0.535 * SOURCE_ASPECT, 0.545);
+        vec2 blade_end = vec2(0.744 * SOURCE_ASPECT, 0.018);
+        vec2 blade_axis = blade_end - blade_start;
+        float blade_t = clamp(dot(sword_point - blade_start, blade_axis) / dot(blade_axis, blade_axis), 0.0, 1.0);
+        float blade_distance = length(sword_point - (blade_start + blade_axis * blade_t));
+        float halo = 1.0 - smoothstep(0.012, 0.078, blade_distance);
+        float flame_detail = smoothstep(0.12, 0.34, source.r - source.b) * smoothstep(0.22, 0.68, brightness);
+        float pulse = 0.82 + 0.18 * sin(TIME * 2.4);
+        graded += vec3(1.0, 0.31, 0.045) * halo * pulse * 0.20;
+        graded = mix(graded, max(graded, source * vec3(1.12, 1.04, 0.86)), halo * flame_detail * 0.16);
+    }
     COLOR = vec4(graded, texel.a);
 }
 """
     var material := ShaderMaterial.new()
     material.shader = shader
+    material.set_shader_parameter("sword_glow_enabled", sword_glow)
     return material
 
 var _world_width := 960.0
