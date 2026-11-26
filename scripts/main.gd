@@ -590,21 +590,26 @@ func _make_menu_button(caption: String) -> Button:
 	button.text = caption
 	button.custom_minimum_size = Vector2(280, 52)
 	button.add_theme_font_size_override("font_size", 23)
-	button.add_theme_color_override("font_color", Color("#fff4d5"))
+	button.add_theme_color_override("font_color", Color("#f4f1f2"))
 	button.add_theme_color_override("font_hover_color", Color("#ffffff"))
+	button.add_theme_color_override("font_pressed_color", Color("#ffffff"))
 	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color("#263e58")
-	normal.border_color = Color("#d6a84b")
-	normal.set_border_width_all(3)
-	normal.set_corner_radius_all(7)
-	normal.shadow_color = Color(0, 0, 0, 0.4)
-	normal.shadow_size = 5
+	normal.bg_color = Color("#09080d")
+	normal.border_color = Color("#a90f2b")
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(4)
+	normal.shadow_color = Color(0.72, 0.0, 0.10, 0.55)
+	normal.shadow_size = 9
 	button.add_theme_stylebox_override("normal", normal)
 	var hover: StyleBoxFlat = normal.duplicate() as StyleBoxFlat
-	hover.bg_color = Color("#3c6687")
+	hover.bg_color = Color("#35101a")
+	hover.border_color = Color("#ff294b")
+	hover.shadow_color = Color(1.0, 0.0, 0.16, 0.82)
+	hover.shadow_size = 13
 	button.add_theme_stylebox_override("hover", hover)
 	var pressed: StyleBoxFlat = normal.duplicate() as StyleBoxFlat
-	pressed.bg_color = Color("#172b40")
+	pressed.bg_color = Color("#19070d")
+	pressed.border_color = Color("#e51b3d")
 	button.add_theme_stylebox_override("pressed", pressed)
 	return button
 
@@ -672,8 +677,8 @@ func _show_save_slot_picker(for_new_game: bool) -> void:
 	panel.anchor_top = 0.12
 	panel.anchor_bottom = 0.88
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color("#172b40")
-	panel_style.border_color = Color("#d6a84b")
+	panel_style.bg_color = Color("#08070c")
+	panel_style.border_color = Color("#b10e2d")
 	panel_style.set_border_width_all(3)
 	panel_style.set_corner_radius_all(8)
 	panel.add_theme_stylebox_override("panel", panel_style)
@@ -756,8 +761,8 @@ func _show_overwrite_confirmation(slot_index: int, progress_text: String) -> voi
 	panel.anchor_top = 0.30
 	panel.anchor_bottom = 0.72
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#172b40")
-	style.border_color = Color("#d71927")
+	style.bg_color = Color("#08070c")
+	style.border_color = Color("#b10e2d")
 	style.set_border_width_all(3)
 	style.set_corner_radius_all(8)
 	panel.add_theme_stylebox_override("panel", style)
@@ -1281,8 +1286,8 @@ func _show_leaside_checkpoint_briefing() -> void:
 	panel.anchor_bottom = 0.94
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.055, 0.085, 0.115, 0.94)
-	style.border_color = Color("#c99a50")
+	style.bg_color = Color("#08070c")
+	style.border_color = Color("#b10e2d")
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(9)
 	style.shadow_color = Color(0, 0, 0, 0.55)
@@ -1316,10 +1321,10 @@ func _show_leaside_checkpoint_briefing() -> void:
 	prompt.custom_minimum_size = Vector2(0, 42)
 	prompt.focus_mode = Control.FOCUS_NONE
 	prompt.add_theme_font_size_override("font_size", 17)
-	prompt.add_theme_color_override("font_color", Color("#f2c879"))
+	prompt.add_theme_color_override("font_color", Color("#ffffff"))
 	var prompt_style := StyleBoxFlat.new()
-	prompt_style.bg_color = Color(0.12, 0.16, 0.20, 0.92)
-	prompt_style.border_color = Color("#c99a50")
+	prompt_style.bg_color = Color("#10080d")
+	prompt_style.border_color = Color("#b10e2d")
 	prompt_style.set_border_width_all(1)
 	prompt_style.set_corner_radius_all(6)
 	prompt.add_theme_stylebox_override("normal", prompt_style)
@@ -1447,6 +1452,36 @@ func _complete_return_to_mission_select() -> void:
 func _build_game(start_x: float, start_y: float) -> void:
 	player = _make_character(Vector2(start_x, start_y), Color("#287caa"), false)
 	add_child(player)
+	# Screen-space horror grading: this layer affects only the rendered scene.
+	# Original background textures, sprites, animations and audio remain untouched.
+	var atmosphere_layer := CanvasLayer.new()
+	atmosphere_layer.name = "NightmareAtmosphere"
+	atmosphere_layer.layer = 1
+	add_child(atmosphere_layer)
+	var atmosphere := ColorRect.new()
+	atmosphere.name = "NighttimeHorrorGrade"
+	atmosphere.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	atmosphere.color = Color.WHITE
+	atmosphere.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var atmosphere_shader := Shader.new()
+	atmosphere_shader.code = """
+shader_type canvas_item;
+void fragment() {
+	vec2 uv = UV;
+	float edge = smoothstep(0.22, 0.88, distance(uv, vec2(0.5)) * 1.35);
+	float lower_fog_band = smoothstep(0.48, 0.92, uv.y);
+	float fog_wave = sin(uv.x * 10.5 + TIME * 0.16 + sin(uv.y * 13.0 - TIME * 0.11) * 1.8);
+	float fog = lower_fog_band * smoothstep(-0.35, 0.78, fog_wave) * 0.13;
+	float crimson_haze = smoothstep(0.32, 0.96, uv.x) * smoothstep(0.38, 0.96, 1.0 - uv.y);
+	vec3 night_tint = mix(vec3(0.006, 0.005, 0.014), vec3(0.040, 0.004, 0.018), crimson_haze * 0.42);
+	float alpha = 0.54 + edge * 0.20 + fog;
+	COLOR = vec4(night_tint, clamp(alpha, 0.0, 0.80));
+}
+"""
+	var atmosphere_material := ShaderMaterial.new()
+	atmosphere_material.shader = atmosphere_shader
+	atmosphere.material = atmosphere_material
+	atmosphere_layer.add_child(atmosphere)
 	_add_vehicle_obstacles()
 	# The slingshot remains at its original Newleaf location; do not place it
 	# on Leaside merely because the route now begins there.
@@ -1471,6 +1506,7 @@ func _build_game(start_x: float, start_y: float) -> void:
 
 	player.get_child(0).set("facing", -1.0)
 	hud = CanvasLayer.new()
+	hud.layer = 2
 	add_child(hud)
 
 	# In-game menu. The larger hit target is inset from the screen edges
@@ -1493,16 +1529,26 @@ func _build_game(start_x: float, start_y: float) -> void:
 	menu_panel.position = Vector2(32, 74)
 	menu_panel.custom_minimum_size = Vector2(250, 112)
 	menu_panel.visible = false
+	var menu_panel_style := StyleBoxFlat.new()
+	menu_panel_style.bg_color = Color("#08070c")
+	menu_panel_style.border_color = Color("#a90f2b")
+	menu_panel_style.set_border_width_all(2)
+	menu_panel_style.set_corner_radius_all(4)
+	menu_panel_style.shadow_color = Color(0.72, 0.0, 0.10, 0.62)
+	menu_panel_style.shadow_size = 14
+	menu_panel_style.content_margin_left = 5.0
+	menu_panel_style.content_margin_right = 5.0
+	menu_panel_style.content_margin_top = 5.0
+	menu_panel_style.content_margin_bottom = 5.0
+	menu_panel.add_theme_stylebox_override("panel", menu_panel_style)
 	hud.add_child(menu_panel)
 	var menu_contents := VBoxContainer.new()
 	menu_panel.add_child(menu_contents)
-	var mission_select_button := Button.new()
-	mission_select_button.text = "RETURN TO MISSION SELECT"
+	var mission_select_button := _make_menu_button("RETURN TO MISSION SELECT")
 	mission_select_button.custom_minimum_size = Vector2(240, 48)
 	mission_select_button.pressed.connect(_return_to_mission_select)
 	menu_contents.add_child(mission_select_button)
-	var return_button := Button.new()
-	return_button.text = "RETURN TO MAIN SCREEN"
+	var return_button := _make_menu_button("RETURN TO MAIN SCREEN")
 	return_button.custom_minimum_size = Vector2(240, 48)
 	return_button.pressed.connect(func(): get_tree().reload_current_scene())
 	menu_contents.add_child(return_button)
@@ -1712,12 +1758,12 @@ func _show_davy_boss_intro() -> void:
 	panel.anchor_top = 0.035
 	panel.anchor_bottom = 0.245
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.055, 0.085, 0.115, 0.97)
-	style.border_color = Color("#c99a50")
+	style.bg_color = Color("#07060b")
+	style.border_color = Color("#b10e2d")
 	style.set_border_width_all(3)
-	style.set_corner_radius_all(8)
-	style.shadow_color = Color(0, 0, 0, 0.65)
-	style.shadow_size = 9
+	style.set_corner_radius_all(4)
+	style.shadow_color = Color(0.82, 0.0, 0.12, 0.72)
+	style.shadow_size = 16
 	panel.add_theme_stylebox_override("panel", style)
 	davy_boss_dialogue_layer.add_child(panel)
 	var margin := MarginContainer.new()
@@ -3257,12 +3303,12 @@ func _show_mattijuana_intro() -> void:
 	panel.anchor_top = 0.035
 	panel.anchor_bottom = 0.27
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.055, 0.085, 0.115, 0.97)
-	style.border_color = Color("#c99a50")
+	style.bg_color = Color("#07060b")
+	style.border_color = Color("#b10e2d")
 	style.set_border_width_all(3)
-	style.set_corner_radius_all(8)
-	style.shadow_color = Color(0, 0, 0, 0.65)
-	style.shadow_size = 9
+	style.set_corner_radius_all(4)
+	style.shadow_color = Color(0.82, 0.0, 0.12, 0.72)
+	style.shadow_size = 16
 	panel.add_theme_stylebox_override("panel", style)
 	mattijuana_dialogue_layer.add_child(panel)
 	var margin := MarginContainer.new()
@@ -3764,12 +3810,12 @@ func _show_baggy_notification() -> void:
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(330.0, 0.0)
 	var metal := StyleBoxFlat.new()
-	metal.bg_color = Color("#20262b")
-	metal.border_color = Color("#9ba8ae")
+	metal.bg_color = Color("#08070c")
+	metal.border_color = Color("#b10e2d")
 	metal.set_border_width_all(3)
 	metal.set_corner_radius_all(8)
-	metal.shadow_color = Color(0.0, 0.0, 0.0, 0.82)
-	metal.shadow_size = 12
+	metal.shadow_color = Color(0.78, 0.0, 0.12, 0.58)
+	metal.shadow_size = 16
 	metal.content_margin_left = 11.0
 	metal.content_margin_right = 11.0
 	metal.content_margin_top = 9.0
@@ -3785,14 +3831,14 @@ func _show_baggy_notification() -> void:
 	heading.text = "COKE BAGGIE"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.add_theme_font_size_override("font_size", 21)
-	heading.add_theme_color_override("font_color", Color("#f0c879"))
+	heading.add_theme_color_override("font_color", Color("#ffffff"))
 	heading.add_theme_color_override("font_shadow_color", Color("#080b0d"))
 	heading.add_theme_constant_override("shadow_offset_x", 2)
 	heading.add_theme_constant_override("shadow_offset_y", 2)
 	contents.add_child(heading)
 
 	var divider := HSeparator.new()
-	divider.add_theme_color_override("separator", Color("#69777e"))
+	divider.add_theme_color_override("separator", Color("#8f1028"))
 	contents.add_child(divider)
 
 	var artwork := TextureRect.new()
@@ -3830,13 +3876,14 @@ func _show_baggy_notification() -> void:
 	close_button.add_theme_font_size_override("font_size", 18)
 	close_button.add_theme_color_override("font_color", Color.WHITE)
 	var close_style := StyleBoxFlat.new()
-	close_style.bg_color = Color("#30383e")
-	close_style.border_color = Color("#c2cbd0")
+	close_style.bg_color = Color("#10080d")
+	close_style.border_color = Color("#c51637")
 	close_style.set_border_width_all(2)
 	close_style.set_corner_radius_all(4)
 	close_button.add_theme_stylebox_override("normal", close_style)
 	var close_hover: StyleBoxFlat = close_style.duplicate() as StyleBoxFlat
-	close_hover.bg_color = Color("#48545c")
+	close_hover.bg_color = Color("#4a0d1b")
+	close_hover.border_color = Color("#ff3154")
 	close_button.add_theme_stylebox_override("hover", close_hover)
 	footer.add_child(close_button)
 	close_button.pressed.connect(_dismiss_baggy_notification)
