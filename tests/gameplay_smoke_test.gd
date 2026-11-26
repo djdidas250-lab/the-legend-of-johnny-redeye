@@ -427,9 +427,7 @@ func _ready() -> void:
 	visual.call("play_slingshot")
 	if not _check(visual.get("action_kind") == "slingshot" and str(visual.get("current_frame_key")).begins_with("john_slingshot:") and visual.texture.get_width() == 512 and visual.texture.get_height() == 184, "Slingshot must display a complete normalized John frame."): return
 	if not _check(stage_script.contains("var reach := 78.0 if int(player.get(\"combo_step\")) < 3 else 90.0"), "Punch hitbox range must provide a practical close-combat reach."): return
-	var notice_image := Image.load_from_file("res://images/slingshot_notice.png")
-	if not _check(stage_script.contains('preload("res://images/slingshot_notice.png")') and stage_script.contains("offset_left = -240") and stage_script.contains("offset_right = 240"), "Pickup notification must use the corrected transparent artwork at the intended size."): return
-	if not _check(notice_image != null and not notice_image.is_empty() and notice_image.get_pixel(0, 0).a < 0.05, "Pickup notification PNG must have transparent outer corners with no checkerboard remnants."): return
+	if not _check(stage_script.contains('artwork.texture = SLINGSHOT_PICKUP_IMAGE') and stage_script.contains('heading.text = "SLINGSHOT ACQUIRED"') and stage_script.contains('metal.bg_color = Color("#08070c")') and stage_script.contains('metal.border_color = Color("#b10e2d")'), "Slingshot notification must use the shared dark crimson pickup-panel style and original slingshot artwork."): return
 	# The pickup belongs to Newleaf, which is reached after the reversed
 	# Leaside-to-McRae route; set the test street explicitly for pickup checks.
 	game.set("current_street", "NEWLEAF CRESCENT")
