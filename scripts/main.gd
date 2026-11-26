@@ -390,18 +390,28 @@ func _show_title() -> void:
 	title_layer = CanvasLayer.new()
 	add_child(title_layer)
 
-	# Fill the screen with the supplied artwork without distortion or side-fill.
-	# Keep its proportions and crop only the tiny amount required by the display aspect ratio.
+	# Scale the original artwork uniformly until it covers the display.
+	# Keep the source aspect ratio and let the viewport clip the small excess;
+	# no blurred, stretched, or artificial side-fill is drawn.
 	var viewport_size := get_viewport_rect().size
-	var art_rect := Rect2(Vector2.ZERO, viewport_size)
+	var source_ratio := float(TITLE_IMAGE.get_width()) / float(TITLE_IMAGE.get_height())
+	var viewport_ratio := viewport_size.x / maxf(viewport_size.y, 1.0)
+	var art_size := viewport_size
+	if viewport_ratio > source_ratio:
+		art_size.y = viewport_size.x / source_ratio
+	else:
+		art_size.x = viewport_size.y * source_ratio
+	var art_rect := Rect2((viewport_size - art_size) * 0.5, art_size)
 
 	var title_art := TextureRect.new()
 	title_art.name = "TitleArtwork"
 	title_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	title_art.custom_minimum_size = Vector2.ZERO
 	title_art.texture = TITLE_IMAGE
-	title_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	title_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	title_art.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	title_art.position = art_rect.position
+	title_art.size = art_rect.size
+	title_art.stretch_mode = TextureRect.STRETCH_SCALE
 	title_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title_layer.add_child(title_art)
 
@@ -532,18 +542,8 @@ float segment_distance(vec2 p, vec2 a, vec2 b) {
 	return length(pa - ba * h);
 }
 void fragment() {
-	// Convert screen-fitted UVs back to the original artwork's UVs.
-	// The artwork is aspect-covered (never stretched), so this compensates for its crop.
-	float source_ratio = 1584.0 / 672.0;
-	float viewport_ratio = SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x;
+	// Glow overlay shares the original artwork's full aspect-preserved rect.
 	vec2 p = UV;
-	if (viewport_ratio > source_ratio) {
-		float visible_height = source_ratio / viewport_ratio;
-		p.y = UV.y * visible_height + (1.0 - visible_height) * 0.5;
-	} else {
-		float visible_width = viewport_ratio / source_ratio;
-		p.x = UV.x * visible_width + (1.0 - visible_width) * 0.5;
-	}
 	float pulse = 0.5 + 0.5 * sin(TIME * 2.1);
 	float flicker = 0.5 + 0.5 * sin(TIME * 10.5 + sin(TIME * 4.7));
 	// Centerline traced down the visible flaming blade; stop at the crossguard.
