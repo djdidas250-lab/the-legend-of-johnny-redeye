@@ -105,6 +105,49 @@ static func create_background_grade_material() -> ShaderMaterial:
     grade.shader = shader
     return grade
 
+
+static func create_cutscene_atmosphere_material() -> ShaderMaterial:
+	# Apply the same cool night grade and low drifting mist to transition artwork.
+	# The material is attached only to the full-screen background TextureRect;
+	# briefing panels and all gameplay actors remain unaffected.
+	var shader := Shader.new()
+	shader.code = """
+shader_type canvas_item;
+render_mode unshaded;
+float luma(vec3 c) {
+	return dot(c, vec3(0.2126, 0.7152, 0.0722));
+}
+void fragment() {
+	vec4 texel = texture(TEXTURE, UV);
+	vec3 source = texel.rgb;
+	float brightness = luma(source);
+	float sky = 1.0 - smoothstep(0.30, 0.56, UV.y);
+	float green_signal = clamp((source.g - max(source.r, source.b)) * 3.4, 0.0, 1.0);
+	float foliage = green_signal * smoothstep(0.12, 0.31, UV.y);
+	vec3 night_sky = mix(vec3(0.006, 0.009, 0.024), source * vec3(0.14, 0.20, 0.37), smoothstep(0.14, 0.72, brightness));
+	vec3 cool_surface = source * vec3(0.24, 0.31, 0.44);
+	vec3 night_ground = mix(cool_surface, source * vec3(0.16, 0.28, 0.30), foliage * 0.66);
+	float horizon = exp(-pow((UV.y - 0.535) * 13.0, 2.0)) * 0.17;
+	night_ground = mix(night_ground, vec3(0.060, 0.074, 0.112), horizon);
+	vec3 graded = mix(night_ground, night_sky, sky);
+	float warm = smoothstep(0.10, 0.30, source.r - source.b) * smoothstep(0.28, 0.68, brightness);
+	graded = mix(graded, source * vec3(0.78, 0.54, 0.34), warm * 0.34);
+	float t = TIME * 0.010;
+	float wave_a = sin(UV.x * 9.0 + t + sin(UV.y * 2.4 - t * 0.19) * 0.82);
+	float wave_b = sin(UV.x * 14.0 - t * 0.62 + sin(UV.y * 1.7 + t * 0.14) * 0.68);
+	float cloud = 0.56 + (wave_a * 0.62 + wave_b * 0.38) * 0.22;
+	float center = 0.70 + sin(UV.x * 2.2 + t * 0.31) * 0.035;
+	float ground_edge = smoothstep(0.47, 0.59, UV.y);
+	float top_edge = 1.0 - smoothstep(center, center + 0.25, UV.y);
+	float fog_alpha = ground_edge * top_edge * mix(0.035, 0.12, smoothstep(0.2, 0.86, cloud));
+	graded = mix(graded, vec3(0.39, 0.45, 0.56), fog_alpha);
+	COLOR = vec4(graded, texel.a);
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	return material
+
 var _world_width := 960.0
 var _street_name := ""
 var _park_mode := false
