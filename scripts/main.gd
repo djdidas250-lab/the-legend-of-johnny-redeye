@@ -1,6 +1,6 @@
 extends Node2D
 
-const TITLE_IMAGE := preload("res://images/Gemini_Generated_Image_dddnf6dddnf6dddn.jpeg")
+const TITLE_IMAGE := preload("res://images/file_000000005268822f8114c8d6d185d9e5.png")
 const TITLE_MUSIC := preload("res://images/02 - Title Theme.wav")
 const TITLE_CLICK_SOUND := preload("res://images/freesound_community-game-start-6104.mp3")
 const DEATH_SCREEN_IMAGE := preload("res://images/image_df287ed.jpg")
@@ -390,21 +390,133 @@ func _show_title() -> void:
 	title_layer = CanvasLayer.new()
 	add_child(title_layer)
 
-	# The supplied artwork already contains the logo, David and all four menu labels.
-	# Stretch it edge-to-edge to match the previous full-screen title presentation.
+	# Fill the display with a softened extension of the artwork, then place the
+	# original image at its exact aspect ratio. This avoids stretching or cropping
+	# the supplied composition while keeping every display edge free of black bars.
+	var viewport_size := get_viewport_rect().size
+	var source_ratio := float(TITLE_IMAGE.get_width()) / float(TITLE_IMAGE.get_height())
+	var viewport_ratio := viewport_size.x / maxf(viewport_size.y, 1.0)
+	var art_size := viewport_size
+	if viewport_ratio > source_ratio:
+		art_size.x = viewport_size.y * source_ratio
+	else:
+		art_size.y = viewport_size.x / source_ratio
+	var art_rect := Rect2((viewport_size - art_size) * 0.5, art_size)
+
+	var title_backdrop := TextureRect.new()
+	title_backdrop.name = "TitleArtworkBackdrop"
+	title_backdrop.texture = TITLE_IMAGE
+	title_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	title_backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	title_backdrop.stretch_mode = TextureRect.STRETCH_SCALE
+	title_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var backdrop_shader := Shader.new()
+	backdrop_shader.code = """
+shader_type canvas_item;
+render_mode unshaded;
+void fragment() {
+	vec2 blur = TEXTURE_PIXEL_SIZE * 10.0;
+	vec3 color = texture(TEXTURE, UV).rgb * 0.30;
+	color += texture(TEXTURE, UV + vec2(blur.x, 0.0)).rgb * 0.12;
+	color += texture(TEXTURE, UV - vec2(blur.x, 0.0)).rgb * 0.12;
+	color += texture(TEXTURE, UV + vec2(0.0, blur.y)).rgb * 0.12;
+	color += texture(TEXTURE, UV - vec2(0.0, blur.y)).rgb * 0.12;
+	color += texture(TEXTURE, UV + blur).rgb * 0.11;
+	color += texture(TEXTURE, UV - blur).rgb * 0.11;
+	float vignette = smoothstep(0.30, 0.92, length((UV - vec2(0.5)) * vec2(1.18, 1.0)));
+	color *= mix(0.48, 0.28, vignette);
+	COLOR = vec4(color, 1.0);
+}
+"""
+	var backdrop_material := ShaderMaterial.new()
+	backdrop_material.shader = backdrop_shader
+	title_backdrop.material = backdrop_material
+	title_layer.add_child(title_backdrop)
+
 	var title_art := TextureRect.new()
+	title_art.name = "TitleArtwork"
 	title_art.texture = TITLE_IMAGE
-	title_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	title_art.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	title_art.position = art_rect.position
+	title_art.size = art_rect.size
 	title_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	title_art.stretch_mode = TextureRect.STRETCH_SCALE
 	title_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var edge_shader := Shader.new()
+	edge_shader.code = """
+shader_type canvas_item;
+void fragment() {
+	vec4 source = texture(TEXTURE, UV);
+	float edge = min(min(UV.x, 1.0 - UV.x), min(UV.y, 1.0 - UV.y));
+	float soft_edge = smoothstep(0.0, 0.016, edge);
+	COLOR = vec4(source.rgb, source.a * soft_edge);
+}
+"""
+	var edge_material := ShaderMaterial.new()
+	edge_material.shader = edge_shader
+	title_art.material = edge_material
 	title_layer.add_child(title_art)
+
+	# Fine drifting smoke softens the scene edges; the separate additive light
+	# pass gives the moon, Ferris wheel and fire-lit ground a restrained light spill.
+	var title_haze := ColorRect.new()
+	title_haze.name = "TitleAtmosphericHaze"
+	title_haze.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	title_haze.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var haze_shader := Shader.new()
+	haze_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_mix;
+void fragment() {
+	vec2 uv = UV;
+	float t = TIME;
+	float broad = sin(uv.x * 5.4 - t * 0.075 + sin(uv.y * 5.8 + t * 0.035) * 0.82);
+	float fine = sin(uv.x * 11.0 + t * 0.052 + sin(uv.y * 8.0 - t * 0.028) * 0.55);
+	float wisps = 0.5 + broad * 0.30 + fine * 0.20;
+	float lower_bank = smoothstep(0.53, 0.96, uv.y);
+	float side_bank = smoothstep(0.02, 0.28, uv.x) * (1.0 - smoothstep(0.72, 0.99, uv.x));
+	float haze = lower_bank * (0.035 + smoothstep(0.22, 0.82, wisps) * 0.065);
+	haze += (1.0 - side_bank) * smoothstep(0.58, 0.96, uv.y) * 0.035;
+	float upper_smoke = exp(-pow((uv.y - (0.39 + sin(uv.x * 5.0 - t * 0.04) * 0.025)) * 16.0, 2.0));
+	haze += upper_smoke * (0.012 + wisps * 0.012);
+	COLOR = vec4(vec3(0.42, 0.49, 0.62), clamp(haze, 0.0, 0.12));
+}
+"""
+	var haze_material := ShaderMaterial.new()
+	haze_material.shader = haze_shader
+	title_haze.material = haze_material
+	title_layer.add_child(title_haze)
+
+	var practical_glow := ColorRect.new()
+	practical_glow.name = "TitlePracticalLightSpill"
+	practical_glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	practical_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var practical_shader := Shader.new()
+	practical_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_add;
+void fragment() {
+	vec2 uv = UV;
+	float moon = exp(-length((uv - vec2(0.775, 0.125)) * vec2(8.0, 10.0)) * 2.2) * 0.12;
+	float wheel = exp(-length((uv - vec2(0.775, 0.355)) * vec2(11.0, 8.0)) * 2.0) * 0.10;
+	float ground = exp(-length((uv - vec2(0.50, 0.86)) * vec2(4.2, 8.0)) * 2.1) * (0.07 + 0.025 * sin(TIME * 2.4));
+	float flicker = 0.90 + 0.07 * sin(TIME * 5.1) + 0.03 * sin(TIME * 11.7);
+	vec3 cool = vec3(0.36, 0.52, 0.78) * moon;
+	vec3 amber = vec3(1.0, 0.34, 0.075) * (wheel + ground) * flicker;
+	COLOR = vec4(cool + amber, clamp(moon + wheel + ground, 0.0, 0.22));
+}
+"""
+	var practical_material := ShaderMaterial.new()
+	practical_material.shader = practical_shader
+	practical_glow.material = practical_material
+	title_layer.add_child(practical_glow)
 
 	# A sampled amber aura follows the gold lettering in the supplied title artwork,
 	# gently illuminating the actual letter strokes without washing out the logo.
 	var logo_glow := ColorRect.new()
 	logo_glow.name = "TitleLogoFireGlow"
-	logo_glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	logo_glow.position = art_rect.position
+	logo_glow.size = art_rect.size
 	logo_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var logo_shader := Shader.new()
 	logo_shader.code = """
@@ -457,7 +569,8 @@ void fragment() {
 	# and enhances the circular fire ring around Johnny’s feet.
 	var sword_glow := ColorRect.new()
 	sword_glow.name = "TitleSwordGlow"
-	sword_glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	sword_glow.position = art_rect.position
+	sword_glow.size = art_rect.size
 	sword_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sword_shader := Shader.new()
 	sword_shader.code = """
@@ -518,25 +631,35 @@ void fragment() {
 	sword_glow.material = sword_material
 	title_layer.add_child(sword_glow)
 
-	# Transparent hit areas are aligned to the four labels printed on the artwork.
-	var new_game := _make_title_hitbox(0.810, 0.445, 0.960, 0.540)
+	# Menu hit areas follow the aspect-fitted artwork rather than the full display,
+	# so each printed label remains clickable on both 16:9 and ultrawide phones.
+	_add_title_particles(title_layer, viewport_size)
+	var new_game_top_left := _title_art_anchor(art_rect, viewport_size, 0.810, 0.445)
+	var new_game_bottom_right := _title_art_anchor(art_rect, viewport_size, 0.960, 0.540)
+	var new_game := _make_title_hitbox(new_game_top_left.x, new_game_top_left.y, new_game_bottom_right.x, new_game_bottom_right.y)
 	new_game.name = "NewGameHitbox"
 	new_game.pressed.connect(func() -> void: _run_title_button_action(new_game, _start_new_game))
 	title_layer.add_child(new_game)
 
-	var continue_game := _make_title_hitbox(0.810, 0.555, 0.960, 0.655)
+	var continue_top_left := _title_art_anchor(art_rect, viewport_size, 0.810, 0.555)
+	var continue_bottom_right := _title_art_anchor(art_rect, viewport_size, 0.960, 0.655)
+	var continue_game := _make_title_hitbox(continue_top_left.x, continue_top_left.y, continue_bottom_right.x, continue_bottom_right.y)
 	continue_game.name = "ContinueHitbox"
 	continue_game.disabled = not _has_save()
 	continue_game.pressed.connect(func() -> void: _run_title_button_action(continue_game, _continue_game))
 	title_layer.add_child(continue_game)
 
 	# Settings intentionally has no action yet, but still plays the menu click.
-	var settings := _make_title_hitbox(0.815, 0.660, 0.960, 0.760)
+	var settings_top_left := _title_art_anchor(art_rect, viewport_size, 0.815, 0.660)
+	var settings_bottom_right := _title_art_anchor(art_rect, viewport_size, 0.960, 0.760)
+	var settings := _make_title_hitbox(settings_top_left.x, settings_top_left.y, settings_bottom_right.x, settings_bottom_right.y)
 	settings.name = "SettingsHitbox"
 	settings.pressed.connect(func() -> void: _run_title_button_action(settings, _open_settings))
 	title_layer.add_child(settings)
 
-	var exit_game := _make_title_hitbox(0.810, 0.770, 0.960, 0.875)
+	var exit_top_left := _title_art_anchor(art_rect, viewport_size, 0.810, 0.770)
+	var exit_bottom_right := _title_art_anchor(art_rect, viewport_size, 0.960, 0.875)
+	var exit_game := _make_title_hitbox(exit_top_left.x, exit_top_left.y, exit_bottom_right.x, exit_bottom_right.y)
 	exit_game.name = "ExitGameHitbox"
 	exit_game.pressed.connect(func() -> void: _run_title_button_action(exit_game, _exit_game))
 	title_layer.add_child(exit_game)
@@ -563,6 +686,89 @@ func _open_settings() -> void:
 	# Settings has no screen yet; the button still completes its audio feedback
 	# and delay without unexpectedly leaving the title screen.
 	pass
+
+func _title_art_anchor(art_rect: Rect2, viewport_size: Vector2, u: float, v: float) -> Vector2:
+	return Vector2(
+		(art_rect.position.x + art_rect.size.x * u) / maxf(viewport_size.x, 1.0),
+		(art_rect.position.y + art_rect.size.y * v) / maxf(viewport_size.y, 1.0)
+	)
+
+func _make_title_particle_texture(size: int = 48) -> Texture2D:
+	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var center := Vector2((size - 1) * 0.5, (size - 1) * 0.5)
+	for y in range(size):
+		for x in range(size):
+			var radius := Vector2(float(x), float(y)).distance_to(center) / (float(size) * 0.5)
+			var alpha := pow(1.0 - smoothstep(0.04, 1.0, radius), 2.1)
+			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
+	return ImageTexture.create_from_image(image)
+
+func _make_title_particle_ramp(first: Color, middle: Color, last: Color) -> Texture2D:
+	var gradient := Gradient.new()
+	gradient.set_color(0, first)
+	gradient.add_point(0.46, middle)
+	gradient.set_color(gradient.get_point_count() - 1, last)
+	var texture := GradientTexture1D.new()
+	texture.gradient = gradient
+	return texture
+
+func _add_title_particles(layer: CanvasLayer, viewport_size: Vector2) -> void:
+	var soft_particle := _make_title_particle_texture()
+	var ember_ramp := _make_title_particle_ramp(
+		Color(1.0, 0.82, 0.42, 0.92),
+		Color(1.0, 0.34, 0.055, 0.72),
+		Color(0.75, 0.10, 0.015, 0.0)
+	)
+	var embers := CPUParticles2D.new()
+	embers.name = "TitleRisingEmbers"
+	embers.amount = 42
+	embers.lifetime = 3.6
+	embers.preprocess = 2.0
+	embers.emitting = true
+	embers.local_coords = false
+	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	embers.emission_rect_extents = Vector2(viewport_size.x * 0.38, viewport_size.y * 0.18)
+	embers.direction = Vector2(-0.12, -1.0)
+	embers.spread = 36.0
+	embers.gravity = Vector2(2.0, -7.0)
+	embers.initial_velocity_min = 13.0
+	embers.initial_velocity_max = 34.0
+	embers.angular_velocity_min = -38.0
+	embers.angular_velocity_max = 38.0
+	embers.scale_amount_min = 0.22
+	embers.scale_amount_max = 0.68
+	embers.color = Color(1.0, 0.58, 0.20, 0.9)
+	embers.color_ramp = ember_ramp
+	embers.texture = soft_particle
+	embers.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	embers.position = Vector2(viewport_size.x * 0.50, viewport_size.y * 0.76)
+	embers.z_index = 20
+	layer.add_child(embers)
+
+	var smoke := CPUParticles2D.new()
+	smoke.name = "TitleDriftingSmoke"
+	smoke.amount = 15
+	smoke.lifetime = 8.5
+	smoke.preprocess = 3.0
+	smoke.emitting = true
+	smoke.local_coords = false
+	smoke.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	smoke.emission_rect_extents = Vector2(viewport_size.x * 0.42, viewport_size.y * 0.10)
+	smoke.direction = Vector2(1.0, -0.12)
+	smoke.spread = 24.0
+	smoke.gravity = Vector2(4.0, -1.5)
+	smoke.initial_velocity_min = 3.0
+	smoke.initial_velocity_max = 8.0
+	smoke.angular_velocity_min = -8.0
+	smoke.angular_velocity_max = 8.0
+	smoke.scale_amount_min = 0.95
+	smoke.scale_amount_max = 2.0
+	smoke.color = Color(0.54, 0.62, 0.76, 0.15)
+	smoke.texture = soft_particle
+	smoke.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	smoke.position = Vector2(viewport_size.x * 0.50, viewport_size.y * 0.84)
+	smoke.z_index = 18
+	layer.add_child(smoke)
 
 func _make_title_hitbox(left: float, top: float, right: float, bottom: float) -> Button:
 	var button := Button.new()
