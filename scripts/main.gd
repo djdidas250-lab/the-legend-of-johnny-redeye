@@ -709,17 +709,16 @@ uniform int next_blade_segment_count = 0;
 uniform vec2 next_ring_center = vec2(0.5, 0.8);
 uniform vec2 next_ring_radius = vec2(0.1, 0.08);
 uniform float next_weight = 0.0;
-float hash_value(vec2 p) {
-	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
+
 float segment_distance(vec2 p, vec2 a, vec2 b) {
 	vec2 pa = p - a;
 	vec2 ba = b - a;
 	float h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.000001), 0.0, 1.0);
 	return length(pa - ba * h);
 }
-vec4 profile_effect(vec2 uv, vec2 a, vec2 b, vec2 c, vec2 d, vec2 e,
-		int segment_count, vec2 ring_center, vec2 ring_radius, float weight, float seed_offset) {
+
+vec4 image_glow(vec2 uv, vec2 a, vec2 b, vec2 c, vec2 d, vec2 e,
+		int segment_count, vec2 ring_center, vec2 ring_radius, float weight) {
 	float aspect = SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x;
 	vec2 p = vec2(uv.x * aspect, uv.y);
 	float blade_d = 10.0;
@@ -727,49 +726,30 @@ vec4 profile_effect(vec2 uv, vec2 a, vec2 b, vec2 c, vec2 d, vec2 e,
 	if (segment_count > 1) blade_d = min(blade_d, segment_distance(p, vec2(b.x * aspect, b.y), vec2(c.x * aspect, c.y)));
 	if (segment_count > 2) blade_d = min(blade_d, segment_distance(p, vec2(c.x * aspect, c.y), vec2(d.x * aspect, d.y)));
 	if (segment_count > 3) blade_d = min(blade_d, segment_distance(p, vec2(d.x * aspect, d.y), vec2(e.x * aspect, e.y)));
-	float pulse = 0.5 + 0.5 * sin(TIME * 2.0 + seed_offset);
-	float flicker = 0.5 + 0.5 * sin(TIME * 10.2 + sin(TIME * 4.3 + seed_offset));
-	float blade_halo = exp(-blade_d * 115.0) * (0.16 + pulse * 0.10) * (0.72 + flicker * 0.28);
-	float blade_core = exp(-blade_d * 310.0) * 0.13;
-	float blade_tip = 0.0;
-	if (segment_count > 0) blade_tip = exp(-length(p - vec2(a.x * aspect, a.y)) * 115.0) * (0.13 + pulse * 0.08);
+	float blade_glow = exp(-blade_d * 150.0) * 0.24;
+	float blade_core = exp(-blade_d * 360.0) * 0.22;
 	vec2 ring_q = (uv - ring_center) / max(ring_radius, vec2(0.0001));
-	float ring_radial = length(ring_q);
-	float ring_distance = abs(ring_radial - 1.0) * min(ring_radius.x * aspect, ring_radius.y);
-	float ring_halo = exp(-ring_distance * 112.0) * (0.13 + pulse * 0.055) * (0.82 + flicker * 0.18);
-	float ring_bloom = exp(-ring_distance * 48.0) * 0.025;
-	float ember_sum = 0.0;
-	for (int i = 0; i < 18; i++) {
-		float fi = float(i);
-		float seed = hash_value(vec2(fi + seed_offset * 7.0, 19.3));
-		float phase = fract(TIME * (0.095 + seed * 0.085) + seed);
-		float angle = seed * 6.2831853;
-		vec2 ring_point = ring_center + vec2(cos(angle) * ring_radius.x, sin(angle) * ring_radius.y);
-		vec2 spark_pos = ring_point + vec2(sin(TIME * 1.7 + fi * 2.1) * 0.003, -phase * 0.060);
-		float life = smoothstep(0.02, 0.16, phase) * (1.0 - smoothstep(0.72, 1.0, phase));
-		float spark_d = length((uv - spark_pos) * vec2(aspect, 1.0));
-		float spark = exp(-spark_d * 460.0) * life * (0.35 + 0.65 * hash_value(vec2(fi, seed_offset + 4.0)));
-		float tail_d = segment_distance(p, vec2(spark_pos.x * aspect, spark_pos.y), vec2(spark_pos.x * aspect, spark_pos.y + 0.010));
-		float tail = exp(-tail_d * 390.0) * life * 0.22;
-		ember_sum += spark + tail;
-	}
+	float ring_distance = abs(length(ring_q) - 1.0) * min(ring_radius.x * aspect, ring_radius.y);
+	float pulse = 0.88 + 0.12 * sin(TIME * 3.2);
+	float ring_glow = exp(-ring_distance * 105.0) * 0.20 * pulse;
+	float ring_core = exp(-ring_distance * 250.0) * 0.12;
 	vec3 amber = vec3(1.0, 0.24, 0.025);
 	vec3 gold = vec3(1.0, 0.72, 0.24);
-	vec3 rgb = amber * (blade_halo + blade_core + blade_tip + ring_halo + ring_bloom + ember_sum * 0.70)
-		+ gold * (blade_core * 0.38 + ember_sum * 0.16);
-	float alpha = clamp(blade_halo + blade_core + blade_tip + ring_halo + ring_bloom + ember_sum * 0.65, 0.0, 0.65);
+	vec3 rgb = amber * (blade_glow + ring_glow) + gold * (blade_core + ring_core);
+	float alpha = clamp(blade_glow + blade_core + ring_glow + ring_core, 0.0, 0.65);
 	return vec4(rgb * weight, alpha * weight);
 }
+
 void fragment() {
-	vec4 current_fx = profile_effect(UV, current_blade_a, current_blade_b, current_blade_c,
+	vec4 current_fx = image_glow(UV, current_blade_a, current_blade_b, current_blade_c,
 		current_blade_d, current_blade_e, current_blade_segment_count,
-		current_ring_center, current_ring_radius, current_weight, 0.0);
-	vec4 next_fx = profile_effect(UV, next_blade_a, next_blade_b, next_blade_c,
+		current_ring_center, current_ring_radius, current_weight);
+	vec4 next_fx = image_glow(UV, next_blade_a, next_blade_b, next_blade_c,
 		next_blade_d, next_blade_e, next_blade_segment_count,
-		next_ring_center, next_ring_radius, next_weight, 3.7);
+		next_ring_center, next_ring_radius, next_weight);
 	COLOR = current_fx + next_fx;
 }
-"""
+""""""
 	intro_effect_material = ShaderMaterial.new()
 	intro_effect_material.shader = intro_effect_shader
 	intro_effect_overlay.material = intro_effect_material
