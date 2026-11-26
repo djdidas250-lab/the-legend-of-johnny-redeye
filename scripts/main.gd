@@ -443,19 +443,8 @@ void fragment() {
 	title_art.size = art_rect.size
 	title_art.stretch_mode = TextureRect.STRETCH_SCALE
 	title_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var edge_shader := Shader.new()
-	edge_shader.code = """
-shader_type canvas_item;
-void fragment() {
-	vec4 source = texture(TEXTURE, UV);
-	float edge = min(min(UV.x, 1.0 - UV.x), min(UV.y, 1.0 - UV.y));
-	float soft_edge = smoothstep(0.0, 0.016, edge);
-	COLOR = vec4(source.rgb, source.a * soft_edge);
-}
-"""
-	var edge_material := ShaderMaterial.new()
-	edge_material.shader = edge_shader
-	title_art.material = edge_material
+	# Keep the supplied JPEG fully opaque at its fitted edges. The previous
+	# alpha feather exposed the stretched backdrop as narrow grey side strips.
 	title_layer.add_child(title_art)
 	title_art.custom_minimum_size = Vector2.ZERO
 	title_art.position = art_rect.position
@@ -580,7 +569,6 @@ void fragment() {
 	sword_shader.code = """
 shader_type canvas_item;
 render_mode unshaded, blend_add;
-uniform sampler2D title_texture : source_color;
 float segment_distance(vec2 p, vec2 a, vec2 b) {
 	vec2 pa = p - a;
 	vec2 ba = b - a;
@@ -588,17 +576,22 @@ float segment_distance(vec2 p, vec2 a, vec2 b) {
 	return length(pa - ba * h);
 }
 void fragment() {
-	// Coordinates are normalized against the inspected 1584x672 source artwork.
-	// The blade glow begins at its tip and stops at 85% of the visible blade,
-	// before the crossguard and Johnny's hands.
+	// The visible blade runs diagonally from the hand at its lower-left base
+	// to the upper-right tip. Use a five-point centerline traced over the blade
+	// itself, rather than the old straight chord that rode along its upper edge.
 	vec2 p = UV;
 	float pulse = 0.5 + 0.5 * sin(TIME * 2.1);
 	float flicker = 0.5 + 0.5 * sin(TIME * 10.5 + sin(TIME * 4.7));
-	float blade_d = segment_distance(p, vec2(0.642, 0.305), vec2(0.535, 0.535));
-	float blade_halo = exp(-blade_d * 48.0) * (0.68 + pulse * 0.27) * (0.68 + flicker * 0.32);
-	float blade_edge = exp(-abs(blade_d - 0.007) * 125.0) * (0.34 + flicker * 0.24);
-	float blade_core = exp(-blade_d * 205.0) * 0.34;
-	float tip_bloom = exp(-length((p - vec2(0.642, 0.305)) * vec2(1.0, 0.82)) * 85.0) * (0.42 + pulse * 0.28);
+	float blade_d = min(
+		min(segment_distance(p, vec2(0.520, 0.566), vec2(0.542, 0.515)),
+			segment_distance(p, vec2(0.542, 0.515), vec2(0.570, 0.458))),
+		min(segment_distance(p, vec2(0.570, 0.458), vec2(0.601, 0.390)),
+			segment_distance(p, vec2(0.601, 0.390), vec2(0.633, 0.312)))
+	);
+	float blade_halo = exp(-blade_d * 58.0) * (0.68 + pulse * 0.27) * (0.68 + flicker * 0.32);
+	float blade_edge = exp(-abs(blade_d - 0.006) * 145.0) * (0.34 + flicker * 0.24);
+	float blade_core = exp(-blade_d * 235.0) * 0.38;
+	float tip_bloom = exp(-length((p - vec2(0.633, 0.312)) * vec2(1.0, 0.82)) * 85.0) * (0.42 + pulse * 0.28);
 	// Warm, localized reflection and an animated halo around the existing fire ring.
 	vec2 ground_p = vec2((p.x - 0.500) * 1.05, (p.y - 0.820) * 3.8);
 	float ground_d = length(ground_p);
