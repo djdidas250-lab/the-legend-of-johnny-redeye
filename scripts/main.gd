@@ -797,41 +797,10 @@ void fragment() {
 
 	_add_title_particles(intro_layer, viewport_size)
 
-	# The supplied loading artwork has a black field. Two keyed passes remove
-	# that field: a soft additive amber aura underneath and crisp original flame
-	# lettering/wheel above, without covering the story artwork with a black box.
-	var loading_glow := TextureRect.new()
-	loading_glow.name = "IntroLoadingGraphicGlow"
-	loading_glow.texture = INTRO_LOADING_IMAGE
-	loading_glow.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	loading_glow.anchor_left = 1.0
-	loading_glow.anchor_top = 1.0
-	loading_glow.anchor_right = 1.0
-	loading_glow.anchor_bottom = 1.0
-	loading_glow.offset_left = -252.0
-	loading_glow.offset_top = -148.0
-	loading_glow.offset_right = -6.0
-	loading_glow.offset_bottom = -12.0
-	loading_glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	loading_glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	loading_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	loading_glow.z_index = 29
-	var loading_glow_shader := Shader.new()
-	loading_glow_shader.code = """
-shader_type canvas_item;
-render_mode unshaded, blend_add;
-void fragment() {
-	vec4 src = texture(TEXTURE, UV);
-	float lum = max(max(src.r, src.g), src.b);
-	float alpha = smoothstep(0.008, 0.34, lum) * 0.56;
-	COLOR = vec4(vec3(1.0, 0.25, 0.025) * alpha, alpha);
-}
-"""
-	var loading_glow_material := ShaderMaterial.new()
-	loading_glow_material.shader = loading_glow_shader
-	loading_glow.material = loading_glow_material
-	intro_layer.add_child(loading_glow)
-
+	# Render the supplied loading artwork exactly once. The previous two-pass
+	# setup used two different rectangles, which made the flame and lettering
+	# appear doubled/offset. A single shader now keys the black field and adds
+	# a restrained amber halo around the source artwork without a second copy.
 	var loading := TextureRect.new()
 	loading.name = "IntroLoadingGraphic"
 	loading.texture = INTRO_LOADING_IMAGE
@@ -846,22 +815,39 @@ void fragment() {
 	loading.offset_bottom = -18.0
 	loading.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	loading.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	loading.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	loading.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	loading.z_index = 30
-	var loading_key_shader := Shader.new()
-	loading_key_shader.code = """
+	var loading_shader := Shader.new()
+	loading_shader.code = """
 shader_type canvas_item;
 render_mode unshaded, blend_mix;
 void fragment() {
 	vec4 src = texture(TEXTURE, UV);
 	float lum = max(max(src.r, src.g), src.b);
-	float alpha = smoothstep(0.012, 0.16, lum);
-	COLOR = vec4(src.rgb, src.a * alpha);
+	float source_alpha = src.a * smoothstep(0.012, 0.16, lum);
+	float nearby_brightness = 0.0;
+	for (int x = -2; x <= 2; x++) {
+		for (int y = -2; y <= 2; y++) {
+			if (x == 0 && y == 0) {
+				continue;
+			}
+			vec2 sample_uv = UV + vec2(float(x), float(y)) * TEXTURE_PIXEL_SIZE * 2.0;
+			vec4 sample_color = texture(TEXTURE, sample_uv);
+			float sample_lum = max(max(sample_color.r, sample_color.g), sample_color.b);
+			float sample_alpha = sample_color.a * smoothstep(0.012, 0.16, sample_lum);
+			nearby_brightness = max(nearby_brightness, sample_alpha);
+		}
+	}
+	float halo = max(nearby_brightness - source_alpha, 0.0) * 0.34;
+	vec3 amber = vec3(1.0, 0.22, 0.025);
+	vec3 rgb = src.rgb * source_alpha + amber * halo;
+	COLOR = vec4(rgb, max(source_alpha, halo));
 }
 """
-	var loading_key_material := ShaderMaterial.new()
-	loading_key_material.shader = loading_key_shader
-	loading.material = loading_key_material
+	var loading_material := ShaderMaterial.new()
+	loading_material.shader = loading_shader
+	loading.material = loading_material
 	intro_layer.add_child(loading)
 
 	# Fine amber bloom below the progress track makes it read like a lit ember.
