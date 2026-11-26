@@ -605,27 +605,15 @@ void fragment() {
 	float ground_bloom = exp(-ground_d * 10.5) * (0.28 + pulse * 0.20);
 	float ground_ripple = (0.5 + 0.5 * sin(ground_p.x * 34.0 - TIME * 3.0 + sin(TIME * 1.7) * 2.0))
 		* exp(-ground_d * 5.0) * (0.09 + pulse * 0.07);
-	vec2 ring_p = vec2((p.x - 0.500) / 0.140, (p.y - 0.820) / 0.080);
-	float ring_distance = abs(length(ring_p) - 1.0);
-	float ring_angle = atan(ring_p.y, ring_p.x);
-	float ring_flicker = 0.78 + 0.15 * sin(TIME * 5.5 + ring_angle * 7.0) + 0.07 * sin(TIME * 11.0 - ring_angle * 13.0);
-	// The artwork already contains Johnny in front of the painted fire ring.
-	// Keep the additive ring behind his dark trousers so its circular edge
-	// cannot draw an orange stripe across either leg.
-	vec3 artwork_pixel = texture(title_texture, p).rgb;
-	float artwork_luma = dot(artwork_pixel, vec3(0.299, 0.587, 0.114));
-	float leg_region = smoothstep(0.430, 0.445, p.x) * (1.0 - smoothstep(0.555, 0.570, p.x))
-		* smoothstep(0.745, 0.760, p.y) * (1.0 - smoothstep(0.875, 0.890, p.y));
-	float trouser_occlusion = leg_region * (1.0 - smoothstep(0.08, 0.28, artwork_luma));
-	float ring_visibility = 1.0 - trouser_occlusion;
-	float ring_glow = exp(-ring_distance * 25.0) * (0.48 + pulse * 0.32) * ring_flicker * ring_visibility;
-	float ring_halo = exp(-ring_distance * 5.5) * (0.16 + pulse * 0.12) * ring_visibility;
+	// The supplied artwork already paints the complete fire ring around Johnny's feet.
+	// Do not draw another ellipse/ring over it: keep only a soft ground bounce,
+	// so the original flame outline remains on the ground and never crosses his legs.
 	vec3 amber = vec3(1.0, 0.27, 0.018);
 	vec3 gold = vec3(1.0, 0.82, 0.38);
-	vec3 rgb = amber * (blade_halo + blade_core + tip_bloom + ground_bloom + ground_ripple + ring_glow)
-		+ gold * (blade_edge + ring_halo);
+	vec3 rgb = amber * (blade_halo + blade_core + tip_bloom + ground_bloom * 0.62)
+		+ gold * blade_edge;
 	float alpha = clamp(blade_halo * 0.72 + blade_edge * 0.90 + blade_core + tip_bloom
-		+ ground_bloom + ground_ripple * 1.4 + ring_glow * 1.25 + ring_halo, 0.0, 1.0);
+		+ ground_bloom * 0.62, 0.0, 1.0);
 	COLOR = vec4(rgb, alpha);
 }
 """
@@ -723,13 +711,13 @@ func _add_title_particles(layer: CanvasLayer, viewport_size: Vector2) -> void:
 	)
 	var embers := CPUParticles2D.new()
 	embers.name = "TitleRisingEmbers"
-	embers.amount = 42
+	embers.amount = 96
 	embers.lifetime = 3.6
 	embers.preprocess = 2.0
 	embers.emitting = true
 	embers.local_coords = false
 	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	embers.emission_rect_extents = Vector2(viewport_size.x * 0.38, viewport_size.y * 0.18)
+	embers.emission_rect_extents = Vector2(viewport_size.x * 0.34, viewport_size.y * 0.085)
 	embers.direction = Vector2(-0.12, -1.0)
 	embers.spread = 36.0
 	embers.gravity = Vector2(2.0, -7.0)
@@ -738,12 +726,12 @@ func _add_title_particles(layer: CanvasLayer, viewport_size: Vector2) -> void:
 	embers.angular_velocity_min = -38.0
 	embers.angular_velocity_max = 38.0
 	embers.scale_amount_min = 0.22
-	embers.scale_amount_max = 0.68
-	embers.color = Color(1.0, 0.58, 0.20, 0.9)
+	embers.scale_amount_max = 0.82
+	embers.color = Color(1.0, 0.68, 0.28, 1.0)
 	embers.color_ramp = ember_ramp
 	embers.texture = soft_particle
 	embers.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	embers.position = Vector2(viewport_size.x * 0.50, viewport_size.y * 0.76)
+	embers.position = Vector2(viewport_size.x * 0.50, viewport_size.y * 0.81)
 	embers.z_index = 20
 	layer.add_child(embers)
 
