@@ -833,15 +833,17 @@ void fragment() {
 			if (x == 0 && y == 0) {
 				continue;
 			}
-			vec2 sample_uv = UV + vec2(float(x), float(y)) * TEXTURE_PIXEL_SIZE * 2.0;
+			vec2 sample_uv = UV + vec2(float(x), float(y)) * TEXTURE_PIXEL_SIZE * 3.0;
 			vec4 sample_color = texture(TEXTURE, sample_uv);
 			float sample_lum = max(max(sample_color.r, sample_color.g), sample_color.b);
-			float sample_alpha = sample_color.a * smoothstep(0.012, 0.16, sample_lum);
+			float sample_alpha = sample_color.a * smoothstep(0.008, 0.12, sample_lum);
 			nearby_brightness = max(nearby_brightness, sample_alpha);
 		}
 	}
-	float halo = max(nearby_brightness - source_alpha, 0.0) * 0.34;
-	vec3 amber = vec3(1.0, 0.22, 0.025);
+	# A broader, much brighter amber halo makes the ember around the lettering
+	# and flame wheel visible without shifting or duplicating the source artwork.
+	float halo = max(nearby_brightness - source_alpha, 0.0) * 1.35;
+	vec3 amber = vec3(1.0, 0.19, 0.015);
 	vec3 rgb = src.rgb * source_alpha + amber * halo;
 	COLOR = vec4(rgb, max(source_alpha, halo));
 }
@@ -851,17 +853,31 @@ void fragment() {
 	loading.material = loading_material
 	intro_layer.add_child(loading)
 
-	# Fine amber bloom below the progress track makes it read like a lit ember.
+	# One soft ember bloom, centered directly behind the progress track.
+	# Its vertical falloff prevents a second hard-edged stripe from appearing.
 	var progress_glow := ColorRect.new()
 	progress_glow.name = "IntroProgressGlow"
-	progress_glow.color = Color(1.0, 0.22, 0.025, 0.22)
 	progress_glow.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	progress_glow.offset_left = 0
 	progress_glow.offset_right = 0
-	progress_glow.offset_top = -15
-	progress_glow.offset_bottom = -1
+	progress_glow.offset_top = -19
+	progress_glow.offset_bottom = 5
 	progress_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	progress_glow.z_index = 39
+	var progress_glow_shader := Shader.new()
+	progress_glow_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_add;
+void fragment() {
+	float vertical = exp(-pow((UV.y - 0.5) * 2.6, 2.0));
+	float flicker = 0.92 + 0.08 * sin(TIME * 7.0 + UV.x * 19.0);
+	float alpha = vertical * flicker * 0.82;
+	COLOR = vec4(vec3(1.0, 0.19, 0.012), alpha);
+}
+"""
+	var progress_glow_material := ShaderMaterial.new()
+	progress_glow_material.shader = progress_glow_shader
+	progress_glow.material = progress_glow_material
 	intro_layer.add_child(progress_glow)
 
 	var progress_track := ColorRect.new()
@@ -919,9 +935,13 @@ func _make_intro_image(texture: Texture2D, node_name: String) -> TextureRect:
 func _update_intro_sequence() -> void:
 	if not intro_active or not is_instance_valid(intro_audio_player) or not is_instance_valid(intro_layer):
 		return
+	# AudioStreamPlayer can report playback position 0 on the frame after
+	# the stream ends but before its finished signal is dispatched. Never feed
+	# that reset position back into the slide index: it briefly reloaded Intro1.
+	if not intro_audio_player.playing:
+		return
 	var playback_time := intro_audio_player.get_playback_position()
-	if intro_audio_player.playing:
-		playback_time += AudioServer.get_time_since_last_mix()
+	playback_time += AudioServer.get_time_since_last_mix()
 	intro_elapsed = clampf(playback_time, 0.0, INTRO_TRACK_DURATION)
 	var next_index := mini(int(floor(intro_elapsed / INTRO_SLIDE_DURATION)), INTRO_IMAGES.size() - 1)
 	if next_index != intro_image_index:
