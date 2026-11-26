@@ -687,8 +687,10 @@ func _ready() -> void:
 	if not _check(returned_map.get_node_or_null("JohnHouseCheckpointHitbox") != null and returned_map.get_node_or_null("McRaeCheckpointMarker") != null, "Returning to Mission Select must restore the correct unlocked mission markers."): return
 	if not _check(bool(returned_cfg.get_value("slot_2", "available", false)) and bool(returned_cfg.get_value("slot_3", "available", false)) and bool(returned_cfg.get_value("slot_3", "unlocked_mcrae", false)), "Returning to Mission Select must leave the other save slots and their progress untouched."): return
 	if not _check(game.get("rivals").is_empty() and game.get("slingshot_projectiles").is_empty() and game.get("slingshot_pickup") == null and game.get("baggy_pickup") == null and game.get("touch_direction_by_finger").is_empty() and game.get("direction_touch_buttons").is_empty(), "Returning to Mission Select must clear enemies, projectiles, pickups, and stale touch controls."): return
-	# Re-enter Leaside through the same setup without the first-mission intro,
-	# representing a checkpoint/restart rather than a fresh mission start.
+	# The in-game menu can leave the test tree paused while it verifies the map.
+	# Clear that test-only pause before simulating a checkpoint/restart entry.
+	get_tree().paused = false
+	# Re-enter Leaside without the first-mission intro, as a checkpoint/restart.
 	game.call("_begin_stage_one_mission", false)
 	await RenderingServer.frame_post_draw
 	var restart_opening_music := game.get("music_player") as AudioStreamPlayer
