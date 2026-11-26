@@ -1,0 +1,205 @@
+version: 2.1
+
+jobs:
+  android-apk:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
+    steps:
+      - checkout
+
+      - run:
+          name: Install build dependencies
+          command: |
+            set -euo pipefail
+            sudo apt-get update
+            sudo apt-get install -y curl unzip zip openjdk-17-jdk python3-venv xvfb libgl1-mesa-dri
+            python3 -m venv .venv
+            .venv/bin/pip install --upgrade pip
+            .venv/bin/pip install Pillow numpy scipy
+
+      - run:
+          name: Prepare supplied sprite sheets and animation previews
+          command: |
+            set -euo pipefail
+            test -s Dorval_Extracted_Sprite_Sheets.zip
+            mkdir -p images/sprites build
+            unzip -o Dorval_Extracted_Sprite_Sheets.zip -d images/sprites
+            .venv/bin/python tools/prepare_john_animations.py
+            .venv/bin/python tools/prepare_davy_jones.py
+            .venv/bin/python tools/prepare_mattijuana.py
+            .venv/bin/python tools/create_mattijuana_previews.py
+            test -s "images/01 - Falling Apart (Prologue).ogg"
+            test -s images/heygen-speech.wav
+            test -s "images/10_Angel With The Scabbed Wings.mp3"
+            for asset in \
+              mattijuana_front_walk mattijuana_human_walk mattijuana_human_attack \
+              mattijuana_human_fall mattijuana_human_recover mattijuana_joint_phase \
+              mattijuana_monster_phase mattijuana_joint_idle mattijuana_joint_walk \
+              mattijuana_joint_attack mattijuana_monster_idle mattijuana_monster_walk \
+              mattijuana_monster_attack mattijuana_monster_fire_breath \
+              mattijuana_joint_to_monster davy_human_entrance davy_transformation \
+              davy_octopus_walk_down davy_octopus_walk_up davy_octopus_transition \
+              davy_octopus_attack enemy_updated john_walk john_walk_away \
+              john_walk_toward john_punch john_hurt_recovery john_slingshot; do
+              test -s "images/sprites/${asset}.png"
+            done
+            test -s build/mattijuana_previews/mattijuana_entrance_walk.gif
+            test -s build/davy_previews/davy_human_walk.gif
+
+      - run:
+          name: Install Godot 4.4.1 and matching Android export templates
+          command: |
+            set -euo pipefail
+            mkdir -p /tmp/godot-install
+            curl -fL --retry 3 -o /tmp/godot-install/godot.zip \
+              https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+            unzip -oq /tmp/godot-install/godot.zip -d /tmp/godot-install
+            sudo install -m 0755 /tmp/godot-install/Godot_v4.4.1-stable_linux.x86_64 /usr/local/bin/godot
+            curl -fL --retry 3 -o /tmp/godot-install/templates.tpz \
+              https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz
+            mkdir -p "$HOME/.local/share/godot/export_templates/4.4.1.stable"
+            unzip -oq /tmp/godot-install/templates.tpz -d /tmp/godot-install/templates
+            if [ -d /tmp/godot-install/templates/templates ]; then
+              cp -a /tmp/godot-install/templates/templates/. "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
+            else
+              cp -a /tmp/godot-install/templates/. "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
+            fi
+            printf '4.4.1.stable' > "$HOME/.local/share/godot/export_templates/4.4.1.stable/version.txt"
+            godot --version
+
+      - run:
+          name: Install Android SDK platform and build tools
+          command: |
+            set -euo pipefail
+            export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+            export ANDROID_HOME="$HOME/android-sdk"
+            export ANDROID_SDK_ROOT="$ANDROID_HOME"
+            mkdir -p "$ANDROID_HOME/cmdline-tools"
+            curl -fL --retry 3 -o /tmp/android-commandlinetools.zip \
+              https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            mkdir -p /tmp/android-commandlinetools
+            unzip -oq /tmp/android-commandlinetools.zip -d /tmp/android-commandlinetools
+            mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
+            cp -a /tmp/android-commandlinetools/cmdline-tools/. "$ANDROID_HOME/cmdline-tools/latest/"
+            export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+            yes | sdkmanager --sdk_root="$ANDROID_HOME" --licenses >/dev/null
+            sdkmanager --sdk_root="$ANDROID_HOME" --install \
+              "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+            mkdir -p "$HOME/.config/godot" "$HOME/.android"
+            if [ ! -f "$HOME/.android/debug.keystore" ]; then
+              keytool -genkeypair -noprompt -v -keystore "$HOME/.android/debug.keystore" \
+                -storepass android -alias androiddebugkey -keypass android \
+                -keyalg RSA -keysize 2048 -validity 10000 \
+                -dname "CN=Android Debug,O=Android,C=US"
+            fi
+            cat > "$HOME/.config/godot/editor_settings-4.4.tres" <<EOF
+            [gd_resource type="EditorSettings" format=3]
+
+            [resource]
+            export/android/java_sdk_path = "$JAVA_HOME"
+            export/android/android_sdk_path = "$ANDROID_HOME"
+            export/android/debug_keystore = "$HOME/.android/debug.keystore"
+            export/android/debug_keystore_user = "androiddebugkey"
+            export/android/debug_keystore_pass = "android"
+            EOF
+            {
+              echo "export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64"
+              echo "export ANDROID_HOME=\"$HOME/android-sdk\""
+              echo "export ANDROID_SDK_ROOT=\"$HOME/android-sdk\""
+              echo "export PATH=\"$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools:$PATH\""
+              echo "export GODOT_ANDROID_KEYSTORE_DEBUG_PATH=\"$HOME/.android/debug.keystore\""
+              echo "export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey"
+              echo "export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android"
+            } >> "$BASH_ENV"
+            test -x "$ANDROID_HOME/platform-tools/adb"
+            test -d "$ANDROID_HOME/platforms/android-34"
+            test -d "$ANDROID_HOME/build-tools/34.0.0"
+
+      - run:
+          name: Verify supplied street panoramas
+          command: |
+            set -euo pipefail
+            test -s images/image_54ce9940.jpg
+            test -s images/image_928e623e.jpg
+            .venv/bin/python - <<'PY'
+            from PIL import Image
+            newleaf = Image.open("images/image_54ce9940.jpg")
+            assert newleaf.width >= 1800 and newleaf.height >= 450, newleaf.size
+            leaside = Image.open("images/image_928e623e.jpg")
+            assert leaside.width >= 1600 and leaside.height >= 400, leaside.size
+            assert leaside.width / leaside.height >= 3.0, leaside.size
+            print("Verified Newleaf and Leaside panoramas:", newleaf.size, leaside.size)
+            PY
+
+      - run:
+          name: Import resources and validate scripts
+          command: |
+            set -euo pipefail
+            godot --headless --editor --path . --quit
+            godot --headless --path . --quit
+
+      - run:
+          name: Smoke test startup and core gameplay
+          command: |
+            set -euo pipefail
+            godot --headless --path . --quit-after 5
+            timeout 90s godot --headless --path . --scene res://tests/gameplay_smoke_test.tscn
+
+      - run:
+          name: Capture and verify street atmosphere transitions
+          command: |
+            set -euo pipefail
+            mkdir -p build/atmosphere-captures
+            xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 godot \
+              --path . --script res://tests/atmosphere_visual_capture.gd \
+              --audio-driver Dummy 2>&1 | tee atmosphere-capture.log
+            grep -q "ATMOSPHERE_VISUAL_CAPTURE_COMPLETE" atmosphere-capture.log
+            grep -q "CUTSCENE_CAPTURE_COUNT=4" atmosphere-capture.log
+            grep -q "STREET_ATMOSPHERE_HANDOFF_COUNT=4" atmosphere-capture.log
+            test "$(find build/atmosphere-captures -maxdepth 1 -type f -name 'cutscene_*.png' | wc -l)" -eq 4
+            for frame in build/atmosphere-captures/cutscene_mcrae.png \
+              build/atmosphere-captures/cutscene_newleaf.png \
+              build/atmosphere-captures/cutscene_woodlawn_road.png \
+              build/atmosphere-captures/cutscene_woodlawn_park.png; do
+              test -s "$frame"
+            done
+
+      - run:
+          name: Export Android APK
+          command: |
+            set -euo pipefail
+            mkdir -p build
+            godot --headless --verbose --path . --export-debug "Android" build/TheLegendOfJohnnyRedeye.apk
+            test -s build/TheLegendOfJohnnyRedeye.apk
+
+      - run:
+          name: Verify APK package and signature
+          command: |
+            set -euo pipefail
+            file build/TheLegendOfJohnnyRedeye.apk
+            unzip -t build/TheLegendOfJohnnyRedeye.apk
+            "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose build/TheLegendOfJohnnyRedeye.apk
+            AAPT="$ANDROID_HOME/build-tools/34.0.0/aapt"
+            "$AAPT" dump badging build/TheLegendOfJohnnyRedeye.apk | tee build/apk-badging.txt
+            grep -F "package: name='com.djdidas.legendofdorval'" build/apk-badging.txt
+            grep -F "application-label:'The Legend of Johnny Redeye'" build/apk-badging.txt
+            "$AAPT" dump xmltree build/TheLegendOfJohnnyRedeye.apk AndroidManifest.xml > build/apk-manifest.txt
+
+      - store_artifacts:
+          path: build/TheLegendOfJohnnyRedeye.apk
+          destination: TheLegendOfJohnnyRedeye.apk
+      - store_artifacts:
+          path: build/atmosphere-captures
+          destination: atmosphere-captures
+      - store_artifacts:
+          path: build/mattijuana_previews
+          destination: mattijuana-previews
+      - store_artifacts:
+          path: build/davy_previews
+          destination: davy-previews
+
+workflows:
+  android-build:
+    jobs:
+      - android-apk
