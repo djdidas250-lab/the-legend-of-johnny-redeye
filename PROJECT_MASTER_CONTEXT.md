@@ -2,7 +2,7 @@
 
 > **Purpose:** This file is the durable source of truth for continuing development in a new ChatGPT conversation. Read this document first, then inspect the current repository and GitHub Actions before changing code. Do not rely on conversational recollection where repository state can be verified.
 >
-> **Last handoff update:** 2026-11-25 (America/Toronto). Repository API timestamps may appear on 2026-11-26 UTC.
+> **Last handoff update:** 2026-11-26 (America/Toronto). Repository API timestamps may appear on 2026-11-26 UTC.
 
 ## 1. Project identity and repository
 
@@ -174,3 +174,26 @@ User can say:
 > Continue The Legend of Johnny Redeye. Read `PROJECT_MASTER_CONTEXT.md` in the private GitHub repository `djdidas250-lab/the-legend-of-johnny-redeye` on `main`. Verify the latest commit, latest Actions run and release asset before doing anything. Continue with the current priority: diagnose failed Build #143, make the automated rendered-frame capture pipeline genuinely work, inspect actual game frames yourself (no uploads from me), and fix the blocky fog without affecting characters or pickups.
 
 Start by fetching this document and checking live GitHub state. Never ask the user to restate the project history or send screenshots.
+
+
+## 11. Stage One mission-start briefing redesign (2026-11-26)
+
+The user confirmed the current development focus is completing Stage One's core mechanics. Future stages will have their own map/mission-select screens, unlockable streets and mission-start briefings, but should reuse the same design system as Stage One. Keep future-stage extensibility in mind without prematurely building Stage Two.
+
+### Implemented on main
+
+- Commit `b7c7b63c3cc257d8930daa93e0a6a8b1f2675492`: redesigned `_show_stage_one_splash()` in `scripts/main.gd`.
+- Commit `8c1eb995c2dcdb427a0d8979bb8c8369ee23153e`: updated `tests/gameplay_smoke_test.gd` for the new layout.
+- Retained the original supplied John's House background texture `images/image_a06e5bc7.jpg`.
+- Replaced the old thin white frame, separate full-width header/footer strips, red underline and simulated button with a full-screen aspect-covered background plus the same dark `#08070c` / crimson `#b10e2d` rounded panel treatment used by later transition briefings.
+- Applied `ENVIRONMENTAL_ATMOSPHERE.create_cutscene_atmosphere_material()` to the house background so it receives the same nighttime grade and subtle drifting mist treatment as transition artwork. The overlay panel and UI are not shaded.
+- Added reusable `_create_transition_briefing_panel(...)` to supply stage title, objective, prompt and action while keeping the shared panel/typography/button styling. Future stages should use this helper rather than inventing a different briefing design.
+- Preserved Stage One title, objective, mission-start action and the game-start click sound. The visible Begin Mission button now handles its own press and audio sequence.
+- Smoke tests now check the original house asset, atmospheric ShaderMaterial, shared panel styling, copy, visible functional button and reusable helper.
+
+### Verification status
+
+- Do not claim this change is fully verified until workflow run #160 completes.
+- Run #160 is the relevant full workflow for the latest source commit. Confirm Godot script validation, startup/gameplay smoke tests, atmosphere capture, Android APK export/package verification and release publication.
+- The source-level test update is committed; no claim of actual rendered visual inspection has been made yet.
+- No Stage Two content or map has been implemented. This change only establishes a reusable Stage briefing layout for later use.
