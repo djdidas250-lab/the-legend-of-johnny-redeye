@@ -62,74 +62,37 @@ const FOG_SHADER := """
 shader_type canvas_item;
 render_mode unshaded, blend_mix;
 
-uniform float drift_speed = 0.012;
-uniform float opacity = 0.38;
-uniform float scale_x = 2.2;
-uniform float scale_y = 1.25;
+uniform float drift_speed = 0.010;
+uniform float opacity = 0.30;
+uniform float scale_x = 1.0;
+uniform float scale_y = 1.0;
 uniform float vertical_offset = 0.0;
 uniform vec3 fog_tint : source_color = vec3(0.48, 0.54, 0.64);
-
-float hash21(vec2 p) {
-    p = fract(p * vec2(123.34, 456.21));
-    p += dot(p, p + 45.32);
-    return fract(p.x * p.y);
-}
-
-float noise2(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    // Quintic interpolation removes the visible grid-like transitions
-    // that can appear in low-resolution value-noise fields.
-    f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
-    float a = hash21(i);
-    float b = hash21(i + vec2(1.0, 0.0));
-    float c = hash21(i + vec2(0.0, 1.0));
-    float d = hash21(i + vec2(1.0, 1.0));
-    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-}
-
-float fbm_soft(vec2 p) {
-    float value = 0.0;
-    float amplitude = 0.58;
-    value += noise2(p) * amplitude;
-    p = p * 1.93 + vec2(13.7, 8.4);
-    amplitude *= 0.29;
-    value += noise2(p) * amplitude;
-    p = p * 1.91 + vec2(7.1, 19.6);
-    amplitude *= 0.22;
-    value += noise2(p) * amplitude;
-    return value / 0.76;
-}
 
 void fragment() {
     vec2 uv = UV;
     float t = TIME * drift_speed;
-    vec2 field = uv * vec2(scale_x, scale_y);
+    float x = uv.x * scale_x;
 
-    // Only broad, low-frequency fields are used. The warp gently bends
-    // the mist sheet; it does not carve it into separate noisy blobs.
-    vec2 warp = vec2(
-        fbm_soft(field * 0.42 + vec2(t * 0.24, -t * 0.10)),
-        fbm_soft(field * 0.36 + vec2(-t * 0.18, t * 0.12))
-    ) - vec2(0.5);
-    vec2 cloud_field = field + warp * vec2(0.72, 0.30);
-    float broad_density = fbm_soft(cloud_field * 0.78 + vec2(t, 0.0));
-    float secondary_density = fbm_soft(cloud_field * 0.53 + vec2(-t * 0.58, 2.7));
-    float density = broad_density * 0.62 + secondary_density * 0.38;
+    // Continuous, overlapping wave fields replace value-noise completely.
+    // Their long wavelengths create broad wisps without pixel/cell artifacts.
+    float swell_a = sin(x * 5.1 + t * 1.00 + sin(uv.y * 3.2 - t * 0.24) * 0.72);
+    float swell_b = sin(x * 8.3 - t * 0.67 + sin(uv.y * 2.1 + t * 0.18) * 0.58);
+    float swell_c = sin(x * 2.7 + t * 0.43 + sin(uv.y * 4.0 - t * 0.14) * 0.46);
+    float wisps = swell_a * 0.48 + swell_b * 0.22 + swell_c * 0.30;
 
-    // A continuous atmospheric sheet is the foundation. Density variation
-    // is deliberately restrained so the result reads as mist, not patches.
-    float horizontal_roll = sin(uv.x * 4.2 + t * 0.42) * 0.018
-        + sin(uv.x * 8.1 - t * 0.27) * 0.009;
-    float lower_edge = 0.425 + vertical_offset + horizontal_roll;
-    float upper_edge = 0.79 + vertical_offset * 0.35 + horizontal_roll * 0.6;
-    float ground_band = smoothstep(lower_edge, lower_edge + 0.16, uv.y)
-        * (1.0 - smoothstep(upper_edge - 0.12, upper_edge + 0.10, uv.y));
+    // A broad ground-hugging body with feathered upper and lower edges.
+    float rolling_center = 0.61 + vertical_offset
+        + sin(uv.x * 3.1 + t * 0.38) * 0.035
+        + sin(uv.x * 6.4 - t * 0.23) * 0.014;
+    float lower = smoothstep(0.405 + vertical_offset, 0.535 + vertical_offset, uv.y);
+    float upper = 1.0 - smoothstep(rolling_center + 0.055, rolling_center + 0.235, uv.y);
+    float body = lower * upper;
 
-    float soft_density = 0.82 + (density - 0.5) * 0.22;
-    float low_curl = smoothstep(0.57, 0.73, secondary_density) * 0.045;
-    float alpha = ground_band * (soft_density + low_curl) * opacity;
-    COLOR = vec4(fog_tint, clamp(alpha, 0.0, 0.34));
+    // Wisps gently modulate opacity only; they never cut hard holes in the fog.
+    float modulation = 0.88 + wisps * 0.075;
+    float alpha = body * modulation * opacity;
+    COLOR = vec4(fog_tint, clamp(alpha, 0.0, 0.30));
 }
 """
 
