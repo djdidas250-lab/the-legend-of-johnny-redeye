@@ -7,6 +7,18 @@ const DEATH_SCREEN_IMAGE := preload("res://images/image_df287ed.jpg")
 const DEATH_SOUND := preload("res://images/death.mp3")
 const DEATH_SCREEN_MUSIC := preload("res://images/18. 'Till I Collapse.mp3")
 const TITLE_MUSIC_VOLUME_DB := -18.0
+const INTRO_IMAGES: Array[Texture2D] = [
+	preload("res://images/intro_assets/Intro1.jpg"),
+	preload("res://images/intro_assets/Intro2.jpg"),
+	preload("res://images/intro_assets/Intro3.jpg"),
+	preload("res://images/intro_assets/Intro4.jpg"),
+	preload("res://images/intro_assets/Intro5.jpeg")
+]
+const INTRO_LOADING_IMAGE := preload("res://images/intro_assets/intro 6.jpeg")
+const INTRO_MUSIC := preload("res://images/intro_assets/01 Intro.mp3")
+const INTRO_TRACK_DURATION := 81.690256
+const INTRO_SLIDE_DURATION := INTRO_TRACK_DURATION / 5.0
+const INTRO_TRANSITION_DURATION := 1.18
 const TITLE_CLICK_VOLUME_DB := -2.0
 const MAP_IMAGE := preload("res://images/Gemini_Generated_Image_3urpcr3urpcr3urp.jpeg")
 const MAP_CHECKPOINT_MARKER := preload("res://images/map_checkpoint_x.svg")
@@ -151,6 +163,15 @@ var player_recovery_active := false
 var player_recovery_timer := 0.0
 var player_recovery_pulse_timer := 0.0
 var title_layer: CanvasLayer
+var intro_layer: CanvasLayer
+var intro_audio_player: AudioStreamPlayer
+var intro_image_current: TextureRect
+var intro_image_next: TextureRect
+var intro_transition_flare: ColorRect
+var intro_progress_fill: ColorRect
+var intro_active := false
+var intro_elapsed := 0.0
+var intro_image_index := -1
 var map_layer: CanvasLayer
 var death_layer: CanvasLayer
 var splash_layer: CanvasLayer
@@ -613,6 +634,389 @@ void fragment() {
 	exit_game.pressed.connect(func() -> void: _run_title_button_action(exit_game, _exit_game))
 	title_layer.add_child(exit_game)
 
+
+func _start_intro_sequence() -> void:
+	# New Game enters the cinematic only after its fresh slot is safely created.
+	# Continue never calls this path and therefore keeps its direct save-slot flow.
+	if title_layer != null:
+		title_layer.queue_free()
+		title_layer = null
+	if map_layer != null:
+		map_layer.queue_free()
+		map_layer = null
+	if intro_audio_player != null:
+		intro_audio_player.stop()
+		intro_audio_player.queue_free()
+		intro_audio_player = null
+	if intro_layer != null:
+		intro_layer.queue_free()
+		intro_layer = null
+	if music_player != null:
+		music_player.stop()
+
+	intro_active = true
+	intro_elapsed = 0.0
+	intro_image_index = 0
+	intro_layer = CanvasLayer.new()
+	intro_layer.name = "CinematicIntroLayer"
+	intro_layer.layer = 24
+	add_child(intro_layer)
+
+	var viewport_size := get_viewport_rect().size
+	var black := ColorRect.new()
+	black.name = "IntroLetterboxBackdrop"
+	black.color = Color.BLACK
+	black.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	black.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	intro_layer.add_child(black)
+
+	intro_image_current = _make_intro_image(INTRO_IMAGES[0], "IntroImageCurrent")
+	intro_image_current.z_index = 1
+	intro_layer.add_child(intro_image_current)
+	intro_image_next = _make_intro_image(INTRO_IMAGES[1], "IntroImageIncoming")
+	intro_image_next.z_index = 2
+	intro_image_next.visible = false
+	intro_layer.add_child(intro_image_next)
+
+	# A restrained blue-grey atmospheric veil and warm practical-light spill
+	# reproduce the title screen's drifting haze and carnival/fire illumination.
+	var haze := ColorRect.new()
+	haze.name = "IntroAtmosphericHaze"
+	haze.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	haze.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	haze.z_index = 4
+	var haze_shader := Shader.new()
+	haze_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_mix;
+void fragment() {
+	vec2 uv = UV;
+	float t = TIME;
+	float broad = sin(uv.x * 5.4 - t * 0.075 + sin(uv.y * 5.8 + t * 0.035) * 0.82);
+	float fine = sin(uv.x * 11.0 + t * 0.052 + sin(uv.y * 8.0 - t * 0.028) * 0.55);
+	float wisps = 0.5 + broad * 0.30 + fine * 0.20;
+	float lower_bank = smoothstep(0.53, 0.96, uv.y);
+	float side_bank = smoothstep(0.02, 0.28, uv.x) * (1.0 - smoothstep(0.72, 0.99, uv.x));
+	float haze_alpha = lower_bank * (0.035 + smoothstep(0.22, 0.82, wisps) * 0.065);
+	haze_alpha += (1.0 - side_bank) * smoothstep(0.58, 0.96, uv.y) * 0.035;
+	float upper_smoke = exp(-pow((uv.y - (0.39 + sin(uv.x * 5.0 - t * 0.04) * 0.025)) * 16.0, 2.0));
+	haze_alpha += upper_smoke * (0.012 + wisps * 0.012);
+	COLOR = vec4(vec3(0.42, 0.49, 0.62), clamp(haze_alpha, 0.0, 0.12));
+}
+"""
+	var haze_material := ShaderMaterial.new()
+	haze_material.shader = haze_shader
+	haze.material = haze_material
+	intro_layer.add_child(haze)
+
+	var light_spill := ColorRect.new()
+	light_spill.name = "IntroPracticalLightSpill"
+	light_spill.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	light_spill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	light_spill.z_index = 5
+	var light_shader := Shader.new()
+	light_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_add;
+void fragment() {
+	vec2 uv = UV;
+	float t = TIME;
+	float left_fire = exp(-length((uv - vec2(0.12, 0.78)) * vec2(3.4, 5.0)) * 2.0) * 0.12;
+	float right_fire = exp(-length((uv - vec2(0.88, 0.76)) * vec2(3.4, 5.0)) * 2.0) * 0.11;
+	float center_glow = exp(-length((uv - vec2(0.52, 0.50)) * vec2(2.2, 2.8)) * 2.2) * 0.035;
+	float flicker = 0.90 + 0.07 * sin(t * 5.1) + 0.03 * sin(t * 11.7);
+	vec3 amber = vec3(1.0, 0.34, 0.075) * (left_fire + right_fire) * flicker;
+	vec3 warm = vec3(1.0, 0.54, 0.20) * center_glow;
+	COLOR = vec4(amber + warm, clamp(left_fire + right_fire + center_glow, 0.0, 0.20));
+}
+"""
+	var light_material := ShaderMaterial.new()
+	light_material.shader = light_shader
+	light_spill.material = light_material
+	intro_layer.add_child(light_spill)
+
+	# One transition shader supports crossfade, directional light-sweep,
+	# organic layered dissolve and smoke-veiled reveal, driven by soundtrack time.
+	var transition_shader := Shader.new()
+	transition_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_mix;
+uniform float progress : hint_range(0.0, 1.0) = 0.0;
+uniform int transition_style = 0;
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+void fragment() {
+	vec4 source = texture(TEXTURE, UV);
+	float reveal = progress;
+	if (transition_style == 1) {
+		float edge = UV.x + (hash(floor(UV * vec2(42.0, 22.0))) - 0.5) * 0.045;
+		reveal = smoothstep(progress - 0.075, progress + 0.075, edge);
+		reveal = 1.0 - reveal;
+	} else if (transition_style == 2) {
+		vec2 cell = floor(UV * vec2(70.0, 30.0));
+		float noise_value = hash(cell) * 0.72 + hash(cell * 0.47 + vec2(13.0, 7.0)) * 0.28;
+		reveal = 1.0 - smoothstep(progress - 0.12, progress + 0.12, noise_value);
+	} else if (transition_style == 3) {
+		float smoke_edge = UV.x + sin(UV.y * 13.0 + TIME * 0.22) * 0.045;
+		float soft_noise = hash(floor(UV * vec2(34.0, 18.0))) * 0.035;
+		reveal = 1.0 - smoothstep(progress - 0.10 - soft_noise, progress + 0.10 + soft_noise, smoke_edge);
+	}
+	source.a *= reveal;
+	COLOR = source;
+}
+"""
+	var transition_material := ShaderMaterial.new()
+	transition_material.shader = transition_shader
+	intro_image_next.material = transition_material
+
+	intro_transition_flare = ColorRect.new()
+	intro_transition_flare.name = "IntroTransitionLightSweep"
+	intro_transition_flare.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	intro_transition_flare.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	intro_transition_flare.z_index = 7
+	var flare_shader := Shader.new()
+	flare_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_add;
+uniform float progress : hint_range(0.0, 1.0) = 0.0;
+uniform float strength = 0.0;
+void fragment() {
+	float sweep = exp(-abs(UV.x - progress) * 34.0);
+	float bloom = exp(-abs(UV.x - progress) * 5.5) * 0.22;
+	float vertical = 0.35 + 0.65 * exp(-pow((UV.y - 0.5) * 1.4, 2.0));
+	float alpha = (sweep * 0.22 + bloom) * vertical * strength;
+	COLOR = vec4(vec3(1.0, 0.28, 0.045), alpha);
+}
+"""
+	var flare_material := ShaderMaterial.new()
+	flare_material.shader = flare_shader
+	intro_transition_flare.material = flare_material
+	intro_transition_flare.visible = false
+	intro_layer.add_child(intro_transition_flare)
+
+	_add_title_particles(intro_layer, viewport_size)
+
+	# The supplied loading artwork has a black field. Two keyed passes remove
+	# that field: a soft additive amber aura underneath and crisp original flame
+	# lettering/wheel above, without covering the story artwork with a black box.
+	var loading_glow := TextureRect.new()
+	loading_glow.name = "IntroLoadingGraphicGlow"
+	loading_glow.texture = INTRO_LOADING_IMAGE
+	loading_glow.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	loading_glow.anchor_left = 1.0
+	loading_glow.anchor_top = 1.0
+	loading_glow.anchor_right = 1.0
+	loading_glow.anchor_bottom = 1.0
+	loading_glow.offset_left = -252.0
+	loading_glow.offset_top = -148.0
+	loading_glow.offset_right = -6.0
+	loading_glow.offset_bottom = -12.0
+	loading_glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	loading_glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	loading_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	loading_glow.z_index = 29
+	var loading_glow_shader := Shader.new()
+	loading_glow_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_add;
+void fragment() {
+	vec4 src = texture(TEXTURE, UV);
+	float lum = max(max(src.r, src.g), src.b);
+	float alpha = smoothstep(0.008, 0.34, lum) * 0.56;
+	COLOR = vec4(vec3(1.0, 0.25, 0.025) * alpha, alpha);
+}
+"""
+	var loading_glow_material := ShaderMaterial.new()
+	loading_glow_material.shader = loading_glow_shader
+	loading_glow.material = loading_glow_material
+	intro_layer.add_child(loading_glow)
+
+	var loading := TextureRect.new()
+	loading.name = "IntroLoadingGraphic"
+	loading.texture = INTRO_LOADING_IMAGE
+	loading.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	loading.anchor_left = 1.0
+	loading.anchor_top = 1.0
+	loading.anchor_right = 1.0
+	loading.anchor_bottom = 1.0
+	loading.offset_left = -246.0
+	loading.offset_top = -142.0
+	loading.offset_right = -12.0
+	loading.offset_bottom = -18.0
+	loading.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	loading.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	loading.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	loading.z_index = 30
+	var loading_key_shader := Shader.new()
+	loading_key_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_mix;
+void fragment() {
+	vec4 src = texture(TEXTURE, UV);
+	float lum = max(max(src.r, src.g), src.b);
+	float alpha = smoothstep(0.012, 0.16, lum);
+	COLOR = vec4(src.rgb, src.a * alpha);
+}
+"""
+	var loading_key_material := ShaderMaterial.new()
+	loading_key_material.shader = loading_key_shader
+	loading.material = loading_key_material
+	intro_layer.add_child(loading)
+
+	# Fine amber bloom below the progress track makes it read like a lit ember.
+	var progress_glow := ColorRect.new()
+	progress_glow.name = "IntroProgressGlow"
+	progress_glow.color = Color(1.0, 0.22, 0.025, 0.22)
+	progress_glow.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	progress_glow.offset_left = 0
+	progress_glow.offset_right = 0
+	progress_glow.offset_top = -15
+	progress_glow.offset_bottom = -1
+	progress_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	progress_glow.z_index = 39
+	intro_layer.add_child(progress_glow)
+
+	var progress_track := ColorRect.new()
+	progress_track.name = "IntroProgressTrack"
+	progress_track.color = Color(0.035, 0.018, 0.012, 0.92)
+	progress_track.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	progress_track.offset_left = 0
+	progress_track.offset_right = 0
+	progress_track.offset_top = -8
+	progress_track.offset_bottom = -2
+	progress_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	progress_track.z_index = 40
+	intro_layer.add_child(progress_track)
+
+	intro_progress_fill = ColorRect.new()
+	intro_progress_fill.name = "IntroProgressFill"
+	intro_progress_fill.color = Color("#ff6a18")
+	intro_progress_fill.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	intro_progress_fill.anchor_left = 0.0
+	intro_progress_fill.anchor_right = 0.0
+	intro_progress_fill.anchor_top = 1.0
+	intro_progress_fill.anchor_bottom = 1.0
+	intro_progress_fill.offset_left = 0
+	intro_progress_fill.offset_right = 0
+	intro_progress_fill.offset_top = -8
+	intro_progress_fill.offset_bottom = -2
+	intro_progress_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	intro_progress_fill.z_index = 41
+	intro_layer.add_child(intro_progress_fill)
+
+	intro_audio_player = AudioStreamPlayer.new()
+	intro_audio_player.name = "IntroSoundtrack"
+	intro_audio_player.stream = INTRO_MUSIC
+	intro_audio_player.volume_db = -8.0
+	intro_audio_player.bus = "Master"
+	add_child(intro_audio_player)
+	intro_audio_player.finished.connect(_finish_intro_sequence, CONNECT_ONE_SHOT)
+	intro_audio_player.play()
+	_update_intro_sequence()
+
+func _make_intro_image(texture: Texture2D, node_name: String) -> TextureRect:
+	var image := TextureRect.new()
+	image.name = node_name
+	image.texture = texture
+	image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	# The supplied story art is 2.35:1. Fit the complete image without stretching
+	# or cropping; the black cinematic letterbox remains behind the artwork.
+	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	image.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return image
+
+func _update_intro_sequence() -> void:
+	if not intro_active or not is_instance_valid(intro_audio_player) or not is_instance_valid(intro_layer):
+		return
+	var playback_time := intro_audio_player.get_playback_position()
+	if intro_audio_player.playing:
+		playback_time += intro_audio_player.get_time_since_last_mix()
+	intro_elapsed = clampf(playback_time, 0.0, INTRO_TRACK_DURATION)
+	var next_index := mini(int(floor(intro_elapsed / INTRO_SLIDE_DURATION)), INTRO_IMAGES.size() - 1)
+	if next_index != intro_image_index:
+		intro_image_index = next_index
+		intro_image_current.texture = INTRO_IMAGES[intro_image_index]
+		intro_image_current.modulate = Color.WHITE
+		intro_image_next.visible = false
+		intro_image_next.material = null
+		if intro_image_index < INTRO_IMAGES.size() - 1:
+			var transition_shader := Shader.new()
+			transition_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_mix;
+uniform float progress : hint_range(0.0, 1.0) = 0.0;
+uniform int transition_style = 0;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+void fragment() {
+	vec4 src = texture(TEXTURE, UV);
+	float reveal = progress;
+	if (transition_style == 1) {
+		float edge = UV.x + (hash(floor(UV * vec2(42.0, 22.0))) - 0.5) * 0.045;
+		reveal = 1.0 - smoothstep(progress - 0.075, progress + 0.075, edge);
+	} else if (transition_style == 2) {
+		vec2 cell = floor(UV * vec2(70.0, 30.0));
+		float n = hash(cell) * 0.72 + hash(cell * 0.47 + vec2(13.0, 7.0)) * 0.28;
+		reveal = 1.0 - smoothstep(progress - 0.12, progress + 0.12, n);
+	} else if (transition_style == 3) {
+		float edge = UV.x + sin(UV.y * 13.0 + TIME * 0.22) * 0.045;
+		float n = hash(floor(UV * vec2(34.0, 18.0))) * 0.035;
+		reveal = 1.0 - smoothstep(progress - 0.10 - n, progress + 0.10 + n, edge);
+	}
+	src.a *= reveal;
+	COLOR = src;
+}
+"""
+			var mat := ShaderMaterial.new()
+			mat.shader = transition_shader
+			intro_image_next.material = mat
+
+	var local_time := intro_elapsed - float(intro_image_index) * INTRO_SLIDE_DURATION
+	var transition_start := INTRO_SLIDE_DURATION - INTRO_TRANSITION_DURATION
+	var transitioning := intro_image_index < INTRO_IMAGES.size() - 1 and local_time >= transition_start
+	if transitioning:
+		var progress := clampf((local_time - transition_start) / INTRO_TRANSITION_DURATION, 0.0, 1.0)
+		intro_image_next.texture = INTRO_IMAGES[intro_image_index + 1]
+		intro_image_next.visible = true
+		var mat := intro_image_next.material as ShaderMaterial
+		if mat != null:
+			mat.set_shader_parameter("progress", progress)
+			mat.set_shader_parameter("transition_style", intro_image_index)
+		if is_instance_valid(intro_transition_flare):
+			intro_transition_flare.visible = true
+			var flare_mat := intro_transition_flare.material as ShaderMaterial
+			flare_mat.set_shader_parameter("progress", progress)
+			var pulse := sin(progress * PI)
+			flare_mat.set_shader_parameter("strength", pulse * (0.70 if intro_image_index == 1 else 0.48))
+	else:
+		intro_image_next.visible = false
+		if is_instance_valid(intro_transition_flare):
+			intro_transition_flare.visible = false
+	if is_instance_valid(intro_progress_fill):
+		var view_width := get_viewport_rect().size.x
+		intro_progress_fill.size.x = view_width * clampf(intro_elapsed / INTRO_TRACK_DURATION, 0.0, 1.0)
+
+func _finish_intro_sequence() -> void:
+	if not intro_active:
+		return
+	intro_active = false
+	if is_instance_valid(intro_audio_player):
+		intro_audio_player.stop()
+		intro_audio_player.queue_free()
+	intro_audio_player = null
+	if is_instance_valid(intro_progress_fill):
+		intro_progress_fill.size.x = get_viewport_rect().size.x
+	if is_instance_valid(intro_layer):
+		var fade := create_tween()
+		fade.tween_property(intro_layer, "modulate:a", 0.0, 0.48)
+		await fade.finished
+		intro_layer.queue_free()
+	intro_layer = null
+	_show_map_screen()
+
+
 func _play_title_click() -> void:
 	if sfx_player == null:
 		return
@@ -808,7 +1212,7 @@ func _begin_fresh_save_slot(slot_index: int) -> void:
 	if save_slot_layer != null:
 		save_slot_layer.queue_free()
 		save_slot_layer = null
-	_show_map_screen()
+	_start_intro_sequence()
 
 func _continue_game() -> void:
 	_show_save_slot_picker(false)
@@ -946,6 +1350,14 @@ func _cancel_save_slot_picker() -> void:
 	_show_title()
 
 func _show_map_screen() -> void:
+	intro_active = false
+	if intro_audio_player != null:
+		intro_audio_player.stop()
+		intro_audio_player.queue_free()
+		intro_audio_player = null
+	if intro_layer != null:
+		intro_layer.queue_free()
+		intro_layer = null
 	if title_layer != null:
 		title_layer.queue_free()
 		title_layer = null
@@ -1733,6 +2145,8 @@ func _setup_horror_atmosphere() -> void:
 	add_child(horror_atmosphere)
 
 func _process(delta: float) -> void:
+	if intro_active:
+		_update_intro_sequence()
 	if not is_instance_valid(horror_atmosphere):
 		return
 	var active_camera := get_viewport().get_camera_2d()
