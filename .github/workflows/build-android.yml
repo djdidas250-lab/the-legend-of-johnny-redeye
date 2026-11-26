@@ -35,6 +35,19 @@ jobs:
           test -s "images/intro_assets/intro 6.jpeg"
           test -s "images/intro_assets/01 Intro.mp3"
 
+      - name: Upload original intro frames for visual coordinate inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: intro-source-frames
+          path: |
+            images/intro_assets/Intro1.jpg
+            images/intro_assets/Intro2.jpg
+            images/intro_assets/Intro3.jpg
+            images/intro_assets/Intro4.jpg
+            images/intro_assets/Intro5.jpeg
+          retention-days: 3
+          if-no-files-found: error
+
       - name: Extract supplied character sprite sheets
         run: |
           test -s Dorval_Extracted_Sprite_Sheets.zip
