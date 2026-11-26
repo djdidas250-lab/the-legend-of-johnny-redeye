@@ -21,9 +21,7 @@ func _run_visual_capture() -> void:
 		await process_frame
 	await RenderingServer.frame_post_draw
 
-	var output_dir := ProjectSettings.globalize_path("res://build/atmosphere_visuals")
-	DirAccess.make_dir_recursive_absolute(output_dir)
-	var capture_times := [0.35, 1.8, 3.6, 5.4]
+	var capture_times := [0.8, 3.8]
 	for i in range(capture_times.size()):
 		await create_timer(float(capture_times[i])).timeout
 		await RenderingServer.frame_post_draw
@@ -32,12 +30,12 @@ func _run_visual_capture() -> void:
 			push_error("Rendered viewport image was empty at capture %d." % i)
 			quit(1)
 			return
-		var output_path := output_dir.path_join("newleaf_fog_%02d.png" % i)
-		var save_error := frame_image.save_png(output_path)
-		if save_error != OK:
-			push_error("Could not save rendered atmosphere frame: " + output_path)
-			quit(1)
-			return
-		print("ATMOSPHERE_VISUAL_CAPTURE=", output_path, " size=", frame_image.get_size())
+		frame_image.resize(640, 360, Image.INTERPOLATE_LANCZOS)
+		var jpg_bytes := frame_image.save_jpg_to_buffer(0.48)
+		var encoded := Marshalls.raw_to_base64(jpg_bytes)
+		print("ATMOSPHERE_FRAME_BEGIN_%02d" % i)
+		print(encoded)
+		print("ATMOSPHERE_FRAME_END_%02d" % i)
+		print("ATMOSPHERE_VISUAL_CAPTURE size=", frame_image.get_size(), " jpeg_bytes=", jpg_bytes.size())
 	print("ATMOSPHERE_VISUAL_CAPTURE_COMPLETE")
 	quit(0)
