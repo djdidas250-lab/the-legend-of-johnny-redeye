@@ -47,6 +47,7 @@ const WOODLAWN_PARK_IMAGE := preload("res://images/image_4e2da26f.jpg")
 const WOODLAWN_PLAYGROUND_BRIEFING_IMAGE := preload("res://images/Gemini_Generated_Image_glbu70glbu70glbu.jpeg")
 const WOODLAWN_PLAYGROUND_IMAGE := preload("res://images/Gemini_Generated_Image_pn9mnhpn9mnhpn9m.jpeg")
 const ENVIRONMENTAL_ATMOSPHERE := preload("res://scripts/environmental_atmosphere.gd")
+const MISSION_SELECT_ATMOSPHERE := preload("res://scripts/mission_select_atmosphere.gd")
 const CHARACTER_VISUAL := preload("res://scripts/character_visual.gd")
 const FIGHTER_BASE := preload("res://scripts/fighter_base.gd")
 const DAVY_VISUAL := preload("res://scripts/davy_jones_visual.gd")
@@ -1410,6 +1411,12 @@ func _show_map_screen() -> void:
 	map_art.stretch_mode = TextureRect.STRETCH_SCALE
 	map_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	map_layer.add_child(map_art)
+
+	# Atmospheric treatment is isolated above the map art and below all markers/hitboxes.
+	var mission_atmosphere := MISSION_SELECT_ATMOSPHERE.new()
+	mission_atmosphere.name = "MissionSelectAtmosphere"
+	mission_atmosphere.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	map_layer.add_child(mission_atmosphere)
 
 	# John's X is centred in the gap between the fourth and fifth houses
 	# to the right of the SILVAN DR label. The hitbox shares its bounds.
