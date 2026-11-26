@@ -596,7 +596,7 @@ void fragment() {
 	float blade_halo = exp(-blade_d * 58.0) * (0.68 + pulse * 0.27) * (0.68 + flicker * 0.32);
 	float blade_edge = exp(-abs(blade_d - 0.006) * 145.0) * (0.34 + flicker * 0.24);
 	float blade_core = exp(-blade_d * 235.0) * 0.38;
-	float tip_bloom = exp(-length((p - vec2(0.633, 0.312)) * vec2(1.0, 0.82)) * 85.0) * (0.42 + pulse * 0.28);
+	float tip_bloom = exp(-length((p - vec2(0.636, 0.310)) * vec2(1.0, 0.82)) * 85.0) * (0.42 + pulse * 0.28);
 	// Warm, localized reflection and an animated halo around the existing fire ring.
 	vec2 ground_p = vec2((p.x - 0.500) * 1.05, (p.y - 0.820) * 3.8);
 	float ground_d = length(ground_p);
