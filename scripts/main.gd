@@ -1091,7 +1091,7 @@ func _make_title_particle_ramp(first: Color, middle: Color, last: Color) -> Grad
 	ramp.set_color(ramp.get_point_count() - 1, last)
 	return ramp
 
-func _add_title_particles(layer: CanvasLayer, viewport_size: Vector2) -> void:
+func _add_title_particles(layer: CanvasLayer, viewport_size: Vector2, full_screen: bool = false) -> void:
 	var soft_particle := _make_title_particle_texture()
 	var ember_ramp := _make_title_particle_ramp(
 		Color(1.0, 0.82, 0.42, 0.92),
@@ -1100,13 +1100,13 @@ func _add_title_particles(layer: CanvasLayer, viewport_size: Vector2) -> void:
 	)
 	var embers := CPUParticles2D.new()
 	embers.name = "TitleRisingEmbers"
-	embers.amount = 96
+	embers.amount = 132 if full_screen else 96
 	embers.lifetime = 3.6
 	embers.preprocess = 2.0
 	embers.emitting = true
 	embers.local_coords = false
 	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	embers.emission_rect_extents = Vector2(viewport_size.x * 0.34, viewport_size.y * 0.085)
+	embers.emission_rect_extents = Vector2(viewport_size.x * (0.49 if full_screen else 0.34), viewport_size.y * (0.30 if full_screen else 0.085))
 	embers.direction = Vector2(-0.12, -1.0)
 	embers.spread = 36.0
 	embers.gravity = Vector2(2.0, -7.0)
@@ -1120,19 +1120,19 @@ func _add_title_particles(layer: CanvasLayer, viewport_size: Vector2) -> void:
 	embers.color_ramp = ember_ramp
 	embers.texture = soft_particle
 	embers.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	embers.position = Vector2(viewport_size.x * 0.50, viewport_size.y * 0.81)
+	embers.position = Vector2(viewport_size.x * 0.50, viewport_size.y * (0.76 if full_screen else 0.81))
 	embers.z_index = 20
 	layer.add_child(embers)
 
 	var smoke := CPUParticles2D.new()
 	smoke.name = "TitleDriftingSmoke"
-	smoke.amount = 15
+	smoke.amount = 28 if full_screen else 15
 	smoke.lifetime = 8.5
 	smoke.preprocess = 3.0
 	smoke.emitting = true
 	smoke.local_coords = false
 	smoke.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	smoke.emission_rect_extents = Vector2(viewport_size.x * 0.42, viewport_size.y * 0.10)
+	smoke.emission_rect_extents = Vector2(viewport_size.x * 0.50, viewport_size.y * (0.48 if full_screen else 0.10))
 	smoke.direction = Vector2(1.0, -0.12)
 	smoke.spread = 24.0
 	smoke.gravity = Vector2(4.0, -1.5)
@@ -1145,7 +1145,7 @@ func _add_title_particles(layer: CanvasLayer, viewport_size: Vector2) -> void:
 	smoke.color = Color(0.54, 0.62, 0.76, 0.15)
 	smoke.texture = soft_particle
 	smoke.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	smoke.position = Vector2(viewport_size.x * 0.50, viewport_size.y * 0.84)
+	smoke.position = Vector2(viewport_size.x * 0.50, viewport_size.y * (0.72 if full_screen else 0.84))
 	smoke.z_index = 18
 	layer.add_child(smoke)
 
@@ -1411,6 +1411,10 @@ func _show_map_screen() -> void:
 	map_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	map_layer.add_child(map_art)
 
+	# Mission Select receives the same cinematic atmosphere language as gameplay:
+	# a cool night grade, rolling layered fog, broad ember drift and practical light pools.
+	_add_mission_select_atmosphere(map_layer, get_viewport_rect().size)
+
 	# John's X is centred in the gap between the fourth and fifth houses
 	# to the right of the SILVAN DR label. The hitbox shares its bounds.
 	var john_marker := _make_checkpoint_marker(0.79, 0.745, 0.835, 0.855, not active_slot_unlocked_mcrae)
@@ -1548,6 +1552,64 @@ func _show_map_screen() -> void:
 		park_hitbox.pressed.connect(_play_map_click)
 		park_hitbox.pressed.connect(_show_woodlawn_park_checkpoint_from_map)
 		map_layer.add_child(park_hitbox)
+
+func _add_mission_select_atmosphere(layer: CanvasLayer, viewport_size: Vector2) -> void:
+	var haze := ColorRect.new()
+	haze.name = "MissionSelectNightHaze"
+	haze.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	haze.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var haze_shader := Shader.new()
+	haze_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_mix;
+void fragment() {
+	vec2 uv = UV;
+	float t = TIME;
+	float broad = sin(uv.x * 4.8 - t * 0.035 + sin(uv.y * 5.0 + t * 0.021) * 0.7);
+	float fine = sin(uv.x * 10.5 + t * 0.026 + sin(uv.y * 8.0 - t * 0.018) * 0.5);
+	float clouds = 0.5 + broad * 0.32 + fine * 0.18;
+	float lower_fog = smoothstep(0.42, 0.92, uv.y) * (0.035 + smoothstep(0.18, 0.84, clouds) * 0.075);
+	float horizon_fog = exp(-pow((uv.y - (0.56 + sin(uv.x * 3.2 - t * 0.025) * 0.025)) * 11.0, 2.0)) * 0.045;
+	float vignette = smoothstep(0.18, 0.82, length((uv - vec2(0.5)) * vec2(0.88, 0.92)));
+	vec3 cool = vec3(0.018, 0.027, 0.050);
+	vec3 fog = vec3(0.43, 0.49, 0.60);
+	vec3 color = mix(cool, fog, clamp(lower_fog + horizon_fog, 0.0, 0.16));
+	float alpha = 0.30 + vignette * 0.13;
+	COLOR = vec4(color, alpha);
+}
+"""
+	var haze_material := ShaderMaterial.new()
+	haze_material.shader = haze_shader
+	haze.material = haze_material
+	layer.add_child(haze)
+
+	var light_spill := ColorRect.new()
+	light_spill.name = "MissionSelectPracticalLightSpill"
+	light_spill.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	light_spill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var light_shader := Shader.new()
+	light_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_add;
+float pool(vec2 uv, vec2 center, vec2 radius) {
+	return exp(-length((uv - center) / radius) * 2.25);
+}
+void fragment() {
+	vec2 uv = UV;
+	float flicker = 0.92 + 0.045 * sin(TIME * 2.1) + 0.025 * sin(TIME * 5.7);
+	float amber = pool(uv, vec2(0.79, 0.79), vec2(0.20, 0.23)) * 0.13;
+	amber += pool(uv, vec2(0.55, 0.64), vec2(0.17, 0.18)) * 0.075;
+	amber += pool(uv, vec2(0.24, 0.22), vec2(0.18, 0.20)) * 0.10;
+	float moon = pool(uv, vec2(0.12, 0.12), vec2(0.34, 0.28)) * 0.065;
+	vec3 glow = vec3(1.0, 0.31, 0.075) * amber * flicker + vec3(0.30, 0.47, 0.78) * moon;
+	COLOR = vec4(glow, clamp(amber * flicker + moon, 0.0, 0.24));
+}
+"""
+	var light_material := ShaderMaterial.new()
+	light_material.shader = light_shader
+	light_spill.material = light_material
+	layer.add_child(light_spill)
+	_add_title_particles(layer, viewport_size, true)
 
 func _make_checkpoint_marker(left: float, top: float, right: float, bottom: float, should_pulse: bool = true) -> TextureRect:
 	var marker := TextureRect.new()
