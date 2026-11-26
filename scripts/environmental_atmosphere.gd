@@ -141,6 +141,12 @@ void fragment() {
     float ground_edge = smoothstep(0.47, 0.59, UV.y);
     float top_edge = 1.0 - smoothstep(center, center + 0.25, UV.y);
     float fog_alpha = ground_edge * top_edge * mix(0.035, 0.12, smoothstep(0.2, 0.86, cloud));
+    if (sword_glow_enabled) {
+        // Keep the burning carnival's original reds and firelight prominent;
+        // the transition grade remains unchanged for every other cutscene.
+        graded = mix(graded, source, 0.62);
+        fog_alpha *= 0.55;
+    }
     graded = mix(graded, vec3(0.39, 0.45, 0.56), fog_alpha);
 
     // The sword's fiery blade runs diagonally from the protagonist's hands
@@ -148,18 +154,18 @@ void fragment() {
     // Add only a soft, pulsing amber halo around that existing blade; the
     // source pixels remain intact and the effect is disabled on other scenes.
     if (sword_glow_enabled) {
-        const float SOURCE_ASPECT = 2.3571429;
-        vec2 sword_point = vec2(UV.x * SOURCE_ASPECT, UV.y);
-        vec2 blade_start = vec2(0.535 * SOURCE_ASPECT, 0.545);
-        vec2 blade_end = vec2(0.744 * SOURCE_ASPECT, 0.018);
+        float source_aspect = 2.3571429;
+        vec2 sword_point = vec2(UV.x * source_aspect, UV.y);
+        vec2 blade_start = vec2(0.570 * source_aspect, 0.535);
+        vec2 blade_end = vec2(0.738 * source_aspect, 0.025);
         vec2 blade_axis = blade_end - blade_start;
         float blade_t = clamp(dot(sword_point - blade_start, blade_axis) / dot(blade_axis, blade_axis), 0.0, 1.0);
         float blade_distance = length(sword_point - (blade_start + blade_axis * blade_t));
-        float halo = 1.0 - smoothstep(0.012, 0.078, blade_distance);
-        float flame_detail = smoothstep(0.12, 0.34, source.r - source.b) * smoothstep(0.22, 0.68, brightness);
-        float pulse = 0.82 + 0.18 * sin(TIME * 2.4);
-        graded += vec3(1.0, 0.31, 0.045) * halo * pulse * 0.20;
-        graded = mix(graded, max(graded, source * vec3(1.12, 1.04, 0.86)), halo * flame_detail * 0.16);
+        float halo = 1.0 - smoothstep(0.010, 0.105, blade_distance);
+        float flame_detail = smoothstep(0.10, 0.30, source.r - source.b) * smoothstep(0.20, 0.62, brightness);
+        float pulse = 0.80 + 0.20 * sin(TIME * 2.4);
+        graded += vec3(1.0, 0.40, 0.075) * halo * pulse * 0.34;
+        graded = mix(graded, max(graded, source * vec3(1.22, 1.08, 0.88)), halo * flame_detail * 0.22);
     }
     COLOR = vec4(graded, texel.a);
 }
