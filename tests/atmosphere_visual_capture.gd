@@ -22,22 +22,50 @@ func _run_visual_capture() -> void:
 			quit(1)
 			return
 
-	var leaside_panorama = game.call("_make_leaside_panorama")
-	game.set("street_panorama", leaside_panorama)
-	game.set("world_end", float(leaside_panorama.get_width()))
-	game.set("current_street", "LEASIDE DRIVE")
-	game.call("_start_game", 55.0, 475.0)
-	for _frame in range(8):
-		await process_frame
-	if game.get("game_started") != true:
-		push_error("The real Leaside gameplay session did not start.")
-		quit(1)
-		return
-
 	var output_dir := ProjectSettings.globalize_path("res://build/atmosphere-captures")
 	var mkdir_error := DirAccess.make_dir_recursive_absolute(output_dir)
 	if mkdir_error != OK and not DirAccess.dir_exists_absolute(output_dir):
 		push_error("Could not create atmosphere capture output directory: %s" % mkdir_error)
+		quit(1)
+		return
+
+	# Render the actual Stage One opening cutscene before gameplay and inspect
+	# the image, dialogue panel and localized blade glow in the captured frame.
+	game.call("_show_stage_one_splash")
+	game.call("_start_stage_one_cutscene")
+	for _frame in range(5):
+		await process_frame
+	await RenderingServer.frame_post_draw
+	var opening_layer := game.get("stage_one_cutscene_layer") as CanvasLayer
+	var opening_audio := game.get("stage_one_cutscene_audio_player") as AudioStreamPlayer
+	var opening_art := opening_layer.get_node_or_null("StageOneCutsceneArtwork") as TextureRect if is_instance_valid(opening_layer) else null
+	var opening_material := opening_art.material as ShaderMaterial if opening_art != null else null
+	var opening_dialogue := opening_layer.find_child("StageOneCutsceneDialogue", true, false) as Label if is_instance_valid(opening_layer) else null
+	if opening_layer == null or opening_audio == null or not opening_audio.playing or opening_art == null or opening_material == null or not bool(opening_material.get_shader_parameter("sword_glow_enabled")) or opening_dialogue == null:
+		push_error("Stage One opening cutscene is missing its active audio, image, dialogue or sword glow.")
+		quit(1)
+		return
+	var opening_frame := root.get_texture().get_image()
+	if opening_frame == null or opening_frame.is_empty():
+		push_error("Rendered Stage One opening cutscene frame was empty.")
+		quit(1)
+		return
+	var opening_path := output_dir.path_join("cutscene_stage_one_intro.png")
+	var opening_save_error := opening_frame.save_png(opening_path)
+	if opening_save_error != OK or not FileAccess.file_exists(opening_path) or FileAccess.get_file_as_bytes(opening_path).is_empty():
+		push_error("Could not save rendered Stage One opening cutscene capture.")
+		quit(1)
+		return
+	print("CUTSCENE_CAPTURE_SAVED=", opening_path, " bytes=", FileAccess.get_file_as_bytes(opening_path).size())
+
+	# The visual-capture job does not need to play the full voice track. Stop
+	# the preview and invoke the same finished callback to enter live gameplay.
+	opening_audio.stop()
+	game.call("_on_stage_one_cutscene_audio_finished")
+	for _frame in range(8):
+		await process_frame
+	if game.get("game_started") != true:
+		push_error("The Stage One opening cutscene did not hand off to gameplay.")
 		quit(1)
 		return
 
@@ -108,7 +136,7 @@ func _run_visual_capture() -> void:
 				return
 		print("ATMOSPHERE_FULL_WIDTH_VERIFIED=", transition["street"], " width=", game.get("world_end"))
 
-	print("CUTSCENE_CAPTURE_COUNT=4")
+	print("CUTSCENE_CAPTURE_COUNT=5")
 	print("STREET_ATMOSPHERE_HANDOFF_COUNT=4")
 	print("ATMOSPHERE_VISUAL_CAPTURE_COMPLETE")
 	quit(0)
