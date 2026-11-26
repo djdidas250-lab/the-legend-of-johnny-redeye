@@ -1,0 +1,40 @@
+name: Temporary intro asset inspection
+on:
+  push:
+    branches:
+      - temp/inspect-introscreen-assets
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract archive and inspect media
+        run: |
+          mkdir -p /tmp/intro-assets /tmp/intro-report
+          python3 - <<'PY'
+          import zipfile, pathlib, shutil
+          zpath = pathlib.Path("images/introscreen.zip")
+          if not zpath.exists():
+              raise SystemExit("images/introscreen.zip not found")
+          with zipfile.ZipFile(zpath) as z:
+              z.extractall("/tmp/intro-assets")
+              for i in z.infolist():
+                  print(f"{i.filename}\t{i.file_size} bytes")
+          PY
+          find /tmp/intro-assets -type f -print0 | while IFS= read -r -d '' f; do
+            rel="${f#/tmp/intro-assets/}"
+            mkdir -p "/tmp/intro-report/$(dirname "$rel")"
+            file "$f" >> /tmp/intro-report/file-types.txt
+            case "$f" in
+              *.mp3|*.wav|*.ogg|*.m4a|*.aac|*.flac)
+                ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$f" >> /tmp/intro-report/audio-durations.txt
+                echo "$rel" >> /tmp/intro-report/audio-files.txt
+                ;;
+            esac
+          done
+          cp -a /tmp/intro-assets/. /tmp/intro-report/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: introscreen-extracted
+          path: /tmp/intro-report/
+          if-no-files-found: error
