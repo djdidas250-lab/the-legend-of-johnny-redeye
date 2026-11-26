@@ -22,6 +22,19 @@ jobs:
       - name: Check out game
         uses: actions/checkout@v4
 
+      - name: Extract supplied cinematic intro assets
+        run: |
+          test -s images/introscreen.zip
+          mkdir -p images/intro_assets
+          unzip -o images/introscreen.zip -d images/intro_assets
+          test -s images/intro_assets/Intro1.jpg
+          test -s images/intro_assets/Intro2.jpg
+          test -s images/intro_assets/Intro3.jpg
+          test -s images/intro_assets/Intro4.jpg
+          test -s images/intro_assets/Intro5.jpeg
+          test -s "images/intro_assets/intro 6.jpeg"
+          test -s "images/intro_assets/01 Intro.mp3"
+
       - name: Extract supplied character sprite sheets
         run: |
           test -s Dorval_Extracted_Sprite_Sheets.zip
