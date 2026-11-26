@@ -198,8 +198,26 @@ func _ready() -> void:
 	if not _check(start_sfx != null and start_sfx.stream.resource_path == "res://images/freesound_community-game-start-6104.mp3", "Start Mission must use the title-screen game-start click sound."): return
 	if start_sfx.playing:
 		await start_sfx.finished
+	for _frame in range(10):
+		await get_tree().process_frame
+		var pending_audio := game.get("stage_one_cutscene_audio_player") as AudioStreamPlayer
+		if is_instance_valid(pending_audio) and pending_audio.playing:
+			break
+	var cutscene_layer := game.get("stage_one_cutscene_layer") as CanvasLayer
+	var cutscene_audio := game.get("stage_one_cutscene_audio_player") as AudioStreamPlayer
+	var cutscene_artwork := cutscene_layer.get_node_or_null("StageOneCutsceneArtwork") as TextureRect if is_instance_valid(cutscene_layer) else null
+	var cutscene_material := cutscene_artwork.material as ShaderMaterial if cutscene_artwork != null else null
+	var cutscene_dialogue := cutscene_layer.find_child("StageOneCutsceneDialogue", true, false) as Label if is_instance_valid(cutscene_layer) else null
+	if not _check(bool(game.get("stage_one_cutscene_active")) and not bool(game.get("game_started")) and cutscene_audio != null and cutscene_audio.playing, "Start Mission must show the opening cutscene and play its voice track before gameplay begins."): return
+	if not _check(cutscene_artwork != null and cutscene_artwork.texture.resource_path == "res://images/stage1_cutscene/cutscene stage 1.jpeg" and cutscene_material != null and bool(cutscene_material.get_shader_parameter("sword_glow_enabled")), "The original Stage One cutscene image must use the atmospheric treatment with its localized sword glow."): return
+	if not _check(cutscene_dialogue != null and cutscene_dialogue.text == "Welland's a sweaty demon orgy and the big top's burning—so clench up, cocksuckers, because I'm turning this whole circus into a fucking bloodbath.", "The Stage One dialogue popup must display the user's exact spoken line."): return
+	var cutscene_panel := cutscene_layer.get_node_or_null("StageOneCutsceneDialoguePanel") as PanelContainer
+	var cutscene_panel_style := cutscene_panel.get_theme_stylebox("panel") as StyleBoxFlat if cutscene_panel != null else null
+	if not _check(cutscene_panel != null and is_equal_approx(cutscene_panel.anchor_top, 0.035) and is_equal_approx(cutscene_panel.anchor_bottom, 0.27) and cutscene_panel_style != null and cutscene_panel_style.bg_color == Color("#07060b") and cutscene_panel_style.border_color == Color("#b10e2d"), "The opening dialogue must use the established top-of-screen boss dialogue panel styling."): return
+	# Wait for the actual MP3 finished signal; no timer or guessed duration may start gameplay.
+	await cutscene_audio.finished
 	await get_tree().process_frame
-	if not _check(bool(game.get("game_started")), "Invisible Start Mission click target did not start Stage One."): return
+	if not _check(not bool(game.get("stage_one_cutscene_active")) and bool(game.get("game_started")), "Level One must begin only after the opening voice track has actually finished."): return
 	var heart_hud: Control = game.get("health_label")
 	var game_script := game.get_script() as GDScript
 	if not _check(heart_hud != null and is_equal_approx(heart_hud.custom_minimum_size.y, 82.0) and int(heart_hud.get("health")) == 5 and int(heart_hud.get("lives")) == 3, "The top-right HUD must show five heart cells with X 3 directly underneath."): return
