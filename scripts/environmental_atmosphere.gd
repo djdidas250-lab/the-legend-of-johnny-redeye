@@ -231,7 +231,7 @@ func _build_ambient_lights() -> void:
         var light := PointLight2D.new()
         light.name = "EnvironmentalBounceLight_%02d" % i
         light.texture = light_texture
-        light.texture_scale = 1.75 if i % 2 == 1 else 1.45
+        light.texture_scale = 2.2
         if _park_mode:
             light.color = Color("#8fa7c8") if i % 2 == 0 else Color("#a8b3c4")
             light.energy = 0.18 if i % 2 == 0 else 0.14
@@ -248,17 +248,17 @@ func _build_ambient_lights() -> void:
         light.shadow_filter_smooth = 1.25
         light.shadow_color = Color(0.012, 0.018, 0.032, 0.42)
         light.set_meta("base_energy", light.energy)
-        light.position = Vector2(_world_width * float(positions[i]), 170.0 if i % 2 == 0 else 205.0)
+        light.position = Vector2(_world_width * float(positions[i]), 135.0 if _park_mode else 150.0)
         add_child(light)
         _lights.append(light)
 
 func _make_organic_light_texture() -> Texture2D:
-    var image := Image.create(128, 128, false, Image.FORMAT_RGBA8)
-    var center := Vector2(63.5, 63.5)
-    for y in range(128):
+    var image := Image.create(128, 256, false, Image.FORMAT_RGBA8)
+    var center := Vector2(63.5, 127.5)
+    for y in range(256):
         for x in range(128):
-            var delta := Vector2(float(x), float(y)) - center
-            var radius := delta.length() / 63.5
+            var delta := Vector2((float(x) - center.x) / 63.5, (float(y) - center.y) / 127.5)
+            var radius := delta.length()
             var angle := atan2(delta.y, delta.x)
             var irregularity := 0.035 * sin(angle * 5.0 + 0.8) + 0.022 * sin(angle * 9.0 - 1.1)
             var adjusted_radius := maxf(0.0, radius + irregularity)
