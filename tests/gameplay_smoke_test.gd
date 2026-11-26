@@ -62,7 +62,7 @@ func _ready() -> void:
 	var smoke := title_layer.find_child("TitleDriftingSmoke", true, false) as CPUParticles2D
 	if not _check(haze != null and haze.material is ShaderMaterial and (haze.material as ShaderMaterial).shader.code.contains("wisps") and light_spill != null and light_spill.material is ShaderMaterial and (light_spill.material as ShaderMaterial).shader.code.contains("moon"), "The title screen must include animated haze and practical-light spill."): return
 	if not _check(embers != null and embers.emitting and embers.amount >= 35 and smoke != null and smoke.emitting and smoke.amount >= 10, "The title screen must include animated ember and smoke particle layers."): return
-	var viewport_size := game.get_viewport_rect().size
+	var viewport_size: Vector2 = game.get_viewport().get_visible_rect().size
 	var art_rect := Rect2(title_art.position, title_art.size)
 	var expected_hitboxes := [
 		["NewGameHitbox", 0.810, 0.445, 0.960, 0.540],
