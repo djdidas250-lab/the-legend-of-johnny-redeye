@@ -172,7 +172,9 @@ var brick_stash_pickup: Sprite2D
 var baggy_notice: Control
 var brick_coke_notice: Control
 var brick_coke_notice_texture: Texture2D
-var slingshot_notice: TextureRect
+var slingshot_notice: Control
+var horror_light_nodes: Array[PointLight2D] = []
+var horror_light_time := 0.0
 var slingshot_projectiles: Array[Dictionary] = []
 var slingshot_cooldown := 0.0
 var slingshot_shoot_button: Button
@@ -1452,36 +1454,7 @@ func _complete_return_to_mission_select() -> void:
 func _build_game(start_x: float, start_y: float) -> void:
 	player = _make_character(Vector2(start_x, start_y), Color("#287caa"), false)
 	add_child(player)
-	# Screen-space horror grading: this layer affects only the rendered scene.
-	# Original background textures, sprites, animations and audio remain untouched.
-	var atmosphere_layer := CanvasLayer.new()
-	atmosphere_layer.name = "NightmareAtmosphere"
-	atmosphere_layer.layer = 1
-	add_child(atmosphere_layer)
-	var atmosphere := ColorRect.new()
-	atmosphere.name = "NighttimeHorrorGrade"
-	atmosphere.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	atmosphere.color = Color.WHITE
-	atmosphere.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var atmosphere_shader := Shader.new()
-	atmosphere_shader.code = """
-shader_type canvas_item;
-void fragment() {
-	vec2 uv = UV;
-	float edge = smoothstep(0.22, 0.88, distance(uv, vec2(0.5)) * 1.35);
-	float lower_fog_band = smoothstep(0.48, 0.92, uv.y);
-	float fog_wave = sin(uv.x * 10.5 + TIME * 0.16 + sin(uv.y * 13.0 - TIME * 0.11) * 1.8);
-	float fog = lower_fog_band * smoothstep(-0.35, 0.78, fog_wave) * 0.13;
-	float crimson_haze = smoothstep(0.32, 0.96, uv.x) * smoothstep(0.38, 0.96, 1.0 - uv.y);
-	vec3 night_tint = mix(vec3(0.006, 0.005, 0.014), vec3(0.040, 0.004, 0.018), crimson_haze * 0.42);
-	float alpha = 0.54 + edge * 0.20 + fog;
-	COLOR = vec4(night_tint, clamp(alpha, 0.0, 0.80));
-}
-"""
-	var atmosphere_material := ShaderMaterial.new()
-	atmosphere_material.shader = atmosphere_shader
-	atmosphere.material = atmosphere_material
-	atmosphere_layer.add_child(atmosphere)
+	_setup_horror_atmosphere()
 	_add_vehicle_obstacles()
 	# The slingshot remains at its original Newleaf location; do not place it
 	# on Leaside merely because the route now begins there.
@@ -1586,6 +1559,111 @@ void fragment() {
 	slingshot_shoot_button.visible = has_slingshot
 	_update_location()
 	_save_game()
+
+func _setup_horror_atmosphere() -> void:
+	# Darken the actual world canvas, then restore selective visibility with
+	# spatially-localized 2D light pools. Source art is never modified.
+	var world_grade := CanvasModulate.new()
+	world_grade.name = "NightmareWorldGrade"
+	world_grade.color = Color("#393744")
+	add_child(world_grade)
+
+	var light_gradient := Gradient.new()
+	light_gradient.offsets = PackedFloat32Array([0.0, 0.34, 1.0])
+	light_gradient.colors = PackedColorArray([
+		Color(1.0, 0.88, 0.70, 0.82),
+		Color(0.68, 0.30, 0.28, 0.34),
+		Color(0.28, 0.06, 0.12, 0.0)
+	])
+	var light_texture := GradientTexture2D.new()
+	light_texture.gradient = light_gradient
+	light_texture.fill = GradientTexture2D.FILL_RADIAL
+	light_texture.fill_from = Vector2(0.5, 0.5)
+	light_texture.fill_to = Vector2(0.5, 0.0)
+	light_texture.width = 256
+	light_texture.height = 256
+
+	horror_light_nodes.clear()
+	for i in range(4):
+		var pool := PointLight2D.new()
+		pool.name = "StreetLightPool_%02d" % i
+		pool.texture = light_texture
+		pool.texture_scale = 1.55 if i % 2 == 0 else 1.35
+		pool.color = Color("#b99a83") if i % 2 == 0 else Color("#76506b")
+		pool.energy = 0.66 if i % 2 == 0 else 0.42
+		pool.position = Vector2(world_end * (0.13 + float(i) * 0.245), 365.0)
+		pool.shadow_enabled = false
+		add_child(pool)
+		horror_light_nodes.append(pool)
+
+	# Two independent fog sheets move at different speeds and depths. They are
+	# rendered over the unchanged street art, not baked into or painted onto it.
+	var fog_shader := Shader.new()
+	fog_shader.code = """
+shader_type canvas_item;
+uniform float drift_speed = 0.012;
+uniform float fog_strength = 1.0;
+float hash21(vec2 p) {
+	p = fract(p * vec2(123.34, 456.21));
+	p += dot(p, p + 45.32);
+	return fract(p.x * p.y);
+}
+float noise2(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), f.x),
+		mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+float fbm(vec2 p) {
+	float value = 0.0;
+	float amplitude = 0.5;
+	for (int i = 0; i < 4; i++) {
+		value += noise2(p) * amplitude;
+		p = p * 2.03 + vec2(13.7, 7.1);
+		amplitude *= 0.5;
+	}
+	return value;
+}
+void fragment() {
+	vec2 uv = UV;
+	float drift = TIME * drift_speed;
+	float broad = fbm(uv * vec2(5.2, 2.5) + vec2(drift, -drift * 0.16));
+	float detail = fbm(uv * vec2(13.0, 5.0) + vec2(-drift * 1.7, drift * 0.28));
+	float low_band = smoothstep(0.43, 0.82, uv.y);
+	float rolling_edge = smoothstep(0.42, 0.77, broad * 0.72 + detail * 0.28);
+	float wisps = smoothstep(0.36, 0.76, broad * 0.62 + detail * 0.38);
+	float alpha = low_band * rolling_edge * wisps * 0.19 * fog_strength;
+	float middle_haze = smoothstep(0.48, 0.74, uv.y) * smoothstep(0.58, 0.86, detail) * 0.055 * fog_strength;
+	float vignette = smoothstep(0.34, 0.92, distance(uv, vec2(0.5)) * 1.18) * 0.13;
+	vec3 fog_color = mix(vec3(0.075, 0.065, 0.105), vec3(0.16, 0.045, 0.075), smoothstep(0.35, 0.82, detail));
+	COLOR = vec4(fog_color, clamp(alpha + middle_haze + vignette, 0.0, 0.26));
+}
+"""
+	var fog_layer := CanvasLayer.new()
+	fog_layer.name = "LayeredGroundFog"
+	fog_layer.layer = 1
+	add_child(fog_layer)
+	for i in range(2):
+		var fog := ColorRect.new()
+		fog.name = "FogDepth_%d" % i
+		fog.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		fog.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var fog_material := ShaderMaterial.new()
+		fog_material.shader = fog_shader
+		fog_material.set_shader_parameter("drift_speed", 0.010 if i == 0 else -0.017)
+		fog_material.set_shader_parameter("fog_strength", 1.0 if i == 0 else 0.62)
+		fog.material = fog_material
+		fog_layer.add_child(fog)
+
+func _process(delta: float) -> void:
+	horror_light_time += delta
+	for i in range(horror_light_nodes.size()):
+		var pool := horror_light_nodes[i]
+		if is_instance_valid(pool):
+			var slow_pulse := sin(horror_light_time * (1.25 + float(i) * 0.09) + float(i) * 1.7)
+			var quick_flicker := sin(horror_light_time * (7.1 + float(i)) + float(i) * 2.4)
+			pool.energy = (0.66 if i % 2 == 0 else 0.42) + slow_pulse * 0.025 + quick_flicker * 0.012
 
 func _make_hud_label(caption: String, at: Vector2, font_size: int) -> Label:
 	var label := Label.new()
@@ -4074,33 +4152,130 @@ func _update_slingshot_pickup() -> void:
 		_save_slingshot_pickup_after_visible_frame()
 
 func _show_slingshot_notification() -> void:
-	if is_instance_valid(slingshot_notice):
-		slingshot_notice.queue_free()
-	# Display the supplied gunmetal notification artwork directly. Do not wrap
-	# it in a second panel or recreate its border/message in separate controls.
-	slingshot_notice = TextureRect.new()
-	slingshot_notice.texture = SLINGSHOT_NOTICE_IMAGE
-	slingshot_notice.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	# Enlarge the supplied gunmetal panel so its message is comfortably readable.
-	slingshot_notice.offset_left = -240
-	slingshot_notice.offset_top = 64
-	slingshot_notice.offset_right = 240
-	slingshot_notice.offset_bottom = 386
-	slingshot_notice.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	slingshot_notice.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	slingshot_notice.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	slingshot_notice.z_index = 200
-	hud.add_child(slingshot_notice)
+	if hud == null or not is_instance_valid(hud) or is_instance_valid(slingshot_notice):
+		return
+	var popup := Control.new()
+	popup.name = "SlingshotPickupNotification"
+	popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	popup.mouse_filter = Control.MOUSE_FILTER_STOP
+	popup.process_mode = Node.PROCESS_MODE_ALWAYS
+	popup.z_index = 500
+	hud.add_child(popup)
+	slingshot_notice = popup
+
+	var shade := ColorRect.new()
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.0, 0.0, 0.0, 0.68)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	popup.add_child(shade)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_STOP
+	popup.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(330.0, 0.0)
+	var metal := StyleBoxFlat.new()
+	metal.bg_color = Color("#08070c")
+	metal.border_color = Color("#b10e2d")
+	metal.set_border_width_all(3)
+	metal.set_corner_radius_all(8)
+	metal.shadow_color = Color(0.78, 0.0, 0.12, 0.62)
+	metal.shadow_size = 18
+	metal.content_margin_left = 11.0
+	metal.content_margin_right = 11.0
+	metal.content_margin_top = 9.0
+	metal.content_margin_bottom = 8.0
+	panel.add_theme_stylebox_override("panel", metal)
+	center.add_child(panel)
+
+	var contents := VBoxContainer.new()
+	contents.add_theme_constant_override("separation", 6)
+	panel.add_child(contents)
+
+	var heading := Label.new()
+	heading.text = "SLINGSHOT ACQUIRED"
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", 21)
+	heading.add_theme_color_override("font_color", Color("#ffffff"))
+	heading.add_theme_color_override("font_shadow_color", Color("#080b0d"))
+	heading.add_theme_constant_override("shadow_offset_x", 2)
+	heading.add_theme_constant_override("shadow_offset_y", 2)
+	contents.add_child(heading)
+
+	var divider := HSeparator.new()
+	divider.add_theme_color_override("separator", Color("#8f1028"))
+	contents.add_child(divider)
+
+	var artwork := TextureRect.new()
+	# Reuse the original slingshot item artwork already used by the world pickup.
+	# The obsolete composite notice image is no longer displayed.
+	artwork.texture = SLINGSHOT_PICKUP_IMAGE
+	artwork.custom_minimum_size = Vector2(280.0, 170.0)
+	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	contents.add_child(artwork)
+
+	var description := Label.new()
+	description.text = "You found a slingshot. Use SHOOT to fire at enemies."
+	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	description.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	description.custom_minimum_size = Vector2(290.0, 36.0)
+	description.add_theme_font_size_override("font_size", 15)
+	description.add_theme_color_override("font_color", Color("#f4f0e8"))
+	contents.add_child(description)
+
+	var footer := HBoxContainer.new()
+	footer.alignment = BoxContainer.ALIGNMENT_END
+	footer.add_theme_constant_override("separation", 9)
+	contents.add_child(footer)
+	var close_hint := Label.new()
+	close_hint.text = "CLICK HERE TO CLOSE"
+	close_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	close_hint.add_theme_font_size_override("font_size", 10)
+	close_hint.add_theme_color_override("font_color", Color("#e8edf0"))
+	footer.add_child(close_hint)
+	var close_button := Button.new()
+	close_button.text = "X"
+	close_button.custom_minimum_size = Vector2(32.0, 30.0)
+	close_button.focus_mode = Control.FOCUS_NONE
+	close_button.add_theme_font_size_override("font_size", 18)
+	close_button.add_theme_color_override("font_color", Color.WHITE)
+	var close_style := StyleBoxFlat.new()
+	close_style.bg_color = Color("#10080d")
+	close_style.border_color = Color("#c51637")
+	close_style.set_border_width_all(2)
+	close_style.set_corner_radius_all(4)
+	close_button.add_theme_stylebox_override("normal", close_style)
+	var close_hover: StyleBoxFlat = close_style.duplicate() as StyleBoxFlat
+	close_hover.bg_color = Color("#4a0d1b")
+	close_hover.border_color = Color("#ff3154")
+	close_button.add_theme_stylebox_override("hover", close_hover)
+	footer.add_child(close_button)
+	close_button.pressed.connect(_dismiss_slingshot_notification)
+
+	if is_instance_valid(music_player):
+		music_player.process_mode = Node.PROCESS_MODE_ALWAYS
+	get_tree().paused = true
+
+func _dismiss_slingshot_notification() -> void:
+	if not is_instance_valid(slingshot_notice):
+		return
+	slingshot_notice.queue_free()
+	slingshot_notice = null
+	get_tree().paused = false
+	if is_instance_valid(music_player):
+		music_player.process_mode = Node.PROCESS_MODE_INHERIT
 
 func _save_slingshot_pickup_after_visible_frame() -> void:
 	await RenderingServer.frame_post_draw
 	_save_game()
 
 func _dismiss_slingshot_notice_on_action() -> void:
-	if not is_instance_valid(slingshot_notice):
-		return
-	slingshot_notice.queue_free()
-	slingshot_notice = null
+	_dismiss_slingshot_notification()
 
 func _try_fire_slingshot() -> void:
 	# Dismiss the pickup prompt from the same action handler used by both
