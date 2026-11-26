@@ -14,7 +14,6 @@ const INTRO_IMAGES: Array[Texture2D] = [
 	preload("res://images/intro_assets/Intro4.jpg"),
 	preload("res://images/intro_assets/Intro5.jpeg")
 ]
-const INTRO_LOADING_IMAGE := preload("res://images/intro_assets/intro 6.jpeg")
 const INTRO_MUSIC := preload("res://images/intro_assets/01 Intro.mp3")
 const INTRO_TRACK_DURATION := 81.690256
 const INTRO_SLIDE_DURATION := INTRO_TRACK_DURATION / 5.0
@@ -82,6 +81,38 @@ var active_slot_unlocked_woodlawn_park_checkpoint := false
 var active_slot_area := "Newleaf Crescent"
 var save_slot_layer: CanvasLayer
 var overwrite_slot_pending := -1
+
+class IntroFlameSpinner extends Control:
+	var spin_angle := 0.0
+
+	func _process(delta: float) -> void:
+		spin_angle = fposmod(spin_angle + delta * 3.8, TAU)
+		queue_redraw()
+
+	func _draw() -> void:
+		var center := size * 0.5
+		# A rotating broken ring of tapered ember/flame shapes reads as a
+		# small fiery loading wheel rather than a static icon.
+		for i in range(12):
+			var angle := spin_angle + float(i) * TAU / 12.0
+			var radius := 13.0
+			var points := PackedVector2Array([
+				Vector2(0.0, -radius - 7.0),
+				Vector2(-4.0, -radius - 1.0),
+				Vector2(-3.0, -radius + 5.0),
+				Vector2(0.0, -radius + 2.0),
+				Vector2(3.0, -radius + 5.0),
+				Vector2(4.0, -radius - 1.0)
+			])
+			var rotated := PackedVector2Array()
+			for point in points:
+				rotated.append(center + point.rotated(angle))
+			var strength := 0.38 + 0.62 * (float(i) / 11.0)
+			var ember := Color("#ff4b12").lerp(Color("#ffd36a"), float(i) / 11.0)
+			ember.a = strength
+			draw_colored_polygon(rotated, ember)
+		draw_arc(center, 9.0, spin_angle, spin_angle + TAU * 0.72, 32, Color(1.0, 0.31, 0.035, 0.72), 2.0, true)
+
 
 class HeartMeter extends Control:
 	var health := 5
@@ -797,70 +828,41 @@ void fragment() {
 
 	_add_title_particles(intro_layer, viewport_size)
 
-	# Render the supplied loading artwork exactly once. The previous two-pass
-	# setup used two different rectangles, which made the flame and lettering
-	# appear doubled/offset. A single shader now keys the black field and adds
-	# a restrained amber halo around the source artwork without a second copy.
-	# Keep the same authored rectangle for every one of the five intro frames.
-	var loading := TextureRect.new()
-	loading.name = "IntroLoadingGraphic"
-	loading.texture = INTRO_LOADING_IMAGE
-	loading.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	loading.anchor_left = 1.0
-	loading.anchor_top = 1.0
-	loading.anchor_right = 1.0
-	loading.anchor_bottom = 1.0
-	loading.offset_left = -246.0
-	loading.offset_top = -142.0
-	loading.offset_right = -12.0
-	loading.offset_bottom = -18.0
-	loading.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	loading.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	loading.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	loading.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	loading.z_index = 30
-	var loading_shader := Shader.new()
-	loading_shader.code = """
-shader_type canvas_item;
-render_mode unshaded, blend_mix;
-void fragment() {
-	vec4 src = texture(TEXTURE, UV);
-	float lum = max(max(src.r, src.g), src.b);
-	// The source is a JPEG, so its nominally black matte contains compression noise.
-	// Use a higher key threshold for both the artwork and halo samples to fully clear it.
-	float source_alpha = src.a * smoothstep(0.14, 0.30, lum);
-	float nearby_brightness = 0.0;
-	for (int x = -2; x <= 2; x++) {
-		for (int y = -2; y <= 2; y++) {
-			if (x == 0 && y == 0) {
-				continue;
-			}
-			vec2 sample_uv = UV + vec2(float(x), float(y)) * TEXTURE_PIXEL_SIZE * 3.0;
-			vec4 sample_color = texture(TEXTURE, sample_uv);
-			float sample_lum = max(max(sample_color.r, sample_color.g), sample_color.b);
-			float sample_alpha = sample_color.a * smoothstep(0.14, 0.30, sample_lum);
-			nearby_brightness = max(nearby_brightness, sample_alpha);
-		}
-	}
-	# A broader, much brighter amber halo makes the ember around the lettering
-	# and flame wheel visible without shifting or duplicating the source artwork.
-	float halo = max(nearby_brightness - source_alpha, 0.0) * 1.35;
-	vec3 amber = vec3(1.0, 0.19, 0.015);
-	float alpha = max(source_alpha, halo);
-	if (alpha < 0.002) {
-		discard;
-	}
-	// CanvasItem blend_mix expects straight-alpha RGB. Keeping the matte
-	// out of both RGB and alpha prevents the source rectangle from rendering
-	// as a dark box while preserving the artwork and its soft amber halo.
-	vec3 rgb = (src.rgb * source_alpha + amber * halo) / max(alpha, 0.002);
-	COLOR = vec4(rgb, alpha);
-}
-"""
-	var loading_material := ShaderMaterial.new()
-	loading_material.shader = loading_shader
-	loading.material = loading_material
-	intro_layer.add_child(loading)
+	# Native loading indicator: no source image or matte is layered over the
+	# five cinematic backgrounds. The flame ring is drawn procedurally and rotates.
+	var loading_indicator := HBoxContainer.new()
+	loading_indicator.name = "IntroLoadingIndicator"
+	loading_indicator.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	loading_indicator.anchor_left = 1.0
+	loading_indicator.anchor_top = 1.0
+	loading_indicator.anchor_right = 1.0
+	loading_indicator.anchor_bottom = 1.0
+	loading_indicator.offset_left = -202.0
+	loading_indicator.offset_top = -66.0
+	loading_indicator.offset_right = -14.0
+	loading_indicator.offset_bottom = -14.0
+	loading_indicator.alignment = BoxContainer.ALIGNMENT_END
+	loading_indicator.add_theme_constant_override("separation", 8)
+	loading_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	loading_indicator.z_index = 30
+	intro_layer.add_child(loading_indicator)
+
+	var loading_text := Label.new()
+	loading_text.name = "LoadingText"
+	loading_text.text = "LOADING"
+	loading_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	loading_text.add_theme_font_size_override("font_size", 19)
+	loading_text.add_theme_color_override("font_color", Color("#ffb04a"))
+	loading_text.add_theme_color_override("font_shadow_color", Color("#6d1d08"))
+	loading_text.add_theme_constant_override("shadow_offset_x", 2)
+	loading_text.add_theme_constant_override("shadow_offset_y", 2)
+	loading_indicator.add_child(loading_text)
+
+	var loading_spinner := IntroFlameSpinner.new()
+	loading_spinner.name = "LoadingFlameSpinner"
+	loading_spinner.custom_minimum_size = Vector2(44.0, 44.0)
+	loading_indicator.add_child(loading_spinner)
+
 
 	# One soft ember bloom, centered directly behind the progress track.
 	# Its vertical falloff prevents a second hard-edged stripe from appearing.
