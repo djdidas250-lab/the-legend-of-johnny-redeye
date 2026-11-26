@@ -172,10 +172,25 @@ jobs:
 
       - name: Render and capture live atmosphere animation
         run: |
+          set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y xvfb libgl1-mesa-dri
+          mkdir -p build/atmosphere-captures
           xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 godot --path . --script res://tests/atmosphere_visual_capture.gd --audio-driver Dummy 2>&1 | tee atmosphere-capture.log
-          grep -q "ATMOSPHERE_VISUAL_CAPTURE_COMPLETE" "$GITHUB_WORKSPACE/atmosphere-capture.log" 2>/dev/null || true
+          grep -q "ATMOSPHERE_VISUAL_CAPTURE_COMPLETE" atmosphere-capture.log
+          grep -q "ATMOSPHERE_CAPTURE_COUNT=3" atmosphere-capture.log
+          test "$(find build/atmosphere-captures -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 3
+          for frame in build/atmosphere-captures/newleaf_00.png build/atmosphere-captures/newleaf_01.png build/atmosphere-captures/newleaf_02.png; do
+            test -s "$frame"
+          done
+
+      - name: Upload rendered atmosphere frames
+        uses: actions/upload-artifact@v4
+        with:
+          name: atmosphere-visual-captures
+          path: build/atmosphere-captures/*.png
+          if-no-files-found: error
+          retention-days: 3
 
       - name: Export Android APK
         run: |
