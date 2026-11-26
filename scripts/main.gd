@@ -1,6 +1,6 @@
 extends Node2D
 
-const TITLE_IMAGE := preload("res://images/file_000000005268822f8114c8d6d185d9e5.png")
+const TITLE_IMAGE := preload("res://images/Gemini_Generated_Image_p080dtp080dtp080.jpeg")
 const TITLE_MUSIC := preload("res://images/02 - Title Theme.wav")
 const TITLE_CLICK_SOUND := preload("res://images/freesound_community-game-start-6104.mp3")
 const DEATH_SCREEN_IMAGE := preload("res://images/image_df287ed.jpg")
@@ -501,8 +501,8 @@ shader_type canvas_item;
 render_mode unshaded, blend_add;
 void fragment() {
 	vec2 uv = UV;
-	float moon = exp(-length((uv - vec2(0.775, 0.125)) * vec2(8.0, 10.0)) * 2.2) * 0.12;
-	float wheel = exp(-length((uv - vec2(0.775, 0.355)) * vec2(11.0, 8.0)) * 2.0) * 0.10;
+	float moon = exp(-length((uv - vec2(0.690, 0.105)) * vec2(8.0, 10.0)) * 2.2) * 0.12;
+	float wheel = exp(-length((uv - vec2(0.755, 0.355)) * vec2(11.0, 8.0)) * 2.0) * 0.10;
 	float ground = exp(-length((uv - vec2(0.50, 0.86)) * vec2(4.2, 8.0)) * 2.1) * (0.07 + 0.025 * sin(TIME * 2.4));
 	float flicker = 0.90 + 0.07 * sin(TIME * 5.1) + 0.03 * sin(TIME * 11.7);
 	vec3 cool = vec3(0.36, 0.52, 0.78) * moon;
@@ -594,18 +594,18 @@ void fragment() {
 	vec2 p = UV;
 	float pulse = 0.5 + 0.5 * sin(TIME * 2.1);
 	float flicker = 0.5 + 0.5 * sin(TIME * 10.5 + sin(TIME * 4.7));
-	float blade_d = segment_distance(p, vec2(0.682, 0.315), vec2(0.588, 0.573));
+	float blade_d = segment_distance(p, vec2(0.642, 0.305), vec2(0.535, 0.535));
 	float blade_halo = exp(-blade_d * 48.0) * (0.68 + pulse * 0.27) * (0.68 + flicker * 0.32);
 	float blade_edge = exp(-abs(blade_d - 0.007) * 125.0) * (0.34 + flicker * 0.24);
 	float blade_core = exp(-blade_d * 205.0) * 0.34;
-	float tip_bloom = exp(-length((p - vec2(0.682, 0.315)) * vec2(1.0, 0.82)) * 85.0) * (0.42 + pulse * 0.28);
+	float tip_bloom = exp(-length((p - vec2(0.642, 0.305)) * vec2(1.0, 0.82)) * 85.0) * (0.42 + pulse * 0.28);
 	// Warm, localized reflection and an animated halo around the existing fire ring.
-	vec2 ground_p = vec2((p.x - 0.505) * 1.15, (p.y - 0.887) * 3.6);
+	vec2 ground_p = vec2((p.x - 0.500) * 1.05, (p.y - 0.820) * 3.8);
 	float ground_d = length(ground_p);
 	float ground_bloom = exp(-ground_d * 10.5) * (0.28 + pulse * 0.20);
 	float ground_ripple = (0.5 + 0.5 * sin(ground_p.x * 34.0 - TIME * 3.0 + sin(TIME * 1.7) * 2.0))
 		* exp(-ground_d * 5.0) * (0.09 + pulse * 0.07);
-	vec2 ring_p = vec2((p.x - 0.505) / 0.138, (p.y - 0.887) / 0.098);
+	vec2 ring_p = vec2((p.x - 0.500) / 0.140, (p.y - 0.820) / 0.080);
 	float ring_distance = abs(length(ring_p) - 1.0);
 	float ring_angle = atan(ring_p.y, ring_p.x);
 	float ring_flicker = 0.78 + 0.15 * sin(TIME * 5.5 + ring_angle * 7.0) + 0.07 * sin(TIME * 11.0 - ring_angle * 13.0);
@@ -614,8 +614,8 @@ void fragment() {
 	// cannot draw an orange stripe across either leg.
 	vec3 artwork_pixel = texture(title_texture, p).rgb;
 	float artwork_luma = dot(artwork_pixel, vec3(0.299, 0.587, 0.114));
-	float leg_region = smoothstep(0.425, 0.445, p.x) * (1.0 - smoothstep(0.565, 0.585, p.x))
-		* smoothstep(0.755, 0.775, p.y) * (1.0 - smoothstep(0.865, 0.885, p.y));
+	float leg_region = smoothstep(0.430, 0.445, p.x) * (1.0 - smoothstep(0.555, 0.570, p.x))
+		* smoothstep(0.745, 0.760, p.y) * (1.0 - smoothstep(0.875, 0.890, p.y));
 	float trouser_occlusion = leg_region * (1.0 - smoothstep(0.08, 0.28, artwork_luma));
 	float ring_visibility = 1.0 - trouser_occlusion;
 	float ring_glow = exp(-ring_distance * 25.0) * (0.48 + pulse * 0.32) * ring_flicker * ring_visibility;
@@ -638,15 +638,15 @@ void fragment() {
 	# Menu hit areas follow the aspect-fitted artwork rather than the full display,
 	# so each printed label remains clickable on both 16:9 and ultrawide phones.
 	_add_title_particles(title_layer, viewport_size)
-	var new_game_top_left := _title_art_anchor(art_rect, viewport_size, 0.810, 0.445)
-	var new_game_bottom_right := _title_art_anchor(art_rect, viewport_size, 0.960, 0.540)
+	var new_game_top_left := _title_art_anchor(art_rect, viewport_size, 0.708, 0.445)
+	var new_game_bottom_right := _title_art_anchor(art_rect, viewport_size, 0.866, 0.520)
 	var new_game := _make_title_hitbox(new_game_top_left.x, new_game_top_left.y, new_game_bottom_right.x, new_game_bottom_right.y)
 	new_game.name = "NewGameHitbox"
 	new_game.pressed.connect(func() -> void: _run_title_button_action(new_game, _start_new_game))
 	title_layer.add_child(new_game)
 
-	var continue_top_left := _title_art_anchor(art_rect, viewport_size, 0.810, 0.555)
-	var continue_bottom_right := _title_art_anchor(art_rect, viewport_size, 0.960, 0.655)
+	var continue_top_left := _title_art_anchor(art_rect, viewport_size, 0.708, 0.530)
+	var continue_bottom_right := _title_art_anchor(art_rect, viewport_size, 0.866, 0.605)
 	var continue_game := _make_title_hitbox(continue_top_left.x, continue_top_left.y, continue_bottom_right.x, continue_bottom_right.y)
 	continue_game.name = "ContinueHitbox"
 	continue_game.disabled = not _has_save()
@@ -654,15 +654,15 @@ void fragment() {
 	title_layer.add_child(continue_game)
 
 	# Settings intentionally has no action yet, but still plays the menu click.
-	var settings_top_left := _title_art_anchor(art_rect, viewport_size, 0.815, 0.660)
-	var settings_bottom_right := _title_art_anchor(art_rect, viewport_size, 0.960, 0.760)
+	var settings_top_left := _title_art_anchor(art_rect, viewport_size, 0.708, 0.615)
+	var settings_bottom_right := _title_art_anchor(art_rect, viewport_size, 0.866, 0.690)
 	var settings := _make_title_hitbox(settings_top_left.x, settings_top_left.y, settings_bottom_right.x, settings_bottom_right.y)
 	settings.name = "SettingsHitbox"
 	settings.pressed.connect(func() -> void: _run_title_button_action(settings, _open_settings))
 	title_layer.add_child(settings)
 
-	var exit_top_left := _title_art_anchor(art_rect, viewport_size, 0.810, 0.770)
-	var exit_bottom_right := _title_art_anchor(art_rect, viewport_size, 0.960, 0.875)
+	var exit_top_left := _title_art_anchor(art_rect, viewport_size, 0.708, 0.700)
+	var exit_bottom_right := _title_art_anchor(art_rect, viewport_size, 0.866, 0.765)
 	var exit_game := _make_title_hitbox(exit_top_left.x, exit_top_left.y, exit_bottom_right.x, exit_bottom_right.y)
 	exit_game.name = "ExitGameHitbox"
 	exit_game.pressed.connect(func() -> void: _run_title_button_action(exit_game, _exit_game))
