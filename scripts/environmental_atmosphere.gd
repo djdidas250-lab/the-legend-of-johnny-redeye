@@ -300,7 +300,6 @@ func _build_dust_field() -> void:
     _dust.color = Color(0.76, 0.70, 0.58, 0.24) if _park_mode else Color(0.70, 0.77, 0.86, 0.22)
     _dust.texture = _make_dust_texture()
     _dust.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-    _dust.visibility_rect = Rect2(-700.0, -400.0, 1400.0, 800.0)
     _dust.z_index = 50
     add_child(_dust)
 
@@ -340,7 +339,6 @@ func _build_falling_leaves() -> void:
     _leaves.color = Color(0.68, 0.48, 0.27, 0.34)
     _leaves.texture = _make_leaf_texture()
     _leaves.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-    _leaves.visibility_rect = Rect2(-720.0, -300.0, 1440.0, 600.0)
     _leaves.z_index = 49
     add_child(_leaves)
 
