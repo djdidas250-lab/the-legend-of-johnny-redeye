@@ -237,32 +237,6 @@ jobs:
             APK was exported, package-checked, and signature-verified by the workflow.
           files: |
             build/TheLegendOfJohnnyRedeye.apk
-            build/davy_previews/davy_human_walk.gif
-            build/davy_previews/davy_human_attack.gif
-            build/davy_previews/davy_human_fall.gif
-            build/davy_previews/davy_entrance.gif
-            build/davy_previews/davy_transformation.gif
-            build/davy_previews/davy_octopus_walk.gif
-            build/davy_previews/davy_octopus_walk_down.gif
-            build/davy_previews/davy_octopus_walk_up.gif
-            build/davy_previews/davy_octopus_transition.gif
-            build/davy_previews/davy_octopus_attack.gif
-            build/davy_previews/davy_transformation_handoff.gif
-            build/davy_previews/davy_human_walk_contact.png
-            build/davy_previews/davy_human_attack_contact.png
-            build/davy_previews/davy_human_fall_contact.png
-            build/davy_previews/davy_entrance_contact.png
-            build/davy_previews/davy_transformation_contact.png
-            build/davy_previews/davy_octopus_walk_contact.png
-            build/davy_previews/davy_octopus_walk_down_contact.png
-            build/davy_previews/davy_octopus_walk_up_contact.png
-            build/davy_previews/davy_octopus_transition_contact.png
-            build/davy_previews/davy_octopus_idle_contact.png
-            build/davy_previews/davy_octopus_attack_contact.png
-            build/davy_previews/davy_transformation_handoff_contact.png
-            build/mattijuana_previews/*.gif
-            build/mattijuana_previews/*.png
-            build/mattijuana_previews/*.json
 
 # QA build: verify front-facing octopus bridge between transformation and walk.
 
