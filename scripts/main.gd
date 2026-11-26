@@ -612,7 +612,6 @@ void fragment() {
 """
 	var sword_material := ShaderMaterial.new()
 	sword_material.shader = sword_shader
-	sword_material.set_shader_parameter("title_texture", TITLE_IMAGE)
 	sword_glow.material = sword_material
 	title_layer.add_child(sword_glow)
 
