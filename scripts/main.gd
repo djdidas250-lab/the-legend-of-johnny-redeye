@@ -4879,8 +4879,9 @@ func _dismiss_slingshot_notice_on_action() -> void:
 	_dismiss_slingshot_notification()
 
 func _try_fire_slingshot() -> void:
-	if first_stage_intro_active:
-		return
+	# The scene tree is paused during the opening audio, and _input rejects
+	# all input until the intro finishes. Keep the existing SHOOT action path
+	# intact so notification dismissal and normal gameplay remain unchanged.
 	# Dismiss the pickup prompt from the same action handler used by both
 	# keyboard and touch SHOOT controls; simulated Input events are not used
 	# by the direct touch-button connection.
