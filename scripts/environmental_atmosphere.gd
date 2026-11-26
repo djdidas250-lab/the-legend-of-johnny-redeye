@@ -141,9 +141,9 @@ func _build_fog_banks() -> void:
         density = 0.96
         fog_palette = [Color("#7b899c"), Color("#657286"), Color("#9aa4ad")]
     var settings := [
-        {"speed": 0.010, "opacity": 0.40 * density, "sx": 3.8, "sy": 2.0, "offset": 0.00, "tint": fog_palette[0], "z": 0},
-        {"speed": -0.014, "opacity": 0.31 * density, "sx": 5.6, "sy": 2.7, "offset": -0.075, "tint": fog_palette[1], "z": 2},
-        {"speed": 0.019, "opacity": 0.22 * density, "sx": 8.2, "sy": 3.4, "offset": 0.055, "tint": fog_palette[2], "z": 4}
+        {"speed": 0.010, "opacity": 0.27 * density, "sx": 0.85, "sy": 1.0, "offset": 0.00, "tint": fog_palette[0], "z": 0},
+        {"speed": -0.008, "opacity": 0.19 * density, "sx": 1.10, "sy": 1.0, "offset": -0.055, "tint": fog_palette[1], "z": 2},
+        {"speed": 0.014, "opacity": 0.13 * density, "sx": 1.35, "sy": 1.0, "offset": 0.045, "tint": fog_palette[2], "z": 4}
     ]
     for setting in settings:
         var bank := Sprite2D.new()
