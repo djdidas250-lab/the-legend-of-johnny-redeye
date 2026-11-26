@@ -685,7 +685,10 @@ func _ready() -> void:
 	game.call("_try_punch")
 	if not _check(is_equal_approx(float(game.get("attack_cooldown")), 0.0), "Attacks must remain disabled during the first-stage opening audio."):
 		return
+	# The remainder of this smoke test exercises ordinary gameplay; explicitly
+	# finish the intro here so its simulated SHOOT input occurs after handoff.
 	game.call("_on_first_stage_intro_finished")
+	await get_tree().process_frame
 	if not _check(not get_tree().paused and not bool(game.get("first_stage_intro_active")) and opening_music.playing, "Stage One music must start and gameplay must resume immediately when the opening audio finishes."):
 		return
 	var baggy: Sprite2D = game.get("baggy_pickup")
