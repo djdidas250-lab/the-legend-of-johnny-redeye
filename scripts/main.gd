@@ -1458,6 +1458,8 @@ func _complete_return_to_mission_select() -> void:
 
 func _build_game(start_x: float, start_y: float) -> void:
 	player = _make_character(Vector2(start_x, start_y), Color("#287caa"), false)
+	# Establish depth before the first rendered frame so fog never covers David.
+	player.z_index = clampi(roundi(player.position.y), 0, 1024)
 	add_child(player)
 	_setup_horror_atmosphere()
 	_add_vehicle_obstacles()
@@ -1466,6 +1468,10 @@ func _build_game(start_x: float, start_y: float) -> void:
 	if not has_slingshot and current_street == "NEWLEAF CRESCENT":
 		_create_slingshot_pickup()
 	_spawn_level_enemies()
+	# Enemies join the same depth-sorted actor plane immediately on spawn.
+	for rival in rivals:
+		if is_instance_valid(rival):
+			rival.z_index = clampi(roundi(rival.position.y), 0, 1024)
 	if current_street == "LEASIDE DRIVE":
 		_create_baggy_pickup()
 		_create_brick_stash_pickup()
