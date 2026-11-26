@@ -1912,9 +1912,13 @@ func _start_stage_one_cutscene() -> void:
 	stage_one_cutscene_layer.add_child(stage_one_cutscene_audio_player)
 	stage_one_cutscene_audio_player.finished.connect(_on_stage_one_cutscene_audio_finished, CONNECT_ONE_SHOT)
 
-	# Present the fully composed image and dialogue for one rendered frame
-	# before starting the voice track, so both begin together on screen.
-	await RenderingServer.frame_post_draw
+	# Defer audio start until the image and dialogue nodes have entered the
+	# scene tree. This also works in the headless gameplay test renderer.
+	call_deferred("_play_stage_one_cutscene_audio")
+
+
+func _play_stage_one_cutscene_audio() -> void:
+	await get_tree().process_frame
 	if not stage_one_cutscene_active or not is_instance_valid(stage_one_cutscene_audio_player):
 		return
 	stage_one_cutscene_audio_player.play()
