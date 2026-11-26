@@ -165,6 +165,8 @@ var _park_mode := false
 var _dust: CPUParticles2D
 var _leaves: CPUParticles2D
 var _lights: Array[PointLight2D] = []
+var _occluders: Array[LightOccluder2D] = []
+var _occluder_origins: Array[Vector2] = []
 var _elapsed := 0.0
 
 func configure(world_width: float, street_name: String = "") -> void:
@@ -174,6 +176,7 @@ func configure(world_width: float, street_name: String = "") -> void:
     z_index = 300
     _build_fog_banks()
     _build_canopy_shadows()
+    _build_tree_occluders()
     _build_ambient_lights()
     _build_dust_field()
     _build_falling_leaves()
@@ -246,6 +249,37 @@ func _build_canopy_shadows() -> void:
         shadow.material = material
         add_child(shadow)
 
+func _build_tree_occluders() -> void:
+    # Invisible occluder silhouettes are aligned to the supplied panorama's
+    # tree groups. Their soft shadows fall onto the scenery only.
+    var anchors := [0.08, 0.20, 0.32, 0.49, 0.64, 0.81, 0.92] if _street_name.contains("NEWLEAF") else (
+        [0.12, 0.28, 0.43, 0.59, 0.75, 0.90] if _park_mode else (
+        [0.07, 0.38, 0.58, 0.78, 0.93] if _street_name.contains("MCRAE") else [0.18, 0.34, 0.51, 0.68, 0.86]))
+    var tree_shape := OccluderPolygon2D.new()
+    tree_shape.closed = true
+    tree_shape.cull_mode = OccluderPolygon2D.CULL_DISABLED
+    tree_shape.polygon = PackedVector2Array([
+        Vector2(-14.0, 132.0), Vector2(-22.0, 38.0),
+        Vector2(-82.0, 20.0), Vector2(-103.0, -17.0),
+        Vector2(-91.0, -61.0), Vector2(-57.0, -100.0),
+        Vector2(-22.0, -124.0), Vector2(18.0, -121.0),
+        Vector2(60.0, -93.0), Vector2(96.0, -49.0),
+        Vector2(88.0, -8.0), Vector2(47.0, 21.0),
+        Vector2(22.0, 38.0), Vector2(14.0, 132.0)
+    ])
+    for i in range(anchors.size()):
+        var occluder := LightOccluder2D.new()
+        occluder.name = "TreeCanopyOccluder_%02d" % i
+        occluder.occluder = tree_shape
+        occluder.occluder_light_mask = 2
+        # Draw the occluder before the panorama so it can cast onto it.
+        occluder.z_as_relative = false
+        occluder.z_index = -1
+        occluder.position = Vector2(_world_width * float(anchors[i]), 175.0 + float(i % 2) * 22.0)
+        add_child(occluder)
+        _occluders.append(occluder)
+        _occluder_origins.append(occluder.position)
+
 func _build_ambient_lights() -> void:
     var light_texture := _make_organic_light_texture()
     var positions := [0.15, 0.40, 0.67, 0.88] if _park_mode else [0.20, 0.51, 0.82]
@@ -264,9 +298,13 @@ func _build_ambient_lights() -> void:
             light.color = Color("#9aacc5") if i != 1 else Color("#c1a58d")
             light.energy = 0.20 if i != 1 else 0.16
         light.range_item_cull_mask = 2
+        light.shadow_item_cull_mask = 2
+        light.shadow_enabled = i < 2
+        light.shadow_filter = Light2D.SHADOW_FILTER_PCF5
+        light.shadow_filter_smooth = 1.25
+        light.shadow_color = Color(0.012, 0.018, 0.032, 0.42)
         light.set_meta("base_energy", light.energy)
-        light.shadow_enabled = false
-        light.position = Vector2(_world_width * float(positions[i]), 275.0 if i % 2 == 0 else 310.0)
+        light.position = Vector2(_world_width * float(positions[i]), 170.0 if i % 2 == 0 else 205.0)
         add_child(light)
         _lights.append(light)
 
@@ -377,3 +415,9 @@ func _process(delta: float) -> void:
         var gentle_flicker := sin(_elapsed * (2.7 + float(i) * 0.8) + float(i) * 2.4)
         var base_energy := float(light.get_meta("base_energy", 0.20))
         light.energy = base_energy + slow_breath * 0.012 + gentle_flicker * 0.006
+    for i in range(_occluders.size()):
+        var occluder := _occluders[i]
+        if not is_instance_valid(occluder):
+            continue
+        var wind_phase := _elapsed * 0.34 + float(i) * 1.61
+        occluder.position = _occluder_origins[i] + Vector2(sin(wind_phase) * 2.2, cos(wind_phase * 0.73) * 0.8)
