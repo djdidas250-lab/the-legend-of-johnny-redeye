@@ -4157,7 +4157,7 @@ func _show_slingshot_notification() -> void:
 	var popup := Control.new()
 	popup.name = "SlingshotPickupNotification"
 	popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	popup.mouse_filter = Control.MOUSE_FILTER_STOP
+	popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	popup.process_mode = Node.PROCESS_MODE_ALWAYS
 	popup.z_index = 500
 	hud.add_child(popup)
@@ -4166,12 +4166,12 @@ func _show_slingshot_notification() -> void:
 	var shade := ColorRect.new()
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.color = Color(0.0, 0.0, 0.0, 0.68)
-	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	popup.add_child(shade)
 
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_STOP
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	popup.add_child(center)
 
 	var panel := PanelContainer.new()
@@ -4257,18 +4257,12 @@ func _show_slingshot_notification() -> void:
 	footer.add_child(close_button)
 	close_button.pressed.connect(_dismiss_slingshot_notification)
 
-	if is_instance_valid(music_player):
-		music_player.process_mode = Node.PROCESS_MODE_ALWAYS
-	get_tree().paused = true
 
 func _dismiss_slingshot_notification() -> void:
 	if not is_instance_valid(slingshot_notice):
 		return
 	slingshot_notice.queue_free()
 	slingshot_notice = null
-	get_tree().paused = false
-	if is_instance_valid(music_player):
-		music_player.process_mode = Node.PROCESS_MODE_INHERIT
 
 func _save_slingshot_pickup_after_visible_frame() -> void:
 	await RenderingServer.frame_post_draw
