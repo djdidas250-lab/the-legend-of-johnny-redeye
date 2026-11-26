@@ -174,17 +174,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb libgl1-mesa-dri
-          mkdir -p build/atmosphere_visuals
           xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 godot --path . --script res://tests/atmosphere_visual_capture.gd --audio-driver Dummy
           test "$(find build/atmosphere_visuals -maxdepth 1 -name 'newleaf_fog_*.png' | wc -l)" -eq 4
-
-      - name: Upload rendered atmosphere review frames
-        uses: actions/upload-artifact@v4
-        with:
-          name: atmosphere-visual-frames-${{ github.run_number }}
-          path: build/atmosphere_visuals/*.png
-          if-no-files-found: error
-          retention-days: 3
 
       - name: Export Android APK
         run: |
