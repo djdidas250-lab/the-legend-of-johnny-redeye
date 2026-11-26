@@ -36,6 +36,9 @@ const SLINGSHOT_NOTICE_IMAGE := preload("res://images/slingshot_notice.png")
 const SLINGSHOT_FIRE_SOUND := preload("res://images/freesound_community-ricochet-4-101446.mp3")
 const ITEM_COLLECTED_SOUND := preload("res://images/alexis_gaming_cam-item-collected-1-367087.mp3")
 const STAGE_ONE_IMAGE := preload("res://images/image_a06e5bc7.jpg")
+const STAGE_ONE_CUTSCENE_IMAGE := preload("res://images/stage1_cutscene/cutscene stage 1.jpeg")
+const STAGE_ONE_CUTSCENE_AUDIO := preload("res://images/stage1_cutscene/John game intro.mp3")
+const STAGE_ONE_CUTSCENE_DIALOGUE := "Welland's a sweaty demon orgy and the big top's burning—so clench up, cocksuckers, because I'm turning this whole circus into a fucking bloodbath."
 const STREET_PANORAMA_IMAGE := preload("res://images/image_54ce9940.jpg")
 const MCRAE_FORWARD_IMAGE := preload("res://images/Gemini_Generated_Image_q2lkc6q2lkc6q2lk.jpeg")
 const NEWLEAF_FORWARD_IMAGE := preload("res://images/Gemini_Generated_Image_qkfscoqkfscoqkfs.jpeg")
@@ -209,6 +212,9 @@ var intro_image_index := -1
 var map_layer: CanvasLayer
 var death_layer: CanvasLayer
 var splash_layer: CanvasLayer
+var stage_one_cutscene_layer: CanvasLayer
+var stage_one_cutscene_audio_player: AudioStreamPlayer
+var stage_one_cutscene_active := false
 var music_player: AudioStreamPlayer
 var sfx_player: AudioStreamPlayer
 var baggy_close_player: AudioStreamPlayer
@@ -1740,7 +1746,7 @@ func _show_stage_one_splash() -> void:
 		"STAGE 1  —  JOHN'S HOUSE",
 		"Make your way along Leaside Drive to Woodlawn Park.",
 		"CLICK HERE TO BEGIN MISSION",
-		_begin_stage_one_mission
+		_start_stage_one_cutscene
 	)
 
 
@@ -1821,6 +1827,109 @@ func _create_transition_briefing_panel(
 	)
 	content.add_child(prompt)
 	return panel
+
+
+func _start_stage_one_cutscene() -> void:
+	if stage_one_cutscene_active:
+		return
+	stage_one_cutscene_active = true
+	if is_instance_valid(splash_layer):
+		splash_layer.queue_free()
+		splash_layer = null
+
+	stage_one_cutscene_layer = CanvasLayer.new()
+	stage_one_cutscene_layer.name = "StageOneOpeningCutscene"
+	stage_one_cutscene_layer.layer = 30
+	add_child(stage_one_cutscene_layer)
+
+	# The source artwork is wider than the 16:9 game viewport. A darkened,
+	# aspect-covered copy fills the margins while the foreground keeps the
+	# complete original image visible without stretching or cropping it.
+	var backdrop := TextureRect.new()
+	backdrop.name = "StageOneCutsceneBackdrop"
+	backdrop.texture = STAGE_ONE_CUTSCENE_IMAGE
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	backdrop.modulate = Color(0.18, 0.12, 0.13, 1.0)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage_one_cutscene_layer.add_child(backdrop)
+
+	var artwork := TextureRect.new()
+	artwork.name = "StageOneCutsceneArtwork"
+	artwork.texture = STAGE_ONE_CUTSCENE_IMAGE
+	artwork.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	artwork.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	artwork.material = ENVIRONMENTAL_ATMOSPHERE.create_cutscene_atmosphere_material(true)
+	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage_one_cutscene_layer.add_child(artwork)
+
+	# Match the top-of-screen dialogue treatment used by the boss encounters.
+	var panel := PanelContainer.new()
+	panel.name = "StageOneCutsceneDialoguePanel"
+	panel.anchor_left = 0.06
+	panel.anchor_right = 0.94
+	panel.anchor_top = 0.035
+	panel.anchor_bottom = 0.27
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#07060b")
+	style.border_color = Color("#b10e2d")
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(4)
+	style.shadow_color = Color(0.82, 0.0, 0.12, 0.72)
+	style.shadow_size = 16
+	panel.add_theme_stylebox_override("panel", style)
+	stage_one_cutscene_layer.add_child(panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	panel.add_child(margin)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 5)
+	margin.add_child(content)
+
+	var heading := _make_hud_label("STAGE 1 — OPENING CUTSCENE", Vector2.ZERO, 19)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_color_override("font_color", Color("#ffffff"))
+	content.add_child(heading)
+
+	var dialogue := _make_hud_label(STAGE_ONE_CUTSCENE_DIALOGUE, Vector2.ZERO, 14)
+	dialogue.name = "StageOneCutsceneDialogue"
+	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(dialogue)
+
+	stage_one_cutscene_audio_player = AudioStreamPlayer.new()
+	stage_one_cutscene_audio_player.name = "StageOneCutsceneAudio"
+	stage_one_cutscene_audio_player.stream = STAGE_ONE_CUTSCENE_AUDIO
+	stage_one_cutscene_audio_player.volume_db = 0.0
+	stage_one_cutscene_layer.add_child(stage_one_cutscene_audio_player)
+	stage_one_cutscene_audio_player.finished.connect(_on_stage_one_cutscene_audio_finished, CONNECT_ONE_SHOT)
+
+	# Present the fully composed image and dialogue for one rendered frame
+	# before starting the voice track, so both begin together on screen.
+	await RenderingServer.frame_post_draw
+	if not stage_one_cutscene_active or not is_instance_valid(stage_one_cutscene_audio_player):
+		return
+	stage_one_cutscene_audio_player.play()
+
+
+func _on_stage_one_cutscene_audio_finished() -> void:
+	if not stage_one_cutscene_active:
+		return
+	stage_one_cutscene_active = false
+	if is_instance_valid(stage_one_cutscene_layer):
+		stage_one_cutscene_layer.queue_free()
+	stage_one_cutscene_layer = null
+	stage_one_cutscene_audio_player = null
+	_begin_stage_one_mission()
+
 
 func _begin_stage_one_mission() -> void:
 	# Stage One now begins at the far end of Leaside, away from McRae.
