@@ -4,6 +4,60 @@ class_name EnvironmentalAtmosphere
 # All atmosphere lives between the panorama and the actors. The parent game
 # canvas alone receives the 2D lights; player/enemy/boss canvases keep mask 1.
 const BACKGROUND_LIGHT_MASK := 2
+const BACKGROUND_NIGHT_GRADE_SHADER := """
+shader_type canvas_item;
+
+float luma(vec3 color) {
+    return dot(color, vec3(0.2126, 0.7152, 0.0722));
+}
+
+void fragment() {
+    vec4 texel = texture(TEXTURE, UV);
+    vec3 source = texel.rgb;
+    float brightness = luma(source);
+
+    // Separate the open sky, vegetation, built surfaces and road before
+    // grading. This retains source-art detail instead of applying one tint.
+    float sky_region = 1.0 - smoothstep(0.30, 0.56, UV.y);
+    float green_signal = clamp((source.g - max(source.r, source.b)) * 3.4, 0.0, 1.0);
+    float foliage_region = green_signal * smoothstep(0.12, 0.31, UV.y);
+    float blue_sky = clamp((source.b - source.r) * 2.8, 0.0, 1.0);
+
+    vec3 night_sky = mix(
+        vec3(0.012, 0.018, 0.043),
+        source * vec3(0.19, 0.27, 0.48),
+        smoothstep(0.14, 0.72, brightness)
+    );
+    night_sky = mix(night_sky, vec3(0.052, 0.070, 0.112), blue_sky * 0.24);
+
+    vec3 cool_surface = source * vec3(0.32, 0.39, 0.53);
+    cool_surface = mix(
+        cool_surface,
+        source * vec3(0.47, 0.53, 0.65),
+        smoothstep(0.36, 0.86, brightness) * 0.30
+    );
+    vec3 night_foliage = source * vec3(0.23, 0.38, 0.39);
+    vec3 night_ground = mix(cool_surface, night_foliage, foliage_region * 0.66);
+
+    // A narrow horizon haze gives distant houses and tree lines separation.
+    float horizon_haze = exp(-pow((UV.y - 0.535) * 13.0, 2.0)) * 0.17;
+    night_ground = mix(night_ground, vec3(0.095, 0.115, 0.16), horizon_haze);
+
+    vec3 graded = mix(night_ground, night_sky, sky_region);
+
+    // Retain small warm details in windows, signs and existing practical lights.
+    float warm_detail = smoothstep(0.10, 0.30, source.r - source.b)
+        * smoothstep(0.28, 0.68, brightness);
+    graded = mix(graded, source * vec3(0.78, 0.54, 0.34), warm_detail * 0.34);
+
+    // Keep the brightest painted details legible without lifting the whole image.
+    float highlight_detail = smoothstep(0.78, 0.98, brightness) * (1.0 - sky_region * 0.35);
+    graded = mix(graded, source * vec3(0.68, 0.73, 0.84), highlight_detail * 0.20);
+
+    COLOR = vec4(max(graded, vec3(0.0)), texel.a);
+}
+"""
+
 const FOG_SHADER := """
 shader_type canvas_item;
 render_mode unshaded;
@@ -97,6 +151,13 @@ void fragment() {
     COLOR = vec4(vec3(0.012, 0.016, 0.026), alpha);
 }
 """
+
+static func create_background_grade_material() -> ShaderMaterial:
+    var shader := Shader.new()
+    shader.code = BACKGROUND_NIGHT_GRADE_SHADER
+    var grade := ShaderMaterial.new()
+    grade.shader = shader
+    return grade
 
 var _world_width := 960.0
 var _street_name := ""
