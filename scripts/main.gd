@@ -696,7 +696,7 @@ func _show_save_slot_picker(for_new_game: bool) -> void:
 	heading.text = "SELECT A SAVE SLOT" if not for_new_game else "CHOOSE A SLOT TO OVERWRITE"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.add_theme_font_size_override("font_size", 25)
-	heading.add_theme_color_override("font_color", Color("#f2c879"))
+	heading.add_theme_color_override("font_color", Color("#ffffff"))
 	content.add_child(heading)
 	var cfg := ConfigFile.new()
 	if cfg.load(SAVE_PATH) != OK:
@@ -1307,7 +1307,7 @@ func _show_leaside_checkpoint_briefing() -> void:
 	heading.text = "NOW ENTERING LEASIDE DRIVE"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.add_theme_font_size_override("font_size", 25)
-	heading.add_theme_color_override("font_color", Color("#f2c879"))
+	heading.add_theme_color_override("font_color", Color("#ffffff"))
 	content.add_child(heading)
 	var objective := Label.new()
 	objective.text = "Make your way up the street to John's house."
@@ -1777,7 +1777,7 @@ func _show_davy_boss_intro() -> void:
 	margin.add_child(content)
 	var heading := _make_hud_label("MINI BOSS FIGHT  —  DAVY JONES", Vector2.ZERO, 16)
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	heading.add_theme_color_override("font_color", Color("#f2c879"))
+	heading.add_theme_color_override("font_color", Color("#ffffff"))
 	content.add_child(heading)
 	var dialogue := _make_hud_label("Ha ha ha, did you really think you could just come into my neighborhood and come and go as you please? You'll have to defeat me first before you can access the secret pathway", Vector2.ZERO, 12)
 	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2604,12 +2604,12 @@ func _begin_mcrae_transition() -> void:
 	briefing_panel.anchor_bottom = 0.94
 	briefing_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var briefing_style := StyleBoxFlat.new()
-	briefing_style.bg_color = Color(0.055, 0.085, 0.115, 0.94)
-	briefing_style.border_color = Color("#c99a50")
+	briefing_style.bg_color = Color("#08070c")
+	briefing_style.border_color = Color("#b10e2d")
 	briefing_style.set_border_width_all(2)
-	briefing_style.set_corner_radius_all(9)
-	briefing_style.shadow_color = Color(0, 0, 0, 0.55)
-	briefing_style.shadow_size = 8
+	briefing_style.set_corner_radius_all(4)
+	briefing_style.shadow_color = Color(0.72, 0.0, 0.10, 0.62)
+	briefing_style.shadow_size = 14
 	briefing_panel.add_theme_stylebox_override("panel", briefing_style)
 	transition_layer.add_child(briefing_panel)
 
@@ -2773,12 +2773,12 @@ func _begin_newleaf_transition() -> void:
 	briefing_panel.anchor_bottom = 0.94
 	briefing_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var briefing_style := StyleBoxFlat.new()
-	briefing_style.bg_color = Color(0.055, 0.085, 0.115, 0.94)
-	briefing_style.border_color = Color("#c99a50")
+	briefing_style.bg_color = Color("#08070c")
+	briefing_style.border_color = Color("#b10e2d")
 	briefing_style.set_border_width_all(2)
-	briefing_style.set_corner_radius_all(9)
-	briefing_style.shadow_color = Color(0, 0, 0, 0.55)
-	briefing_style.shadow_size = 8
+	briefing_style.set_corner_radius_all(4)
+	briefing_style.shadow_color = Color(0.72, 0.0, 0.10, 0.62)
+	briefing_style.shadow_size = 14
 	briefing_panel.add_theme_stylebox_override("panel", briefing_style)
 	transition_layer.add_child(briefing_panel)
 
@@ -2926,12 +2926,12 @@ func _begin_woodlawn_park_transition() -> void:
 	briefing_panel.anchor_bottom = 0.94
 	briefing_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var briefing_style := StyleBoxFlat.new()
-	briefing_style.bg_color = Color(0.055, 0.085, 0.115, 0.94)
-	briefing_style.border_color = Color("#c99a50")
+	briefing_style.bg_color = Color("#08070c")
+	briefing_style.border_color = Color("#b10e2d")
 	briefing_style.set_border_width_all(2)
-	briefing_style.set_corner_radius_all(9)
-	briefing_style.shadow_color = Color(0, 0, 0, 0.55)
-	briefing_style.shadow_size = 8
+	briefing_style.set_corner_radius_all(4)
+	briefing_style.shadow_color = Color(0.72, 0.0, 0.10, 0.62)
+	briefing_style.shadow_size = 14
 	briefing_panel.add_theme_stylebox_override("panel", briefing_style)
 	transition_layer.add_child(briefing_panel)
 
@@ -3322,7 +3322,7 @@ func _show_mattijuana_intro() -> void:
 	margin.add_child(content)
 	var heading := _make_hud_label("MATTIJUANA", Vector2.ZERO, 19)
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	heading.add_theme_color_override("font_color", Color("#f2c879"))
+	heading.add_theme_color_override("font_color", Color("#ffffff"))
 	content.add_child(heading)
 	var dialogue := _make_hud_label("You stepped into the wrong damn park, motherfucker—I’m gonna smoke your ass like a cheap dime bag and leave your bitch-ass swinging from the monkey bars!", Vector2.ZERO, 14)
 	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -3377,12 +3377,12 @@ func _begin_woodlawn_playground_transition() -> void:
 	briefing_panel.anchor_bottom = 0.94
 	briefing_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var briefing_style := StyleBoxFlat.new()
-	briefing_style.bg_color = Color(0.055, 0.085, 0.115, 0.94)
-	briefing_style.border_color = Color("#c99a50")
+	briefing_style.bg_color = Color("#08070c")
+	briefing_style.border_color = Color("#b10e2d")
 	briefing_style.set_border_width_all(2)
-	briefing_style.set_corner_radius_all(9)
-	briefing_style.shadow_color = Color(0, 0, 0, 0.55)
-	briefing_style.shadow_size = 8
+	briefing_style.set_corner_radius_all(4)
+	briefing_style.shadow_color = Color(0.72, 0.0, 0.10, 0.62)
+	briefing_style.shadow_size = 14
 	briefing_panel.add_theme_stylebox_override("panel", briefing_style)
 	transition_layer.add_child(briefing_panel)
 
@@ -3946,12 +3946,12 @@ func _show_brick_coke_notification() -> void:
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(330.0, 0.0)
 	var metal := StyleBoxFlat.new()
-	metal.bg_color = Color("#20262b")
-	metal.border_color = Color("#9ba8ae")
+	metal.bg_color = Color("#08070c")
+	metal.border_color = Color("#b10e2d")
 	metal.set_border_width_all(3)
-	metal.set_corner_radius_all(8)
-	metal.shadow_color = Color(0.0, 0.0, 0.0, 0.82)
-	metal.shadow_size = 12
+	metal.set_corner_radius_all(4)
+	metal.shadow_color = Color(0.78, 0.0, 0.12, 0.58)
+	metal.shadow_size = 16
 	metal.content_margin_left = 11.0
 	metal.content_margin_right = 11.0
 	metal.content_margin_top = 9.0
@@ -3967,7 +3967,7 @@ func _show_brick_coke_notification() -> void:
 	heading.text = "BRICK OF COKE"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.add_theme_font_size_override("font_size", 21)
-	heading.add_theme_color_override("font_color", Color("#f0c879"))
+	heading.add_theme_color_override("font_color", Color("#ffffff"))
 	heading.add_theme_color_override("font_shadow_color", Color("#080b0d"))
 	heading.add_theme_constant_override("shadow_offset_x", 2)
 	heading.add_theme_constant_override("shadow_offset_y", 2)
@@ -3999,7 +3999,7 @@ func _show_brick_coke_notification() -> void:
 	one_up.text = "(1-UP)"
 	one_up.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	one_up.add_theme_font_size_override("font_size", 17)
-	one_up.add_theme_color_override("font_color", Color("#f0c879"))
+	one_up.add_theme_color_override("font_color", Color("#ff294b"))
 	contents.add_child(one_up)
 
 	var footer := HBoxContainer.new()
@@ -4019,13 +4019,14 @@ func _show_brick_coke_notification() -> void:
 	close_button.add_theme_font_size_override("font_size", 18)
 	close_button.add_theme_color_override("font_color", Color.WHITE)
 	var close_style := StyleBoxFlat.new()
-	close_style.bg_color = Color("#30383e")
-	close_style.border_color = Color("#c2cbd0")
+	close_style.bg_color = Color("#10080d")
+	close_style.border_color = Color("#c51637")
 	close_style.set_border_width_all(2)
 	close_style.set_corner_radius_all(4)
 	close_button.add_theme_stylebox_override("normal", close_style)
 	var close_hover: StyleBoxFlat = close_style.duplicate() as StyleBoxFlat
-	close_hover.bg_color = Color("#48545c")
+	close_hover.bg_color = Color("#4a0d1b")
+	close_hover.border_color = Color("#ff3154")
 	close_button.add_theme_stylebox_override("hover", close_hover)
 	footer.add_child(close_button)
 	close_button.pressed.connect(_dismiss_brick_coke_notification)
