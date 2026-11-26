@@ -435,11 +435,12 @@ void fragment() {
 
 	var title_art := TextureRect.new()
 	title_art.name = "TitleArtwork"
+	title_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	title_art.custom_minimum_size = Vector2.ZERO
 	title_art.texture = TITLE_IMAGE
 	title_art.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	title_art.position = art_rect.position
 	title_art.size = art_rect.size
-	title_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	title_art.stretch_mode = TextureRect.STRETCH_SCALE
 	title_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var edge_shader := Shader.new()
@@ -456,6 +457,9 @@ void fragment() {
 	edge_material.shader = edge_shader
 	title_art.material = edge_material
 	title_layer.add_child(title_art)
+	title_art.custom_minimum_size = Vector2.ZERO
+	title_art.position = art_rect.position
+	title_art.size = art_rect.size
 
 	# Fine drifting smoke softens the scene edges; the separate additive light
 	# pass gives the moon, Ferris wheel and fire-lit ground a restrained light spill.
