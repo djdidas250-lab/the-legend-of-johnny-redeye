@@ -826,7 +826,7 @@ render_mode unshaded, blend_mix;
 void fragment() {
 	vec4 src = texture(TEXTURE, UV);
 	float lum = max(max(src.r, src.g), src.b);
-	float source_alpha = src.a * smoothstep(0.012, 0.16, lum);
+	float source_alpha = src.a * smoothstep(0.035, 0.12, lum);
 	float nearby_brightness = 0.0;
 	for (int x = -2; x <= 2; x++) {
 		for (int y = -2; y <= 2; y++) {
@@ -844,8 +844,15 @@ void fragment() {
 	# and flame wheel visible without shifting or duplicating the source artwork.
 	float halo = max(nearby_brightness - source_alpha, 0.0) * 1.35;
 	vec3 amber = vec3(1.0, 0.19, 0.015);
-	vec3 rgb = src.rgb * source_alpha + amber * halo;
-	COLOR = vec4(rgb, max(source_alpha, halo));
+	float alpha = max(source_alpha, halo);
+	if (alpha < 0.002) {
+		discard;
+	}
+	// CanvasItem blend_mix expects straight-alpha RGB. Keeping the matte
+	// out of both RGB and alpha prevents the source rectangle from rendering
+	// as a dark box while preserving the artwork and its soft amber halo.
+	vec3 rgb = (src.rgb * source_alpha + amber * halo) / max(alpha, 0.002);
+	COLOR = vec4(rgb, alpha);
 }
 """
 	var loading_material := ShaderMaterial.new()
@@ -991,13 +998,13 @@ void fragment() {
 		var mat := intro_image_next.material as ShaderMaterial
 		if mat != null:
 			mat.set_shader_parameter("progress", progress)
-			mat.set_shader_parameter("transition_style", intro_image_index)
+			mat.set_shader_parameter("transition_style", 0)
 		if is_instance_valid(intro_transition_flare):
 			intro_transition_flare.visible = true
 			var flare_mat := intro_transition_flare.material as ShaderMaterial
 			flare_mat.set_shader_parameter("progress", progress)
 			var pulse := sin(progress * PI)
-			flare_mat.set_shader_parameter("strength", pulse * (0.70 if intro_image_index == 1 else 0.48))
+			flare_mat.set_shader_parameter("strength", pulse * 0.48)
 	else:
 		intro_image_next.visible = false
 		if is_instance_valid(intro_transition_flare):
