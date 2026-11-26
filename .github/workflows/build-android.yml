@@ -43,9 +43,17 @@ jobs:
                   except Exception:
                       pass
           PY
-          mkdir -p build/stage1-cutscene-source
-          find /tmp/stage1-cutscene -type f \\( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \\) -exec cp {} build/stage1-cutscene-source/ \\;
-          test -n "$(find build/stage1-cutscene-source -type f -print -quit)"
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          root = Path('/tmp/stage1-cutscene')
+          out = Path('build/stage1-cutscene-source')
+          out.mkdir(parents=True, exist_ok=True)
+          images = [p for p in root.rglob('*') if p.is_file() and p.suffix.lower() in {'.png', '.jpg', '.jpeg', '.webp'}]
+          assert images, 'No supported image found in archive'
+          for p in images:
+              shutil.copy2(p, out / p.name)
+          PY
       - name: Upload Stage 1 cutscene source image for visual review
         uses: actions/upload-artifact@v4
         with:
