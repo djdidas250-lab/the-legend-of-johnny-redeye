@@ -22,6 +22,38 @@ jobs:
       - name: Check out game
         uses: actions/checkout@v4
 
+      - name: Inspect Stage 1 cutscene archive and publish source image
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/stage1-cutscene
+          unzip -l "images/cutscene stage 1.zip"
+          unzip -o "images/cutscene stage 1.zip" -d /tmp/stage1-cutscene
+          find /tmp/stage1-cutscene -type f -maxdepth 3 -print
+          python3 -m pip install --user Pillow
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          root = Path('/tmp/stage1-cutscene')
+          for p in root.rglob('*'):
+              if p.is_file():
+                  print(f'CUTSCENE_FILE: {p.relative_to(root)} bytes={p.stat().st_size}')
+                  try:
+                      im = Image.open(p)
+                      print(f'CUTSCENE_IMAGE: {p.name} format={im.format} size={im.size} mode={im.mode}')
+                  except Exception:
+                      pass
+          PY
+          mkdir -p build/stage1-cutscene-source
+          find /tmp/stage1-cutscene -type f \\( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \\) -exec cp {} build/stage1-cutscene-source/ \\;
+          test -n "$(find build/stage1-cutscene-source -type f -print -quit)"
+      - name: Upload Stage 1 cutscene source image for visual review
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage1-cutscene-source-image
+          path: build/stage1-cutscene-source/*
+          retention-days: 3
+          if-no-files-found: error
+
       - name: Extract supplied cinematic intro assets
         run: |
           test -s images/introscreen.zip
