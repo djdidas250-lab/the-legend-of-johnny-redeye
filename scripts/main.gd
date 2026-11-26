@@ -23,6 +23,7 @@ const MAP_IMAGE := preload("res://images/Gemini_Generated_Image_3urpcr3urpcr3urp
 const MAP_CHECKPOINT_MARKER := preload("res://images/map_checkpoint_x.svg")
 const MAP_MUSIC := preload("res://images/28. Holy Sanctuary.wav")
 const STAGE_ONE_MUSIC := preload("res://images/7. Soldier.mp3")
+const FIRST_STAGE_OPENING_AUDIO := preload("res://images/John game intro.mp3")
 const STAGE_ONE_MUSIC_VOLUME_DB := -15.0
 const INTRO_MUSIC_VOLUME_DB := -9.09
 const MAP_CLICK_SOUND := preload("res://images/sword-shine.mp3")
@@ -204,6 +205,8 @@ var intro_image_next: TextureRect
 var intro_transition_flare: ColorRect
 var intro_progress_fill: ColorRect
 var intro_active := false
+var first_stage_intro_active := false
+var first_stage_intro_player: AudioStreamPlayer
 var intro_elapsed := 0.0
 var intro_image_index := -1
 var map_layer: CanvasLayer
@@ -273,6 +276,8 @@ func _setup_inputs() -> void:
 			InputMap.action_add_event(action, event)
 
 func _input(event: InputEvent) -> void:
+	if first_stage_intro_active:
+		return
 	# Track each touchscreen finger independently so simultaneous movement
 	# presses remain continuous instead of relying on simulated InputMap taps.
 	if event is InputEventScreenTouch:
@@ -1831,7 +1836,7 @@ func _begin_stage_one_mission() -> void:
 	active_slot_unlocked_leaside = true
 	active_slot_area = "Leaside Drive"
 	_save_slot_progress()
-	_start_game(55.0, 475.0)
+	_start_game(55.0, 475.0, true)
 	player.get_child(0).set("facing", 1.0)
 	var camera := player.get_node_or_null("Camera2D") as Camera2D
 	if camera != null:
@@ -1933,8 +1938,13 @@ func _continue_leaside_briefing() -> void:
 	awaiting_leaside_briefing = false
 	_start_leaside_checkpoint_game()
 
-func _start_game(start_x: float, start_y: float) -> void:
+func _start_game(start_x: float, start_y: float, play_first_stage_intro: bool = false) -> void:
 	_reset_davy_boss_state()
+	first_stage_intro_active = play_first_stage_intro
+	if is_instance_valid(first_stage_intro_player):
+		first_stage_intro_player.stop()
+		first_stage_intro_player.queue_free()
+		first_stage_intro_player = null
 	if title_layer != null:
 		title_layer.queue_free()
 		title_layer = null
@@ -1946,6 +1956,7 @@ func _start_game(start_x: float, start_y: float) -> void:
 		splash_layer = null
 	if music_player:
 		music_player.stop()
+		music_player.process_mode = Node.PROCESS_MODE_INHERIT
 		music_player.stream = STAGE_ONE_MUSIC
 		music_player.volume_db = STAGE_ONE_MUSIC_VOLUME_DB
 		music_player.finished.connect(func() -> void:
@@ -1963,11 +1974,37 @@ func _start_game(start_x: float, start_y: float) -> void:
 		_save_slot_progress()
 	_build_game(start_x, start_y)
 	queue_redraw()
-	# Wait until Godot has actually drawn the gameplay frame before starting
-	# the Stage One soundtrack, so the music never leads the visible level.
+	if play_first_stage_intro:
+		# Freeze the complete scene tree while the one-time opening audio plays.
+		# The dedicated player runs while paused; gameplay music stays stopped.
+		first_stage_intro_player = AudioStreamPlayer.new()
+		first_stage_intro_player.name = "FirstStageOpeningAudio"
+		first_stage_intro_player.stream = FIRST_STAGE_OPENING_AUDIO
+		first_stage_intro_player.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(first_stage_intro_player)
+		first_stage_intro_player.finished.connect(_on_first_stage_intro_finished, CONNECT_ONE_SHOT)
+		get_tree().paused = true
+	# Wait until Godot has drawn the initialized gameplay frame before audio begins.
 	await RenderingServer.frame_post_draw
-	if game_started and is_instance_valid(music_player):
+	if game_started and first_stage_intro_active and is_instance_valid(first_stage_intro_player):
+		first_stage_intro_player.play()
+	elif game_started and is_instance_valid(music_player):
 		music_player.play()
+
+func _on_first_stage_intro_finished() -> void:
+	if not first_stage_intro_active:
+		return
+	first_stage_intro_active = false
+	if is_instance_valid(first_stage_intro_player):
+		first_stage_intro_player.stop()
+		first_stage_intro_player.queue_free()
+	first_stage_intro_player = null
+	_clear_touch_directions()
+	get_tree().paused = false
+	if is_instance_valid(music_player):
+		music_player.process_mode = Node.PROCESS_MODE_INHERIT
+		if game_started:
+			music_player.play()
 
 func _return_to_mission_select() -> void:
 	if not game_started:
@@ -2761,7 +2798,7 @@ func _resolve_player_direction(raw_direction: Vector2) -> Vector2:
 
 
 func _physics_process(delta: float) -> void:
-	if not game_started or player == null or street_transition_active or game_over_pending:
+	if first_stage_intro_active or not game_started or player == null or street_transition_active or game_over_pending:
 		return
 	if mattijuana_boss_active and mattijuana_boss_state in ["entrance", "dialogue"]:
 		player.velocity = Vector2.ZERO
@@ -3075,7 +3112,7 @@ func _return_to_title_from_death() -> void:
 	_show_title()
 
 func _try_punch() -> void:
-	if attack_cooldown > 0.0 or not bool(player.call("can_start_attack")):
+	if first_stage_intro_active or player == null or attack_cooldown > 0.0 or not bool(player.call("can_start_attack")):
 		return
 	combo_step = 1 if combo_timer <= 0.0 else mini(combo_step + 1, 3)
 	combo_timer = 0.72
@@ -4842,6 +4879,8 @@ func _dismiss_slingshot_notice_on_action() -> void:
 	_dismiss_slingshot_notification()
 
 func _try_fire_slingshot() -> void:
+	if first_stage_intro_active:
+		return
 	# Dismiss the pickup prompt from the same action handler used by both
 	# keyboard and touch SHOOT controls; simulated Input events are not used
 	# by the direct touch-button connection.
