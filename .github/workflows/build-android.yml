@@ -74,7 +74,7 @@ jobs:
                "-c:a", "libmp3lame", "-b:a", "256k", str(temporary)],
               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True
           )
-          intro.replace(temporary)
+          temporary.replace(intro)
           matched_lufs = measure(intro)
           print(f"CINEMATIC_INTRO_MATCHED_LUFS={matched_lufs:.2f}")
           difference = abs(matched_lufs - target_lufs)
