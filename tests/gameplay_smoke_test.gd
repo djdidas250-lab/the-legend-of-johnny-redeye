@@ -199,7 +199,6 @@ func _ready() -> void:
 	if start_sfx.playing:
 		await start_sfx.finished
 	await RenderingServer.frame_post_draw
-	await RenderingServer.frame_post_draw
 	if not _check(bool(game.get("game_started")), "Invisible Start Mission click target did not start Stage One."): return
 	var opening_audio := game.get("first_stage_intro_player") as AudioStreamPlayer
 	var opening_music := game.get("music_player") as AudioStreamPlayer
@@ -687,7 +686,6 @@ func _ready() -> void:
 	# Re-enter Leaside through the same setup without the first-mission intro,
 	# representing a checkpoint/restart rather than a fresh mission start.
 	game.call("_begin_stage_one_mission", false)
-	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	var restart_opening_music := game.get("music_player") as AudioStreamPlayer
 	if not _check(not bool(game.get("first_stage_intro_active")) and game.get("first_stage_intro_player") == null and not get_tree().paused and restart_opening_music != null and restart_opening_music.playing, "A Leaside checkpoint/restart must not replay the first-mission opening audio."):

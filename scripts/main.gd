@@ -1983,10 +1983,11 @@ func _start_game(start_x: float, start_y: float, play_first_stage_intro: bool = 
 		first_stage_intro_player.process_mode = Node.PROCESS_MODE_ALWAYS
 		add_child(first_stage_intro_player)
 		first_stage_intro_player.finished.connect(_on_first_stage_intro_finished, CONNECT_ONE_SHOT)
-		get_tree().paused = true
-	# Wait until Godot has drawn the initialized gameplay frame before audio begins.
+	# Let Godot render the newly initialized level before starting its intro audio.
+	# Pause only after that frame, so the audio-start coroutine can resume reliably.
 	await RenderingServer.frame_post_draw
 	if game_started and first_stage_intro_active and is_instance_valid(first_stage_intro_player):
+		get_tree().paused = true
 		first_stage_intro_player.play()
 	elif game_started and is_instance_valid(music_player):
 		music_player.play()
