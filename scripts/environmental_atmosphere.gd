@@ -114,44 +114,6 @@ void fragment() {
 }
 """
 
-const SHADOW_SHADER := """
-shader_type canvas_item;
-render_mode unshaded;
-
-uniform float seed = 0.0;
-uniform float sway = 0.02;
-
-float segment_distance(vec2 p, vec2 a, vec2 b) {
-    vec2 pa = p - a;
-    vec2 ba = b - a;
-    float h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.0001), 0.0, 1.0);
-    return length(pa - ba * h);
-}
-
-void fragment() {
-    vec2 p = UV;
-    float wind = sin(TIME * 0.43 + seed) * sway;
-    p.x += wind * (1.0 - p.y);
-    p.y += cos(TIME * 0.31 + seed) * 0.008 * (p.x - 0.5);
-
-    float d = 1.0;
-    // A branching canopy silhouette, projected across the pavement rather
-    // than a screen-wide darkening layer.
-    d = min(d, segment_distance(p, vec2(0.50, 1.08), vec2(0.50, 0.43)));
-    d = min(d, segment_distance(p, vec2(0.50, 0.69), vec2(0.17, 0.29)));
-    d = min(d, segment_distance(p, vec2(0.50, 0.61), vec2(0.86, 0.22)));
-    d = min(d, segment_distance(p, vec2(0.30, 0.45), vec2(0.12, 0.18)));
-    d = min(d, segment_distance(p, vec2(0.69, 0.42), vec2(0.91, 0.10)));
-    d = min(d, segment_distance(p, vec2(0.50, 0.83), vec2(0.34, 0.57)));
-    d = min(d, segment_distance(p, vec2(0.50, 0.78), vec2(0.67, 0.51)));
-    float branches = 1.0 - smoothstep(0.008, 0.026, d);
-    float edge_fade = 1.0 - smoothstep(0.56, 0.78, distance(UV, vec2(0.5, 0.5)));
-    float softness = 0.78 + 0.22 * sin((UV.x * 19.0 + UV.y * 13.0) + TIME * 0.18 + seed);
-    float alpha = branches * edge_fade * softness * 0.14;
-    COLOR = vec4(vec3(0.012, 0.016, 0.026), alpha);
-}
-"""
-
 static func create_background_grade_material() -> ShaderMaterial:
     var shader := Shader.new()
     shader.code = BACKGROUND_NIGHT_GRADE_SHADER
@@ -175,7 +137,6 @@ func configure(world_width: float, street_name: String = "") -> void:
     _park_mode = _street_name.contains("WOODLAWN")
     z_index = 300
     _build_fog_banks()
-    _build_canopy_shadows()
     _build_tree_occluders()
     _build_ambient_lights()
     _build_dust_field()
@@ -228,26 +189,6 @@ func _make_fog_shader() -> Shader:
     var shader := Shader.new()
     shader.code = FOG_SHADER
     return shader
-
-func _build_canopy_shadows() -> void:
-    var pixel := _white_pixel()
-    var anchors := [0.12, 0.30, 0.52, 0.74, 0.90] if _park_mode else [0.16, 0.43, 0.72, 0.91]
-    for i in range(anchors.size()):
-        var shadow := Sprite2D.new()
-        shadow.name = "SwayingTreeShadow_%02d" % i
-        shadow.texture = pixel
-        shadow.centered = false
-        shadow.position = Vector2(_world_width * float(anchors[i]), 340.0 + float(i % 2) * 18.0)
-        shadow.scale = Vector2(330.0 if i % 2 == 0 else 270.0, 190.0)
-        shadow.z_index = 8
-        shadow.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-        var material := ShaderMaterial.new()
-        material.shader = Shader.new()
-        material.shader.code = SHADOW_SHADER
-        material.set_shader_parameter("seed", float(i) * 2.17)
-        material.set_shader_parameter("sway", 0.018 + float(i % 2) * 0.009)
-        shadow.material = material
-        add_child(shadow)
 
 func _build_tree_occluders() -> void:
     # Invisible occluder silhouettes are aligned to the supplied panorama's
