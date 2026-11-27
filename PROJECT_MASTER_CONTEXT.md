@@ -249,3 +249,89 @@ This section supersedes any older "latest build" or "current immediate task" not
 ### Next conversation handoff
 Start by reading this file, then verify the live \`main\` commit and latest Android workflow run. The project is intentionally reset to the build #244 state. The immediate next task is to let the user install and test the rebuilt APK. Do not resume the opening-audio change or make unrelated edits. Preserve this restored checkpoint unless the user explicitly requests a new change.
 
+
+
+## 14. Stage One opening cutscene after Start Mission (2026-11-26)
+
+This section supersedes older "latest build" notes in sections 7, 8, 9 and 13 for the current main-branch state. The build-244 rollback was the starting baseline for this change; the Stage One cutscene is now implemented on top of that baseline.
+
+### User-approved behaviour and exact dialogue
+
+- Trigger: pressing **Start Mission** on the Stage 1 — John's House briefing screen.
+- Show the original image from images/cutscene stage 1.zip and start its accompanying MP3 at the same time.
+- A top-of-screen dialogue popup uses the established dark panel / crimson border / glow treatment used by the mini-boss and final-boss dialogue sequences.
+- The popup text is exactly the user's supplied line, including punctuation and profanity:
+
+  > Welland's a sweaty demon orgy and the big top's burning—so clench up, cocksuckers, because I'm turning this whole circus into a fucking bloodbath.
+
+- Keep the image and popup visible while the voice track plays.
+- Start Level 1 only from the audio player's actual finished signal. Do not replace this with a timer or estimated duration.
+- This cutscene is only on the Stage 1 — John's House Start Mission path. Do not trigger it on checkpoints, other missions, or boss encounters.
+
+### Source archive and assets
+
+- Source archive: images/cutscene stage 1.zip.
+- Workflow extracts the archive before Godot resource import into images/stage1_cutscene/.
+- Archive contains:
+  - cutscene stage 1.jpeg — 1584 × 672, original artwork preserved.
+  - John game intro.mp3 — verified by ffprobe at **8.908 seconds**.
+- The original ZIP remains the source asset; no image or audio substitution was made.
+
+### Implementation on main
+
+- Final verified source commit: ef3656cf549529465ff4ae718c9c8170305b0618.
+- scripts/main.gd now preloads the JPEG and MP3, defines the exact dialogue string, and routes the Stage One Start Mission action into _start_stage_one_cutscene().
+- The cutscene displays the complete original image with aspect preservation. A clean dark letterbox background fills the unused viewport area; the artwork is not stretched or cropped.
+- The top dialogue popup reuses the established dark/crimson boss-dialogue treatment. Its current anchors are top 0.025, bottom 0.225; the heading is STAGE 1 — OPENING CUTSCENE.
+- The voice track begins through _play_stage_one_cutscene_audio() after the scene-tree presentation frame. This deliberately avoids depending on RenderingServer.frame_post_draw to start audio, which did not work reliably in the headless gameplay test.
+- _on_stage_one_cutscene_audio_finished() clears the cutscene layer and only then calls _begin_stage_one_mission().
+- The callback is one-shot and guarded by stage_one_cutscene_active; no alternate trigger was added.
+
+### Atmosphere and sword glow
+
+- scripts/environmental_atmosphere.gd extends create_cutscene_atmosphere_material(sword_glow: bool = false).
+- The optional sword_glow_enabled shader parameter is enabled only for this Stage One cutscene. Other existing transition scenes retain their prior shader treatment.
+- The Stage One version preserves substantially more of the supplied carnival artwork's original red/fire palette, reduces fog opacity for this already-smoky image, and adds a localized, softly pulsing amber halo around the existing fiery sword blade.
+- The artwork itself is unchanged. No generated/repainted sword or replacement image was introduced.
+- Visual framing refinement replaced the duplicate darkened background image with a clean dark ColorRect backdrop to remove the visible horizontal seam seen in the first screenshot. The dialogue panel was shortened so more of the red moon and upper blade remain visible.
+
+### Automated verification and visual inspection
+
+- Latest verified workflow run: **#271**, run ID 45913845352.
+- Run head commit: ef3656cf549529465ff4ae718c9c8170305b0618.
+- Final conclusion: **completed / success**.
+- Passed:
+  - Stage One archive extraction and asset existence checks.
+  - MP3 duration verification (8.908 seconds).
+  - Godot resource import and project script validation.
+  - Game startup smoke test.
+  - Gameplay smoke test verifying the exact dialogue text, popup style/position, original image, sword-glow material, audio playback, and that gameplay remains stopped until the actual MP3 finished signal.
+  - Rendered visual capture of the Stage One opening cutscene plus all four existing street-transition scenes.
+  - Android APK export, package verification, launcher-label check, and signature verification.
+- Visual QA artifact: stage-one-cutscene-visual-qa, artifact ID 15161686328. It contains five PNG captures: Stage One opening cutscene plus McRae, Newleaf, Woodlawn road and Woodlawn Park.
+- The Stage One rendered screenshot was retrieved from the GitHub Actions artifact and visually inspected. The final version preserves the original carnival colours, keeps the full artwork visible, removes the previous background seam, and shows the dialogue popup at the top with the localized sword glow.
+- Earlier diagnostic runs:
+  - Run #268 (45912716869) failed because the headless gameplay test did not observe audio playback while the cutscene code awaited RenderingServer.frame_post_draw. Fixed by deferring audio start and awaiting get_tree().process_frame.
+  - Run #269 (45913052277) passed the audio-finished gameplay gate.
+  - Run #270 (45913586887) failed only because the popup-layout test still asserted the old panel anchors after the intentional visual refinement. Updated the test to the final anchors.
+  - Run #271 is the final green build described above.
+- No user on-device test result has been reported yet.
+
+### Verified APK release
+
+- Rolling release tag: android-latest.
+- Asset: TheLegendOfJohnnyRedeye.apk.
+- Verified APK size: **139,346,894 bytes**.
+- APK asset updated: 2026-11-27T00:00:50Z (GitHub API time; local Toronto date remains 2026-11-26).
+- Release body identifies commit ef3656cf549529465ff4ae718c9c8170305b0618 and confirms export, package check and signature verification.
+- Direct download URL:
+
+  https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/releases/download/android-latest/TheLegendOfJohnnyRedeye.apk
+
+### Next conversation handoff
+
+1. Read this file, then verify live main, latest workflow run, and android-latest APK asset.
+2. The user should now install and test the verified APK. Wait for their feedback before making more changes.
+3. Preserve this exact cutscene dialogue, original image/MP3, popup styling, atmospheric treatment and audio-finished gate.
+4. Do not resume the separate earlier request about the other first-level intro audio. This is the distinct Stage One — John's House Start Mission cutscene.
+5. Do not make unrelated edits or alter any other mission, pickup, boss, route, music, or gameplay behaviour.
