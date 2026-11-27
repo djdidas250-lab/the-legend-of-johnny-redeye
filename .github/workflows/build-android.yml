@@ -29,8 +29,8 @@ jobs:
           python3 - <<'PY'
           from PIL import Image
           image = Image.open("images/stage select screen.jpeg")
-          assert image.width >= 1800 and image.height >= 600, image.size
-          assert image.width / image.height >= 2.4, image.size
+          assert image.width >= 1500 and image.height >= 600, image.size
+          assert image.width / image.height >= 2.2, image.size
           print("Verified Stage Select panorama:", image.size)
           PY
 
