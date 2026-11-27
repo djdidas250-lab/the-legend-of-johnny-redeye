@@ -1854,13 +1854,16 @@ func _start_stage_one_cutscene() -> void:
 	stage_one_cutscene_layer.layer = 30
 	add_child(stage_one_cutscene_layer)
 
-	# The source artwork is wider than the 16:9 game viewport. A darkened,
-	# aspect-covered copy fills the margins while the foreground keeps the
-	# complete original image visible without stretching or cropping it.
-	var backdrop := ColorRect.new()
+	# Fill the complete viewport with a darkened, enlarged copy of the same
+	# artwork. The crisp foreground remains fully visible and uncropped above it.
+	var backdrop := TextureRect.new()
 	backdrop.name = "StageOneCutsceneBackdrop"
-	backdrop.color = Color("#08070b")
+	backdrop.texture = STAGE_ONE_CUTSCENE_IMAGE
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	backdrop.modulate = Color(0.20, 0.19, 0.22, 1.0)
+	backdrop.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage_one_cutscene_layer.add_child(backdrop)
 
@@ -4047,15 +4050,20 @@ func _show_mattijuana_victory_cutscene() -> void:
 	victory_layer.layer = 110
 	add_child(victory_layer)
 
-	var black_backdrop := ColorRect.new()
+	# Use a darkened, aspect-covered copy of the victory artwork behind the
+	# complete foreground image, eliminating side bars without cropping the pose.
+	var black_backdrop := TextureRect.new()
 	black_backdrop.name = "VictoryCutsceneBackdrop"
-	black_backdrop.color = Color("#02030a")
+	black_backdrop.texture = MATTIJUANA_VICTORY_IMAGE
 	black_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	black_backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	black_backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	black_backdrop.modulate = Color(0.16, 0.18, 0.24, 1.0)
+	black_backdrop.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	black_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	victory_layer.add_child(black_backdrop)
 
 	# Keep the supplied 1584x672 artwork unmodified and preserve its wide aspect.
-	var artwork := TextureRect.new()
 	artwork.name = "MattijuanaVictoryArtwork"
 	artwork.texture = MATTIJUANA_VICTORY_IMAGE
 	artwork.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
