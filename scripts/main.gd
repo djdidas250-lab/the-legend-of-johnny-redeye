@@ -38,6 +38,9 @@ const ITEM_COLLECTED_SOUND := preload("res://images/alexis_gaming_cam-item-colle
 const STAGE_ONE_IMAGE := preload("res://images/image_a06e5bc7.jpg")
 const STAGE_ONE_CUTSCENE_IMAGE := preload("res://images/stage1_cutscene/cutscene stage 1.jpeg")
 const STAGE_ONE_CUTSCENE_AUDIO := preload("res://images/stage1_cutscene/John game intro.mp3")
+const WOODLAWN_VICTORY_IMAGE := preload("res://images/Gemini_Generated_Image_d35sdld35sdld35s.jpeg")
+const WOODLAWN_VICTORY_AUDIO := preload("res://images/junkie bitch.mp3")
+const WOODLAWN_VICTORY_DIALOGUE := "Looks like you're the one who just got smoked like some cheap soggy wet sock weed, Mattijuana—I beat your ass so hard your mom's gonna feel the contact high. Now roll yourself up into a ditch and cry about it, bitch, 'cause the only thing that got lit today is your sorry fucking junkie ass you lil bitch!"
 const STAGE_ONE_CUTSCENE_DIALOGUE := "Welland's a sweaty demon orgy and the big top's burning—so clench up, cocksuckers, because I'm turning this whole circus into a fucking bloodbath."
 const STREET_PANORAMA_IMAGE := preload("res://images/image_54ce9940.jpg")
 const MCRAE_FORWARD_IMAGE := preload("res://images/Gemini_Generated_Image_q2lkc6q2lkc6q2lk.jpeg")
@@ -215,6 +218,9 @@ var splash_layer: CanvasLayer
 var stage_one_cutscene_layer: CanvasLayer
 var stage_one_cutscene_audio_player: AudioStreamPlayer
 var stage_one_cutscene_active := false
+var woodlawn_victory_layer: CanvasLayer
+var woodlawn_victory_audio_player: AudioStreamPlayer
+var woodlawn_victory_active := false
 var music_player: AudioStreamPlayer
 var sfx_player: AudioStreamPlayer
 var baggy_close_player: AudioStreamPlayer
@@ -1930,6 +1936,139 @@ func _on_stage_one_cutscene_audio_finished() -> void:
 	stage_one_cutscene_layer = null
 	stage_one_cutscene_audio_player = null
 	_begin_stage_one_mission()
+
+
+
+func _start_woodlawn_victory_cutscene() -> void:
+	if woodlawn_victory_active:
+		return
+	woodlawn_victory_active = true
+	if is_instance_valid(mattijuana_boss):
+		mattijuana_boss.queue_free()
+	mattijuana_boss = null
+	mattijuana_boss_visual = null
+	mattijuana_health_bar = null
+	if is_instance_valid(player):
+		player.velocity = Vector2.ZERO
+	if is_instance_valid(music_player):
+		music_player.stop()
+
+	woodlawn_victory_layer = CanvasLayer.new()
+	woodlawn_victory_layer.name = "WoodlawnVictoryCutscene"
+	woodlawn_victory_layer.layer = 40
+	add_child(woodlawn_victory_layer)
+
+	var backdrop := ColorRect.new()
+	backdrop.color = Color("#10150e")
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	woodlawn_victory_layer.add_child(backdrop)
+
+	var artwork := TextureRect.new()
+	artwork.name = "WoodlawnVictoryArtwork"
+	artwork.texture = WOODLAWN_VICTORY_IMAGE
+	artwork.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	artwork.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	artwork.material = ENVIRONMENTAL_ATMOSPHERE.create_woodlawn_victory_material()
+	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	woodlawn_victory_layer.add_child(artwork)
+
+	# The defeated boss fills the lower centre/right of the supplied artwork.
+	var embers := CPUParticles2D.new()
+	embers.name = "WoodlawnGroundEmbers"
+	embers.position = Vector2(get_viewport_rect().size.x * 0.64, get_viewport_rect().size.y * 0.79)
+	embers.amount = 72
+	embers.lifetime = 1.35
+	embers.preprocess = 1.0
+	embers.emitting = true
+	embers.local_coords = false
+	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	embers.emission_rect_extents = Vector2(get_viewport_rect().size.x * 0.19, get_viewport_rect().size.y * 0.055)
+	embers.direction = Vector2(-0.08, -1.0)
+	embers.spread = 32.0
+	embers.gravity = Vector2(0.0, -13.0)
+	embers.initial_velocity_min = 10.0
+	embers.initial_velocity_max = 42.0
+	embers.angular_velocity_min = -100.0
+	embers.angular_velocity_max = 100.0
+	embers.scale_amount_min = 0.45
+	embers.scale_amount_max = 1.35
+	embers.color = Color(1.0, 0.34, 0.045, 0.92)
+	embers.texture = _make_woodlawn_ember_texture()
+	embers.z_index = 5
+	woodlawn_victory_layer.add_child(embers)
+
+	var panel := PanelContainer.new()
+	panel.name = "WoodlawnVictoryDialoguePanel"
+	panel.anchor_left = 0.055
+	panel.anchor_right = 0.945
+	panel.anchor_top = 0.025
+	panel.anchor_bottom = 0.255
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#07060b")
+	style.border_color = Color("#b10e2d")
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(4)
+	style.shadow_color = Color(0.82, 0.0, 0.12, 0.72)
+	style.shadow_size = 16
+	panel.add_theme_stylebox_override("panel", style)
+	woodlawn_victory_layer.add_child(panel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 7)
+	margin.add_theme_constant_override("margin_bottom", 7)
+	panel.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 4)
+	margin.add_child(content)
+	var heading := _make_hud_label("WOODLAWN PARK — VICTORY", Vector2.ZERO, 17)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_color_override("font_color", Color("#ffffff"))
+	content.add_child(heading)
+	var dialogue := _make_hud_label(WOODLAWN_VICTORY_DIALOGUE, Vector2.ZERO, 12)
+	dialogue.name = "WoodlawnVictoryDialogue"
+	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(dialogue)
+
+	woodlawn_victory_audio_player = AudioStreamPlayer.new()
+	woodlawn_victory_audio_player.name = "WoodlawnVictoryAudio"
+	woodlawn_victory_audio_player.stream = WOODLAWN_VICTORY_AUDIO
+	woodlawn_victory_audio_player.volume_db = 0.0
+	woodlawn_victory_layer.add_child(woodlawn_victory_audio_player)
+	woodlawn_victory_audio_player.finished.connect(_on_woodlawn_victory_audio_finished, CONNECT_ONE_SHOT)
+	call_deferred("_play_woodlawn_victory_audio")
+
+
+func _make_woodlawn_ember_texture() -> Texture2D:
+	var image := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+	for y in range(16):
+		for x in range(16):
+			var distance := Vector2(x - 7.5, y - 7.5).length() / 7.5
+			var alpha := clampf(1.0 - distance, 0.0, 1.0)
+			alpha = alpha * alpha
+			image.set_pixel(x, y, Color(1.0, 0.78, 0.34, alpha))
+	return ImageTexture.create_from_image(image)
+
+
+func _play_woodlawn_victory_audio() -> void:
+	await get_tree().process_frame
+	if woodlawn_victory_active and is_instance_valid(woodlawn_victory_audio_player):
+		woodlawn_victory_audio_player.play()
+
+
+func _on_woodlawn_victory_audio_finished() -> void:
+	if not woodlawn_victory_active:
+		return
+	woodlawn_victory_active = false
+	if is_instance_valid(woodlawn_victory_layer):
+		woodlawn_victory_layer.queue_free()
+	woodlawn_victory_layer = null
+	woodlawn_victory_audio_player = null
+	call_deferred("_return_to_mission_select")
 
 
 func _begin_stage_one_mission() -> void:
@@ -4011,16 +4150,13 @@ func _finish_mattijuana_encounter() -> void:
 	mattijuana_defeated = true
 	if is_instance_valid(mattijuana_boss_visual):
 		mattijuana_boss_visual.call("play_animation", "attack", 3.0, false)
-	_show_notice("MATTIJUANA DEFEATED! THE PLAYGROUND IS CLEAR!")
 	if is_instance_valid(music_player):
 		music_player.stop()
-	_play_davy_victory_sting()
+	# Persist the boss clear before the cinematic. The normal map return runs
+	# only after the victory audio's actual finished signal.
+	_save_slot_progress()
 	await get_tree().create_timer(1.5).timeout
-	if is_instance_valid(mattijuana_boss):
-		mattijuana_boss.queue_free()
-	mattijuana_boss = null
-	mattijuana_boss_visual = null
-	mattijuana_health_bar = null
+	_start_woodlawn_victory_cutscene()
 
 
 func _show_mattijuana_intro() -> void:
