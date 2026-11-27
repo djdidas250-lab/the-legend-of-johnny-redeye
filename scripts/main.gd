@@ -39,6 +39,12 @@ const STAGE_ONE_IMAGE := preload("res://images/image_a06e5bc7.jpg")
 const STAGE_ONE_CUTSCENE_IMAGE := preload("res://images/stage1_cutscene/cutscene stage 1.jpeg")
 const STAGE_ONE_CUTSCENE_AUDIO := preload("res://images/stage1_cutscene/John game intro.mp3")
 const STAGE_ONE_CUTSCENE_DIALOGUE := "Welland's a sweaty demon orgy and the big top's burning—so clench up, cocksuckers, because I'm turning this whole circus into a fucking bloodbath."
+const POST_BOSS_PHONE_SCENE_JOHNNY := preload("res://images/john_gil_cinematic/scene 1.jpeg")
+const POST_BOSS_PHONE_SCENE_SPLIT := preload("res://images/john_gil_cinematic/scene 2.jpeg")
+const POST_BOSS_PHONE_RING := preload("res://images/john_gil_cinematic/1 ringing phone.mp3")
+const POST_BOSS_PHONE_GIL_ANSWER := preload("res://images/john_gil_cinematic/2 Gil phone answer.mp3")
+const POST_BOSS_PHONE_JOHNNY_LINE := preload("res://images/john_gil_cinematic/3 Johnny Phone.mp3")
+const POST_BOSS_PHONE_GIL_REPLY := preload("res://images/john_gil_cinematic/4 Gil Phone.mp3")
 const STREET_PANORAMA_IMAGE := preload("res://images/image_54ce9940.jpg")
 const MCRAE_FORWARD_IMAGE := preload("res://images/Gemini_Generated_Image_q2lkc6q2lkc6q2lk.jpeg")
 const NEWLEAF_FORWARD_IMAGE := preload("res://images/Gemini_Generated_Image_qkfscoqkfscoqkfs.jpeg")
@@ -215,6 +221,9 @@ var splash_layer: CanvasLayer
 var stage_one_cutscene_layer: CanvasLayer
 var stage_one_cutscene_audio_player: AudioStreamPlayer
 var stage_one_cutscene_active := false
+var post_boss_phone_cinematic_active := false
+var post_boss_phone_cinematic_layer: CanvasLayer
+var post_boss_phone_audio_player: AudioStreamPlayer
 var music_player: AudioStreamPlayer
 var sfx_player: AudioStreamPlayer
 var baggy_close_player: AudioStreamPlayer
@@ -4015,12 +4024,188 @@ func _finish_mattijuana_encounter() -> void:
 	if is_instance_valid(music_player):
 		music_player.stop()
 	_play_davy_victory_sting()
-	await get_tree().create_timer(1.5).timeout
+	# Keep the approved victory presentation on screen until its sting and
+	# existing notice duration have completed before starting the new scene.
+	await get_tree().create_timer(2.35).timeout
 	if is_instance_valid(mattijuana_boss):
 		mattijuana_boss.queue_free()
 	mattijuana_boss = null
 	mattijuana_boss_visual = null
 	mattijuana_health_bar = null
+	await _play_post_boss_phone_cinematic()
+	if is_inside_tree() and game_started:
+		_return_to_mission_select()
+
+
+func _play_post_boss_phone_cinematic() -> void:
+	if post_boss_phone_cinematic_active:
+		return
+	post_boss_phone_cinematic_active = true
+	post_boss_phone_cinematic_layer = CanvasLayer.new()
+	post_boss_phone_cinematic_layer.name = "PostBossJohnGilPhoneCinematic"
+	post_boss_phone_cinematic_layer.layer = 40
+	add_child(post_boss_phone_cinematic_layer)
+
+	var artwork := TextureRect.new()
+	artwork.name = "PhoneCinematicArtwork"
+	artwork.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	artwork.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	artwork.texture = POST_BOSS_PHONE_SCENE_JOHNNY
+	post_boss_phone_cinematic_layer.add_child(artwork)
+
+	# Atmosphere stays on independent layers so the supplied illustrations
+	# remain untouched. Johnny's carnival embers are present on both scenes.
+	var ember_texture := _make_phone_cinematic_particle_texture()
+	var carnival_embers := _make_phone_cinematic_particles(
+		"JohnnyCarnivalEmbers", ember_texture, Vector2(720.0, 560.0),
+		Vector2(250.0, 300.0), 22, Color(1.0, 0.36, 0.08, 0.72),
+		18.0, 42.0, 0.55, 1.05, 6.5
+	)
+	post_boss_phone_cinematic_layer.add_child(carnival_embers)
+
+	var fade := ColorRect.new()
+	fade.name = "PhoneCinematicFade"
+	fade.color = Color(0.0, 0.0, 0.0, 1.0)
+	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	post_boss_phone_cinematic_layer.add_child(fade)
+	await _fade_phone_cinematic(fade, 0.0, 0.8)
+
+	# The first supplied image stays on screen for the complete ringing track.
+	await _play_post_boss_phone_audio(POST_BOSS_PHONE_RING, "PhoneRinging")
+	if not is_instance_valid(post_boss_phone_cinematic_layer):
+		return
+
+	# Fade fully through black before changing to the supplied split-screen art.
+	await _fade_phone_cinematic(fade, 1.0, 0.45)
+	artwork.texture = POST_BOSS_PHONE_SCENE_SPLIT
+
+	var gil_smoke := _make_phone_cinematic_particles(
+		"GilBedroomSmoke", ember_texture, Vector2(240.0, 560.0),
+		Vector2(220.0, 300.0), 20, Color(0.72, 0.76, 0.78, 0.28),
+		7.0, 20.0, 1.0, 2.0, 8.0
+	)
+	post_boss_phone_cinematic_layer.add_child(gil_smoke)
+
+	var left_dim := ColorRect.new()
+	left_dim.name = "GilInactiveSpeakerDim"
+	left_dim.anchor_left = 0.0
+	left_dim.anchor_top = 0.0
+	left_dim.anchor_right = 0.5
+	left_dim.anchor_bottom = 1.0
+	left_dim.color = Color(0.0, 0.0, 0.0, 1.0)
+	left_dim.modulate.a = 0.0
+	left_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	post_boss_phone_cinematic_layer.add_child(left_dim)
+
+	var right_dim := ColorRect.new()
+	right_dim.name = "JohnnyInactiveSpeakerDim"
+	right_dim.anchor_left = 0.5
+	right_dim.anchor_top = 0.0
+	right_dim.anchor_right = 1.0
+	right_dim.anchor_bottom = 1.0
+	right_dim.color = Color(0.0, 0.0, 0.0, 1.0)
+	right_dim.modulate.a = 0.28
+	right_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	post_boss_phone_cinematic_layer.add_child(right_dim)
+
+	await _fade_phone_cinematic(fade, 0.0, 0.45)
+	# Gil answers first: emphasize the left half without blurring either
+	# character. Then smoothly hand focus to Johnny and back to Gil.
+	await _play_post_boss_phone_audio(POST_BOSS_PHONE_GIL_ANSWER, "GilAnswersPhone")
+	await _set_phone_speaker_focus(left_dim, right_dim, false)
+	await _play_post_boss_phone_audio(POST_BOSS_PHONE_JOHNNY_LINE, "JohnnyPhoneDialogue")
+	await _set_phone_speaker_focus(left_dim, right_dim, true)
+	await _play_post_boss_phone_audio(POST_BOSS_PHONE_GIL_REPLY, "GilPhoneReply")
+
+	await _fade_phone_cinematic(fade, 1.0, 0.8)
+	if is_instance_valid(post_boss_phone_cinematic_layer):
+		post_boss_phone_cinematic_layer.queue_free()
+	post_boss_phone_cinematic_layer = null
+	post_boss_phone_audio_player = null
+	post_boss_phone_cinematic_active = false
+
+
+func _play_post_boss_phone_audio(stream: AudioStream, player_name: String) -> void:
+	if not is_instance_valid(post_boss_phone_cinematic_layer):
+		return
+	post_boss_phone_audio_player = AudioStreamPlayer.new()
+	post_boss_phone_audio_player.name = player_name
+	post_boss_phone_audio_player.stream = stream
+	post_boss_phone_audio_player.volume_db = 0.0
+	post_boss_phone_cinematic_layer.add_child(post_boss_phone_audio_player)
+	post_boss_phone_audio_player.play()
+	await post_boss_phone_audio_player.finished
+	if is_instance_valid(post_boss_phone_audio_player):
+		post_boss_phone_audio_player.queue_free()
+	post_boss_phone_audio_player = null
+
+
+func _fade_phone_cinematic(fade: ColorRect, target_alpha: float, duration: float) -> void:
+	if not is_instance_valid(fade):
+		return
+	var tween := create_tween()
+	tween.tween_property(fade, "color:a", target_alpha, duration)
+	await tween.finished
+
+
+func _set_phone_speaker_focus(left_dim: ColorRect, right_dim: ColorRect, gil_active: bool) -> void:
+	if not is_instance_valid(left_dim) or not is_instance_valid(right_dim):
+		return
+	var target_left := 0.0 if gil_active else 0.28
+	var target_right := 0.28 if gil_active else 0.0
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(left_dim, "modulate:a", target_left, 0.55)
+	tween.tween_property(right_dim, "modulate:a", target_right, 0.55)
+	await tween.finished
+
+
+func _make_phone_cinematic_particle_texture() -> Texture2D:
+	var image := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	for y in range(32):
+		for x in range(32):
+			var distance := Vector2(x - 15.5, y - 15.5).length() / 15.5
+			var alpha := pow(maxf(0.0, 1.0 - distance), 2.2)
+			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
+	return ImageTexture.create_from_image(image)
+
+
+func _make_phone_cinematic_particles(
+	particle_name: String,
+	particle_texture: Texture2D,
+	emitter_position: Vector2,
+	emitter_extents: Vector2,
+	particle_amount: int,
+	particle_color: Color,
+	velocity_min: float,
+	velocity_max: float,
+	scale_min: float,
+	scale_max: float,
+	particle_lifetime: float
+) -> CPUParticles2D:
+	var particles := CPUParticles2D.new()
+	particles.name = particle_name
+	particles.position = emitter_position
+	particles.amount = particle_amount
+	particles.lifetime = particle_lifetime
+	particles.emitting = true
+	particles.texture = particle_texture
+	particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	particles.emission_rect_extents = emitter_extents
+	particles.direction = Vector2(-0.12, -1.0)
+	particles.spread = 22.0
+	particles.gravity = Vector2(0.0, -13.0)
+	particles.initial_velocity_min = velocity_min
+	particles.initial_velocity_max = velocity_max
+	particles.scale_amount_min = scale_min
+	particles.scale_amount_max = scale_max
+	particles.color = particle_color
+	particles.z_index = 8
+	return particles
 
 
 func _show_mattijuana_intro() -> void:
