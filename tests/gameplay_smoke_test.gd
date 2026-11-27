@@ -656,6 +656,21 @@ func _ready() -> void:
 	if not _check(playground_camera.limit_left == 0 and playground_camera.limit_right == int(game.get("world_end")) and is_equal_approx(playground_camera.zoom.x, 1.35), "The playground camera must use the new panorama's complete bounds."): return
 	var mattijuana := game.get("mattijuana_boss") as Node2D
 	if not _check(mattijuana != null and str(game.get("mattijuana_boss_state")) == "waiting" and mattijuana.position == Vector2(110.0, 360.0), "Matt-ijuana must be present and waiting at the far-left side of the playground before the final enemy is defeated."): return
+	var waiting_visual := game.get("mattijuana_boss_visual") as Sprite2D
+	if not _check(waiting_visual != null and waiting_visual.visible and waiting_visual.texture != null and game.get("mattijuana_health_bar") != null, "Matt-ijuana's waiting sprite and health bar must actually be visible and loaded."): return
+	# Exercise the real final-enemy handoff rather than merely checking that a
+	# waiting boss node exists. Put John close enough that the entrance tween is
+	# short, then verify the title/dialogue and voice playback actually begin.
+	for remaining_rival in game.get("rivals"):
+		if is_instance_valid(remaining_rival):
+			remaining_rival.queue_free()
+	game.get("rivals").clear()
+	player.position = Vector2(260.0, 475.0)
+	game.call("_maybe_begin_mattijuana_entrance")
+	await get_tree().create_timer(2.6).timeout
+	var boss_dialogue_layer := game.get("mattijuana_dialogue_layer") as CanvasLayer
+	var boss_voice := game.get("mattijuana_voice_player") as AudioStreamPlayer
+	if not _check(str(game.get("mattijuana_boss_state")) == "dialogue" and boss_dialogue_layer != null and boss_voice != null and boss_voice.playing and boss_dialogue_layer.find_child("Label", true, false) != null, "Defeating the final regular enemy must trigger Matt-ijuana's entrance, title dialogue, and voice playback."): return
 	if not _check(game_script.source_code.contains('const MATTIJUANA_BOSS_MUSIC := preload("res://images/10_Angel With The Scabbed Wings.mp3")') and game_script.source_code.contains("func _maybe_begin_mattijuana_entrance()") and game_script.source_code.contains("func _begin_mattijuana_entrance()") and game_script.source_code.contains("func _show_mattijuana_intro()"), "Matt-ijuana's soundtrack handoff and entrance sequence must be connected."): return
 	if not _check(game_script.source_code.contains("You stepped into the wrong damn park, motherfucker—I’m gonna smoke your ass like a cheap dime bag and leave your bitch-ass swinging from the monkey bars!"), "Matt-ijuana's introduction must retain the exact approved dialogue."): return
 	if not _check(game_script.source_code.contains("MATTIJUANA_HUMAN_VISUAL") and game_script.source_code.contains("human_fight") and game_script.source_code.contains("phase2_pending"), "Matt-ijuana human combat and phase handoff must be wired into the gameplay controller."): return
