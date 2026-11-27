@@ -1873,7 +1873,7 @@ func _start_stage_one_cutscene() -> void:
 	add_child(stage_one_cutscene_audio_player)
 	stage_one_cutscene_audio_player.finished.connect(_on_stage_one_cutscene_audio_finished, CONNECT_ONE_SHOT)
 
-	# Defer audio start until the image and dialogue nodes have entered the
+	# Defer audio start until the image and audio nodes have entered the
 	# scene tree. This also works in the headless gameplay test renderer.
 	call_deferred("_play_stage_one_cutscene_audio")
 
@@ -2424,6 +2424,8 @@ func _davy_boss_visual_animation(name: String, fps: float, loop: bool) -> void:
 
 func _show_davy_boss_intro() -> void:
 	# Keep the original voice timing and music ducking, but show no dialogue UI.
+	if is_instance_valid(davy_boss_dialogue_layer):
+		davy_boss_dialogue_layer.queue_free()
 	davy_boss_dialogue_layer = null
 	await get_tree().create_timer(0.45).timeout
 	if is_instance_valid(davy_voice_player):
