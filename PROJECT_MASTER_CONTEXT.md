@@ -146,22 +146,21 @@ Do not invent that a screenshot was seen. Do not tell the user the fog looks imp
 - The project contains a stable Android debug keystore cache.
 - Workflow also generates/publishes Davy Jones and Matt-ijuana animation previews as release assets.
 - Historical user-facing APKs mentioned in recent conversation: Build #99/#100, then builds described as #133 and #143. Do not assume those labels correspond to current release asset without checking.
-- **Latest verified GitHub Actions state (2026-11-26 06:24 UTC):** run ID `45767558036`, commit `64e5eea6753a06ca6f19df108e615818789c6cc7`, status completed, conclusion **success**. Script validation, startup smoke test, core gameplay test, four-cutscene atmosphere capture, Android APK export, package verification and signature verification all passed. The `android-latest` release asset `TheLegendOfJohnnyRedeye.apk` was updated at `2026-11-26T06:24:28Z`, size `127,916,435` bytes, SHA-256 `95e8239e468ecf42e5048967a874a2bdbd2e1d16c2ba3115013ee0b75ad60131`. Direct URL: `https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/releases/download/android-latest/TheLegendOfJohnnyRedeye.apk`.
-- The rolling `android-latest` release exists and includes many animation preview assets; inspect its asset list and latest APK upload time/size before treating it as a valid install for current source.
+- **Previous verified workflow state (2026-11-26 06:24 UTC):** run ID `45767558036`, commit `64e5eea6753a06ca6f19df108e615818789c6cc7`, status completed, conclusion **success**. This is historical and is superseded as the latest user-tested checkpoint by section 16 below.
 - Historical previous assistant messages sometimes claimed green builds/APK sizes without verifiable evidence. Trust live repository/API data over those messages.
 
 ## 8. Latest known failure/diagnostic notes
 
 - Build #131 had a GDScript indentation parse error in `tests/gameplay_smoke_test.gd`; an extra indentation level caused “Expected statement, found Indent”. It was reportedly corrected.
 - Other previous failure reports include unsupported Godot particle properties and a stale audio filename assertion. Verify current logs and code rather than assuming those are still present.
-- Build #143 is currently the latest verified run and failed. Its exact failing step has not yet been identified in this handoff; fetch the run's jobs and logs before proceeding.
+- Earlier build notes in this document are historical. Section 16 is the authoritative current checkpoint for the Matt-ijuana encounter and ending.
 
 ## 9. Current immediate task list (ordered)
 
-1. The title-screen artwork replacement and atmosphere pass is implemented and verified. Do not reopen that task unless the user requests further changes.
-2. Continue completing Stage One gameplay as directed by the user, preserving the working gameplay baseline and avoiding unrelated edits.
-3. Before future code changes, verify the current repository head, latest Android workflow run and `android-latest` release asset.
-4. Preserve the reusable Stage One design systems: map/mission select, unlockable street progression, transition screens, and the shared mission-start briefing panel.
+1. Preserve the user-tested Build #295 checkpoint recorded in section 16. Do not make gameplay, asset, audio, dialogue-panel or visual changes unless the user explicitly asks.
+2. The only visual refinement the user has identified for later work is removing the grey/dark vertical side bars from the Woodlawn Park boss-defeat artwork so it reaches the full left and right screen edges. The user explicitly said the dialogue popup must remain exactly as it appears in the verified checkpoint. Do not start this visual refinement until the user asks to resume it.
+3. Before future code changes, verify the current source branch head, latest Android workflow run and APK release asset.
+4. Preserve all working Stage One gameplay, boss phases, audio handoffs, cutscenes, maps and mission progression.
 5. Do not begin Stage Two prematurely. When the user says Stage One is complete, reuse the established systems for Stage Two's map, mission select and unlockable streets.
 6. Update this handoff document after meaningful milestones, including commit SHA, workflow run/status, test outcomes and APK details.
 
@@ -169,10 +168,9 @@ Do not invent that a screenshot was seen. Do not tell the user the fog looks imp
 
 User can say:
 
-> Continue The Legend of Johnny Redeye. Read `PROJECT_MASTER_CONTEXT.md` in the private GitHub repository `djdidas250-lab/the-legend-of-johnny-redeye` on `main`. Verify the latest commit, latest Android Actions run and current `android-latest` APK asset before making changes. The new title artwork and animated title atmosphere were implemented in commit `64e5eea6753a06ca6f19df108e615818789c6cc7` and passed full workflow run `45767558036`; the verified APK link and SHA-256 are recorded in section 7. Continue with Stage One completion, carrying forward the approved briefing/map/mission-select design systems for later stages. Do not ask me to re-upload the title image or repeat project history.
+> Continue The Legend of Johnny Redeye. Read `PROJECT_MASTER_CONTEXT.md` in the private GitHub repository `djdidas250-lab/the-legend-of-johnny-redeye` on `main`. The current user-tested checkpoint is Build #295, commit `b3447f4e65c5daa241a62ba2dba4cd782d43f931`, workflow run `45931009594`. Start from branch `rollback/verified-boss-defeat-cutscene-build-295`. The Matt-ijuana boss fight and boss-defeat cutscene were confirmed working by the user on a fresh New Game. Do not change the dialogue popup; the only later visual request is to remove the side bars from the ending artwork, but wait until I ask to do that. Verify live GitHub state before any edits.
 
 Start by fetching this document and checking live GitHub state. Never ask the user to restate the project history or send screenshots.
-
 
 ## 11. Stage One mission-start briefing redesign (2026-11-26)
 
@@ -193,9 +191,8 @@ The user confirmed the current development focus is completing Stage One's core 
 
 - The redesign and its smoke tests are included in the verified Android workflow run `45767558036` (commit `64e5eea6753a06ca6f19df108e615818789c6cc7`), which completed successfully.
 - The full run passed Godot validation, startup/gameplay smoke tests, four-cutscene atmosphere capture, Android APK export, package verification and signature verification.
-- The Stage One briefing redesign is now an approved, verified reusable baseline for later stages.
+- The Stage One briefing redesign is an approved, verified reusable baseline for later stages.
 - No Stage Two content or map has been implemented. This change only establishes a reusable Stage briefing layout for later use.
-
 
 ## 12. Title screen artwork and animated atmosphere (2026-11-26)
 
@@ -220,158 +217,105 @@ The user confirmed the current development focus is completing Stage One's core 
 
 - Commits during implementation included `1c9cb5e1e59d9dedee2098c5deccdecc497b61a5` (CPU particle ramp type fix), `d15e533326c72e5f004bdd791b7d98594e48b98c` (smoke-test viewport type fix), `51d0435578d1a9e8d6b0d329056535a21e97eb63` (temporary layout diagnostics), `b0cc9b298302c495b74d7defbaeee7e0724352ea` (compare against game canvas bounds), and `64e5eea6753a06ca6f19df108e615818789c6cc7` (ensure TextureRect respects aspect-fitted bounds).
 - Earlier failed runs were used to identify and fix the CPU particle ramp type and a TextureRect sizing issue. Do not describe those intermediate runs as successful.
-- Latest run `45767558036` completed successfully with all 20 build/export steps successful, including Godot script validation, startup and gameplay smoke tests, four-cutscene visual capture, Android APK export, package verification and signature verification.
-- The latest verified APK is the `android-latest` release asset described in section 8 above.
-- No claim has been made that the user has personally tested this APK on-device yet.
-
+- Run `45767558036` completed successfully with all 20 build/export steps successful, including Godot script validation, startup and gameplay smoke tests, four-cutscene visual capture, Android APK export, package verification and signature verification.
+- No claim has been made that the user has personally tested this APK on-device.
 
 ## 13. Recovery checkpoint — build #244 restored (2026-11-26)
 
-This section supersedes any older "latest build" or "current immediate task" notes above.
+This section is historical and is superseded by the later Stage One and Build #295 checkpoint notes.
 
-### Authoritative rollback point
+### Historical rollback point
 - User explicitly selected **Android build #244** as the last successful build containing all desired changes before work began on the first-level opening audio.
-- Build #244 GitHub Actions run: \`45875852901\`.
+- Build #244 GitHub Actions run: `45875852901`.
 - Run result: **completed / success**.
-- Build #244 source commit: \`58948db0cf3ad58035618551dc3f4dd8ce51e3c6\`.
+- Build #244 source commit: `58948db0cf3ad58035618551dc3f4dd8ce51e3c6`.
 - Commit message: "Attach mission select atmosphere directly to map image".
-- This is the exact approved source tree to restore. It includes the mission-select atmospheric effects attached directly to the map artwork and all gameplay/assets as they existed at build #244.
-- The later first-level opening-audio implementation is intentionally excluded. Do not reintroduce it unless the user asks again.
-- No other changes are authorized as part of this rollback.
-
-### Recovery procedure and current build
-- Restore the repository's \`main\` branch source tree to commit \`58948db0cf3ad58035618551dc3f4dd8ce51e3c6\`, retaining this handoff document as the only additional file change.
-- Trigger a fresh Android APK build from that restored source.
-- Record the new rollback commit SHA, workflow run number/ID, final conclusion, APK release asset timestamp/size, and direct download URL below once verified.
-- Do not give the user an APK link until the new workflow is completed successfully and the release asset is confirmed to belong to the rollback build.
-- Build #244 itself was green; the fresh rebuild is being performed so the user can download the APK again.
-
-### Next conversation handoff
-Start by reading this file, then verify the live \`main\` commit and latest Android workflow run. The project is intentionally reset to the build #244 state. The immediate next task is to let the user install and test the rebuilt APK. Do not resume the opening-audio change or make unrelated edits. Preserve this restored checkpoint unless the user explicitly requests a new change.
-
-
+- This was the starting point for later work, not the current checkpoint.
+- The later first-level opening-audio implementation was intentionally excluded at the time. Do not reintroduce it unless the user asks again.
 
 ## 14. Stage One opening cutscene after Start Mission (2026-11-26)
 
-This section supersedes older "latest build" notes in sections 7, 8, 9 and 13 for the current main-branch state. The build-244 rollback was the starting baseline for this change; the Stage One cutscene is now implemented on top of that baseline.
+This section records the Stage One opening cutscene implementation. Its verified/user-approved status is retained; later notes describe the more recent final-boss ending work.
 
 ### User-approved behaviour and exact dialogue
 
 - Trigger: pressing **Start Mission** on the Stage 1 — John's House briefing screen.
-- Show the original image from images/cutscene stage 1.zip and start its accompanying MP3 at the same time.
+- Show the original image from `images/cutscene stage 1.zip` and start its accompanying MP3 at the same time.
 - A top-of-screen dialogue popup uses the established dark panel / crimson border / glow treatment used by the mini-boss and final-boss dialogue sequences.
-- The popup text is exactly the user's supplied line, including punctuation and profanity:
-
+- The popup text is exactly the user's supplied line:
   > Welland's a sweaty demon orgy and the big top's burning—so clench up, cocksuckers, because I'm turning this whole circus into a fucking bloodbath.
-
 - Keep the image and popup visible while the voice track plays.
 - Start Level 1 only from the audio player's actual finished signal. Do not replace this with a timer or estimated duration.
 - This cutscene is only on the Stage 1 — John's House Start Mission path. Do not trigger it on checkpoints, other missions, or boss encounters.
 
 ### Source archive and assets
 
-- Source archive: images/cutscene stage 1.zip.
-- Workflow extracts the archive before Godot resource import into images/stage1_cutscene/.
+- Source archive: `images/cutscene stage 1.zip`.
+- Workflow extracts the archive before Godot resource import into `images/stage1_cutscene/`.
 - Archive contains:
-  - cutscene stage 1.jpeg — 1584 × 672, original artwork preserved.
-  - John game intro.mp3 — verified by ffprobe at **8.908 seconds**.
+  - `cutscene stage 1.jpeg` — 1584 × 672, original artwork preserved.
+  - `John game intro.mp3` — verified by ffprobe at **8.908 seconds**.
 - The original ZIP remains the source asset; no image or audio substitution was made.
 
-### Implementation on main
+### Implementation and verification
 
-- Final verified source commit: ef3656cf549529465ff4ae718c9c8170305b0618.
-- scripts/main.gd now preloads the JPEG and MP3, defines the exact dialogue string, and routes the Stage One Start Mission action into _start_stage_one_cutscene().
-- The cutscene displays the complete original image with aspect preservation. A clean dark letterbox background fills the unused viewport area; the artwork is not stretched or cropped.
-- The top dialogue popup reuses the established dark/crimson boss-dialogue treatment. Its current anchors are top 0.025, bottom 0.225; the heading is STAGE 1 — OPENING CUTSCENE.
-- The voice track begins through _play_stage_one_cutscene_audio() after the scene-tree presentation frame. This deliberately avoids depending on RenderingServer.frame_post_draw to start audio, which did not work reliably in the headless gameplay test.
-- _on_stage_one_cutscene_audio_finished() clears the cutscene layer and only then calls _begin_stage_one_mission().
-- The callback is one-shot and guarded by stage_one_cutscene_active; no alternate trigger was added.
+- Final verified source commit: `ef3656cf549529465ff4ae718c9c8170305b0618`.
+- The Stage One Start Mission path displays the complete original image with aspect preservation and starts the supplied voice track. Level 1 begins only on the audio player's actual finished signal.
+- The final verified Android workflow was **#271**, run ID `45913845352`, completed successfully. It passed Godot validation, startup/gameplay smoke tests, rendered visual capture, Android APK export, package verification and signature verification.
+- The user subsequently tested the APK and explicitly confirmed: **"Looks great, everything works as it should."**
+- Preserve this cutscene exactly unless the user explicitly requests a change.
 
-### Atmosphere and sword glow
+## 15. Historical next-feature note
 
-- scripts/environmental_atmosphere.gd extends create_cutscene_atmosphere_material(sword_glow: bool = false).
-- The optional sword_glow_enabled shader parameter is enabled only for this Stage One cutscene. Other existing transition scenes retain their prior shader treatment.
-- The Stage One version preserves substantially more of the supplied carnival artwork's original red/fire palette, reduces fog opacity for this already-smoky image, and adds a localized, softly pulsing amber halo around the existing fiery sword blade.
-- The artwork itself is unchanged. No generated/repainted sword or replacement image was introduced.
-- Visual framing refinement replaced the duplicate darkened background image with a clean dark ColorRect backdrop to remove the visible horizontal seam seen in the first screenshot. The dialogue panel was shortened so more of the red moon and upper blade remain visible.
+The original next-feature note after build #271 was to create a post-final-boss Woodlawn Park scene. That work has since been completed and is recorded in section 16. Do not treat the older “details not specified” instruction as current.
 
-### Automated verification and visual inspection
+## 16. User-tested checkpoint — Matt-ijuana boss and boss-defeat cutscene (Build #295)
 
-- Latest verified workflow run: **#271**, run ID 45913845352.
-- Run head commit: ef3656cf549529465ff4ae718c9c8170305b0618.
-- Final conclusion: **completed / success**.
-- Passed:
-  - Stage One archive extraction and asset existence checks.
-  - MP3 duration verification (8.908 seconds).
-  - Godot resource import and project script validation.
-  - Game startup smoke test.
-  - Gameplay smoke test verifying the exact dialogue text, popup style/position, original image, sword-glow material, audio playback, and that gameplay remains stopped until the actual MP3 finished signal.
-  - Rendered visual capture of the Stage One opening cutscene plus all four existing street-transition scenes.
-  - Android APK export, package verification, launcher-label check, and signature verification.
-- Visual QA artifact: stage-one-cutscene-visual-qa, artifact ID 15161686328. It contains five PNG captures: Stage One opening cutscene plus McRae, Newleaf, Woodlawn road and Woodlawn Park.
-- The Stage One rendered screenshot was retrieved from the GitHub Actions artifact and visually inspected. The final version preserves the original carnival colours, keeps the full artwork visible, removes the previous background seam, and shows the dialogue popup at the top with the localized sword glow.
-- Earlier diagnostic runs:
-  - Run #268 (45912716869) failed because the headless gameplay test did not observe audio playback while the cutscene code awaited RenderingServer.frame_post_draw. Fixed by deferring audio start and awaiting get_tree().process_frame.
-  - Run #269 (45913052277) passed the audio-finished gameplay gate.
-  - Run #270 (45913586887) failed only because the popup-layout test still asserted the old panel anchors after the intentional visual refinement. Updated the test to the final anchors.
-  - Run #271 is the final green build described above.
-- No user on-device test result has been reported yet.
+**This is the authoritative current checkpoint. It supersedes earlier rollback/build/current-task notes in this document. Do not use Build #271 or #244 as the current rollback point.**
 
-### Verified APK release
+### Exact source checkpoint
 
-- Rolling release tag: android-latest.
-- Asset: TheLegendOfJohnnyRedeye.apk.
-- Verified APK size: **139,346,894 bytes**.
-- APK asset updated: 2026-11-27T00:00:50Z (GitHub API time; local Toronto date remains 2026-11-26).
-- Release body identifies commit ef3656cf549529465ff4ae718c9c8170305b0618 and confirms export, package check and signature verification.
-- Direct download URL:
+- **Android build:** #295.
+- **GitHub Actions run ID:** `45931009594`.
+- **Workflow result:** completed / success.
+- **Exact source commit:** `b3447f4e65c5daa241a62ba2dba4cd782d43f931`.
+- **Checkpoint branch created from that exact commit:** `rollback/verified-boss-defeat-cutscene-build-295`.
+- Branch creation was confirmed successful. The branch was created at the exact commit above; no gameplay or visual source files were changed when it was created.
+- GitHub Actions run: https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/actions/runs/45931009594
 
-  https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/releases/download/android-latest/TheLegendOfJohnnyRedeye.apk
+### User's functional test result
 
-### Next conversation handoff
+- On a fresh **New Game**, the user reached Woodlawn Park and confirmed that the **Matt-ijuana boss fight and the boss-defeat cutscene both work**.
+- The user had previously seen the boss missing when resuming from a Continue save. That save already had the boss defeated; the user then tested a fresh New Game and confirmed the boss encounter and defeat cutscene are present. Do not “fix” or rewrite the encounter based on the old Continue-save observation.
+- Preserve the Matt-ijuana entrance safeguard, three boss phases, attack/transform sequence, defeat handoff, cutscene audio, and return to Mission Select exactly as they are in this checkpoint.
+- This is the last checkpoint the user personally confirmed as functionally working. A green workflow alone is not a substitute for this user test.
 
-1. Read this file, then verify live main, latest workflow run, and android-latest APK asset.
-2. The user should now install and test the verified APK. Wait for their feedback before making more changes.
-3. Preserve this exact cutscene dialogue, original image/MP3, popup styling, atmospheric treatment and audio-finished gate.
-4. Do not resume the separate earlier request about the other first-level intro audio. This is the distinct Stage One — John's House Start Mission cutscene.
-5. Do not make unrelated edits or alter any other mission, pickup, boss, route, music, or gameplay behaviour.
+### Verified APK
 
-## 15. User-tested checkpoint — Stage One opening cutscene approved (2026-11-26)
+- Rolling release asset: `TheLegendOfJohnnyRedeye.apk` under release tag `android-latest`.
+- APK asset size confirmed: **140,916,132 bytes**.
+- Release metadata was checked and explicitly identifies source commit `b3447f4e65c5daa241a62ba2dba4cd782d43f931`; it reports APK export, package check and signature verification by the workflow.
+- Direct APK URL: https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/releases/download/android-latest/TheLegendOfJohnnyRedeye.apk
+- Do not assume this rolling URL continues to serve Build #295 after a later successful workflow overwrites it. Verify release metadata and commit before sharing it again.
+- No new Android build was run after creating the rollback branch. The branch creation itself did not trigger a build.
 
-This is the current handoff point and supersedes the instruction in section 14 to wait for the user's first on-device test.
+### Remaining visual request — do not implement until explicitly asked
 
-### User acceptance
-- The user has tested the APK containing the Stage One — John's House opening cutscene and explicitly confirmed: **"Looks great, everything works as it should."**
-- Treat this cutscene implementation as approved and working. Do not modify it unless the user explicitly requests a change.
+- The user subsequently clarified that the victory/boss-defeat dialogue popup must remain **exactly as it appears in Build #295**, matching the established popup used on the other cutscene screens.
+- The only requested visual adjustment is to remove the grey/dark vertical bars at the left and right of the boss-defeat artwork so the image reaches the full screen width.
+- Do not change the popup's size, height, width, position, font, padding, style, text layout or any other property.
+- Preserve the artwork proportions as much as possible. The established cinematic look is nighttime, dark/cool-toned with matching fog/haze; embers and sparks remain separate animated overlays. Do not blur or distort the source artwork.
+- The user has now said they only want the project master file updated so the current state is preserved. **Do not begin the side-bar visual edit or make any game-code changes unless they explicitly ask to resume.**
 
-### Preserved cutscene behaviour
-- Triggered only by pressing **Start Mission** on the Stage 1 — John's House briefing screen.
-- Displays the original JPEG extracted from `images/cutscene stage 1.zip` while playing `John game intro.mp3`.
-- Shows the exact user-provided dialogue in the established dark/crimson dialogue popup at the top of the image:
-  "Welland's a sweaty demon orgy and the big top's burning—so clench up, cocksuckers, because I'm turning this whole circus into a fucking bloodbath."
-- Original artwork remains unmodified and aspect-preserved.
-- Uses the approved cutscene atmospheric shader treatment, including restrained drifting fog and localized animated amber sword glow.
-- Level 1 begins only after the MP3's actual audio-finished signal. No estimated-duration timer.
-- No other mission, checkpoint, boss, pickup, audio, or gameplay sequence should be changed by this feature.
+### Failed attempts after the checkpoint
 
-### Verified implementation and build
-- Implementation commit: `ef3656cf549529465ff4ae718c9c8170305b0618`.
-- Latest verified Android workflow: **#271**, run ID `45913845352`, completed successfully.
-- Workflow passed archive extraction, audio duration check, Godot import/script validation, startup and gameplay smoke tests, rendered cutscene/transition visual capture, Android APK export, package verification and signature verification.
-- Visual QA artifact: `stage-one-cutscene-visual-qa`, artifact ID `15161686328`; the Stage One cutscene and four existing transition scenes were retrieved and visually inspected.
-- Verified APK: `TheLegendOfJohnnyRedeye.apk`, 139,346,894 bytes.
-- APK direct URL: https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/releases/download/android-latest/TheLegendOfJohnnyRedeye.apk
-- APK release asset was updated at `2026-11-27T00:00:50Z` (GitHub UTC timestamp; local Toronto date was 2026-11-26).
-
-### Next requested feature — post-final-boss Woodlawn Park scene
-- The user has identified the next development task: add the scene that appears **after the player defeats the final boss at the end of Woodlawn Park**.
-- No details of that ending scene have been specified yet. Do not infer its artwork, dialogue, audio, duration, transitions, or behaviour.
-- The user explicitly asked to update this master handoff before touching anything else. This update records the current approved checkpoint and the next task only.
-- Next step: ask the user to describe the post-final-boss scene and its desired sequence. Before implementation, inspect the current final-boss defeat/completion flow, assets, and build workflow. Preserve the approved opening cutscene and all other working gameplay.
+- Later attempts Build #297 and #299 failed. They are not the checkpoint and must not replace Build #295.
+- Do not describe those failed builds as successful or use their source as the starting point.
+- Do not assume the later dialogue-box/image-layout experiments are safe. Start future work from the exact Build #295 checkpoint branch above.
 
 ### Resume instructions
-1. Read this master file first.
-2. Verify the live `main` head, latest Android workflow run, and current `android-latest` APK asset before any code changes.
-3. Preserve the user-tested Stage One opening cutscene exactly as approved.
-4. Continue with the post-final-boss Woodlawn Park scene only after the user supplies its requirements.
 
+1. Read this master file first.
+2. Verify the live GitHub refs and release metadata. Use `rollback/verified-boss-defeat-cutscene-build-295` as the source branch for any future work on this feature.
+3. Preserve Build #295's working Matt-ijuana encounter and boss-defeat cutscene.
+4. Make no changes until the user explicitly requests the next task. If the user later resumes the visual refinement, change only the artwork's left/right fill; leave the dialogue popup untouched.
