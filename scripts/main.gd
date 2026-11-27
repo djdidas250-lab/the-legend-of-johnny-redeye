@@ -4024,9 +4024,12 @@ func _finish_mattijuana_encounter() -> void:
 	if is_instance_valid(music_player):
 		music_player.stop()
 	_play_davy_victory_sting()
-	# Keep the approved victory presentation on screen until its sting and
-	# existing notice duration have completed before starting the new scene.
-	await get_tree().create_timer(2.35).timeout
+	# Wait for the actual victory sting's finished signal, then let the existing
+	# defeat notice complete before replacing the victory presentation.
+	if is_instance_valid(sfx_player) and sfx_player.playing:
+		await sfx_player.finished
+	if notice_timer > 0.0:
+		await get_tree().create_timer(notice_timer).timeout
 	if is_instance_valid(mattijuana_boss):
 		mattijuana_boss.queue_free()
 	mattijuana_boss = null
