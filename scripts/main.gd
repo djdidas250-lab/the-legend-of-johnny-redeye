@@ -20,6 +20,7 @@ const INTRO_SLIDE_DURATION := INTRO_TRACK_DURATION / 5.0
 const INTRO_TRANSITION_DURATION := 1.18
 const TITLE_CLICK_VOLUME_DB := -2.0
 const MAP_IMAGE := preload("res://images/Gemini_Generated_Image_3urpcr3urpcr3urp.jpeg")
+const STAGE_SELECT_IMAGE := preload("res://images/stage select screen.jpeg")
 const MAP_CHECKPOINT_MARKER := preload("res://images/map_checkpoint_x.svg")
 const MAP_MUSIC := preload("res://images/28. Holy Sanctuary.wav")
 const STAGE_ONE_MUSIC := preload("res://images/7. Soldier.mp3")
@@ -95,6 +96,8 @@ var active_slot_unlocked_woodlawn_checkpoint := false
 var active_slot_unlocked_woodlawn_park_checkpoint := false
 var active_slot_area := "Newleaf Crescent"
 var save_slot_layer: CanvasLayer
+var stage_select_layer: CanvasLayer
+var active_stage_id := "woodlawn_suburbs"
 var overwrite_slot_pending := -1
 
 class IntroFlameSpinner extends Control:
@@ -1061,6 +1064,279 @@ func _finish_intro_sequence() -> void:
 		await fade.finished
 		intro_layer.queue_free()
 	intro_layer = null
+	_show_stage_select_screen()
+
+
+func _show_saved_stage_mission_select() -> void:
+	# Continue Game bypasses Stage Select and returns directly to the map
+	# belonging to the saved stage. Add future stage IDs here as maps ship.
+	match active_stage_id:
+		"woodlawn_suburbs":
+			_show_map_screen()
+		_:
+			push_warning("Unknown saved stage '%s'; opening the currently available Woodlawn Suburbs map." % active_stage_id)
+			active_stage_id = "woodlawn_suburbs"
+			_show_map_screen()
+
+
+func _show_stage_select_screen() -> void:
+	if is_instance_valid(stage_select_layer):
+		stage_select_layer.queue_free()
+	stage_select_layer = CanvasLayer.new()
+	stage_select_layer.name = "StageSelectLayer"
+	stage_select_layer.layer = 12
+	add_child(stage_select_layer)
+	if is_instance_valid(title_layer):
+		title_layer.queue_free()
+		title_layer = null
+	if is_instance_valid(map_layer):
+		map_layer.queue_free()
+		map_layer = null
+	if music_player != null:
+		music_player.stop()
+		music_player.stream = MAP_MUSIC
+		music_player.volume_db = -10.0
+		music_player.play()
+		if not music_player.finished.is_connected(_loop_stage_select_music):
+			music_player.finished.connect(_loop_stage_select_music)
+
+	# Preserve the panorama's native ratio. The letterbox space becomes a
+	# deliberate dark title/menu zone instead of stretching or cropping art.
+	var viewport_size := get_viewport_rect().size
+	var image_ratio := float(STAGE_SELECT_IMAGE.get_width()) / maxf(float(STAGE_SELECT_IMAGE.get_height()), 1.0)
+	var viewport_ratio := viewport_size.x / maxf(viewport_size.y, 1.0)
+	var art_size := viewport_size
+	if viewport_ratio < image_ratio:
+		art_size.y = viewport_size.x / image_ratio
+	else:
+		art_size.x = viewport_size.y * image_ratio
+	var art_position := (viewport_size - art_size) * 0.5
+
+	var artwork := TextureRect.new()
+	artwork.name = "StageSelectArtwork"
+	artwork.texture = STAGE_SELECT_IMAGE
+	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	artwork.stretch_mode = TextureRect.STRETCH_SCALE
+	artwork.position = art_position
+	artwork.size = art_size
+	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage_select_layer.add_child(artwork)
+
+	# Separate practical-light pass follows the real fire, moon and reflected
+	# light sources in the supplied Helland carnival panorama.
+	var practical_light := ColorRect.new()
+	practical_light.name = "StageSelectPracticalLighting"
+	practical_light.position = art_position
+	practical_light.size = art_size
+	practical_light.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var light_shader := Shader.new()
+	light_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_add;
+float glow(vec2 p, vec2 center, vec2 spread) {
+	vec2 d = (p - center) / spread;
+	return exp(-dot(d, d) * 2.0);
+}
+void fragment() {
+	vec2 p = UV;
+	float flicker = 0.90 + 0.055 * sin(TIME * 5.2) + 0.035 * sin(TIME * 11.4 + p.x * 19.0);
+	float sign_fire = glow(p, vec2(0.125, 0.285), vec2(0.065, 0.15)) * 0.18
+		+ glow(p, vec2(0.305, 0.300), vec2(0.055, 0.13)) * 0.16;
+	float bridge_fire = glow(p, vec2(0.515, 0.535), vec2(0.085, 0.11)) * 0.17
+		+ glow(p, vec2(0.575, 0.585), vec2(0.060, 0.12)) * 0.14;
+	float carnival_fire = glow(p, vec2(0.865, 0.390), vec2(0.075, 0.14)) * 0.18
+		+ glow(p, vec2(0.945, 0.425), vec2(0.045, 0.09)) * 0.13;
+	float moon_spill = glow(p, vec2(0.695, 0.125), vec2(0.18, 0.24)) * 0.12;
+	float wheel_lights = glow(p, vec2(0.735, 0.405), vec2(0.12, 0.18)) * 0.055;
+	float water_reflection = glow(p, vec2(0.555, 0.735), vec2(0.19, 0.22)) * 0.12;
+	float warm = (sign_fire + bridge_fire + carnival_fire) * flicker;
+	float red = moon_spill * (0.86 + 0.10 * sin(TIME * 0.7));
+	vec3 color = vec3(1.0, 0.31, 0.075) * (warm + water_reflection * 0.72)
+		+ vec3(0.82, 0.10, 0.12) * red
+		+ vec3(1.0, 0.62, 0.25) * wheel_lights;
+	float alpha = clamp(warm + red + wheel_lights + water_reflection * 0.5, 0.0, 0.34);
+	COLOR = vec4(color, alpha);
+}
+"""
+	var light_material := ShaderMaterial.new()
+	light_material.shader = light_shader
+	practical_light.material = light_material
+	stage_select_layer.add_child(practical_light)
+
+	# Independently animated river fog, low foreground haze and distant mist.
+	var fog := ColorRect.new()
+	fog.name = "StageSelectAtmosphericFog"
+	fog.position = art_position
+	fog.size = art_size
+	fog.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fog_shader := Shader.new()
+	fog_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_mix;
+void fragment() {
+	vec2 uv = UV;
+	float t = TIME;
+	float drift = sin(uv.x * 7.0 - t * 0.045 + sin(uv.y * 9.0 + t * 0.025) * 0.8);
+	float fine = sin(uv.x * 15.0 + t * 0.032 + sin(uv.y * 12.0 - t * 0.02));
+	float shape = 0.5 + 0.32 * drift + 0.18 * fine;
+	float river = exp(-pow((uv.y - (0.78 + sin(uv.x * 5.0 - t * 0.035) * 0.035)) * 10.0, 2.0));
+	float foreground = exp(-pow((uv.y - (0.96 + sin(uv.x * 3.0 + t * 0.022) * 0.025)) * 13.0, 2.0));
+	float distant = exp(-pow((uv.y - (0.49 + sin(uv.x * 4.0 - t * 0.018) * 0.018)) * 15.0, 2.0));
+	float alpha = river * (0.055 + shape * 0.065) + foreground * (0.045 + shape * 0.075) + distant * (0.012 + shape * 0.020);
+	COLOR = vec4(vec3(0.66, 0.70, 0.76), clamp(alpha, 0.0, 0.19));
+}
+"""
+	var fog_material := ShaderMaterial.new()
+	fog_material.shader = fog_shader
+	fog.material = fog_material
+	stage_select_layer.add_child(fog)
+
+	# Ember and smoke particles are separate from the supplied illustration.
+	var ember_texture := _make_title_particle_texture(32)
+	var ember_ramp := _make_title_particle_ramp(
+		Color(1.0, 0.86, 0.48, 0.98),
+		Color(1.0, 0.34, 0.055, 0.72),
+		Color(0.68, 0.08, 0.01, 0.0)
+	)
+	var embers := CPUParticles2D.new()
+	embers.name = "StageSelectRisingEmbers"
+	embers.amount = 78
+	embers.lifetime = 4.2
+	embers.preprocess = 2.0
+	embers.emitting = true
+	embers.local_coords = false
+	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	embers.emission_rect_extents = Vector2(art_size.x * 0.46, art_size.y * 0.055)
+	embers.direction = Vector2(-0.08, -1.0)
+	embers.spread = 24.0
+	embers.gravity = Vector2(1.2, -4.5)
+	embers.initial_velocity_min = 7.0
+	embers.initial_velocity_max = 21.0
+	embers.angular_velocity_min = -22.0
+	embers.angular_velocity_max = 22.0
+	embers.scale_amount_min = 0.12
+	embers.scale_amount_max = 0.48
+	embers.color = Color(1.0, 0.66, 0.25, 0.92)
+	embers.color_ramp = ember_ramp
+	embers.texture = ember_texture
+	embers.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	embers.position = art_position + Vector2(art_size.x * 0.52, art_size.y * 0.78)
+	embers.z_index = 3
+	stage_select_layer.add_child(embers)
+
+	var smoke := CPUParticles2D.new()
+	smoke.name = "StageSelectDriftingSmoke"
+	smoke.amount = 13
+	smoke.lifetime = 8.0
+	smoke.preprocess = 2.0
+	smoke.emitting = true
+	smoke.local_coords = false
+	smoke.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	smoke.emission_rect_extents = Vector2(art_size.x * 0.44, art_size.y * 0.035)
+	smoke.direction = Vector2(1.0, -0.06)
+	smoke.spread = 17.0
+	smoke.gravity = Vector2(2.0, -0.5)
+	smoke.initial_velocity_min = 1.8
+	smoke.initial_velocity_max = 4.5
+	smoke.scale_amount_min = 0.65
+	smoke.scale_amount_max = 1.45
+	smoke.color = Color(0.64, 0.68, 0.76, 0.12)
+	smoke.texture = ember_texture
+	smoke.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	smoke.position = art_position + Vector2(art_size.x * 0.5, art_size.y * 0.91)
+	smoke.z_index = 4
+	stage_select_layer.add_child(smoke)
+
+	var heading := Label.new()
+	heading.name = "StageSelectHeading"
+	heading.text = "STAGE SELECT"
+	heading.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	heading.offset_top = viewport_size.y * 0.025
+	heading.offset_bottom = viewport_size.y * 0.145
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", clampi(int(viewport_size.y * 0.066), 27, 48))
+	heading.add_theme_color_override("font_color", Color("#fff8f1"))
+	heading.add_theme_color_override("font_shadow_color", Color(1.0, 0.83, 0.78, 0.85))
+	heading.add_theme_constant_override("shadow_offset_x", 0)
+	heading.add_theme_constant_override("shadow_offset_y", 0)
+	heading.add_theme_constant_override("shadow_outline_size", 7)
+	heading.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage_select_layer.add_child(heading)
+	var heading_tween := create_tween().set_loops()
+	heading_tween.tween_property(heading, "modulate", Color(1.0, 0.82, 0.78, 0.78), 1.15)
+	heading_tween.tween_property(heading, "modulate", Color.WHITE, 1.15)
+
+	var panel := PanelContainer.new()
+	panel.name = "StageSelectPanel"
+	panel.anchor_left = 0.16
+	panel.anchor_right = 0.84
+	panel.anchor_top = 0.735
+	panel.anchor_bottom = 0.945
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.018, 0.008, 0.015, 0.86)
+	panel_style.border_color = Color("#a90e2b")
+	panel_style.set_border_width_all(3)
+	panel_style.set_corner_radius_all(8)
+	panel_style.shadow_color = Color(0.65, 0.015, 0.075, 0.38)
+	panel_style.shadow_size = 13
+	panel.add_theme_stylebox_override("panel", panel_style)
+	stage_select_layer.add_child(panel)
+
+	var panel_margin := MarginContainer.new()
+	panel_margin.add_theme_constant_override("margin_left", 14)
+	panel_margin.add_theme_constant_override("margin_right", 14)
+	panel_margin.add_theme_constant_override("margin_top", 9)
+	panel_margin.add_theme_constant_override("margin_bottom", 9)
+	panel.add_child(panel_margin)
+	var panel_content := VBoxContainer.new()
+	panel_content.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel_content.add_theme_constant_override("separation", 4)
+	panel_margin.add_child(panel_content)
+
+	var available_label := Label.new()
+	available_label.text = "AVAILABLE STAGE"
+	available_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	available_label.add_theme_font_size_override("font_size", 12)
+	available_label.add_theme_color_override("font_color", Color("#d9a6a9"))
+	panel_content.add_child(available_label)
+
+	var woodlawn_button := Button.new()
+	woodlawn_button.name = "WoodlawnSuburbsStageButton"
+	woodlawn_button.text = "WOODLAWN SUBURBS"
+	woodlawn_button.custom_minimum_size = Vector2(0, maxf(42.0, viewport_size.y * 0.075))
+	woodlawn_button.focus_mode = Control.FOCUS_NONE
+	woodlawn_button.add_theme_font_size_override("font_size", clampi(int(viewport_size.y * 0.032), 17, 25))
+	var stage_button_style := StyleBoxFlat.new()
+	stage_button_style.bg_color = Color(0.045, 0.012, 0.022, 0.92)
+	stage_button_style.border_color = Color("#c11b3b")
+	stage_button_style.set_border_width_all(2)
+	stage_button_style.set_corner_radius_all(5)
+	woodlawn_button.add_theme_stylebox_override("normal", stage_button_style)
+	var hover_style := stage_button_style.duplicate() as StyleBoxFlat
+	hover_style.bg_color = Color(0.17, 0.018, 0.04, 0.96)
+	hover_style.border_color = Color("#ff536b")
+	woodlawn_button.add_theme_stylebox_override("hover", hover_style)
+	woodlawn_button.add_theme_stylebox_override("pressed", hover_style)
+	woodlawn_button.add_theme_color_override("font_color", Color("#fff5f1"))
+	woodlawn_button.add_theme_color_override("font_hover_color", Color.WHITE)
+	panel_content.add_child(woodlawn_button)
+	woodlawn_button.pressed.connect(_on_stage_selected.bind("woodlawn_suburbs"))
+
+
+func _loop_stage_select_music() -> void:
+	if is_instance_valid(stage_select_layer) and music_player != null:
+		music_player.play()
+
+
+func _on_stage_selected(stage_id: String) -> void:
+	if not is_instance_valid(stage_select_layer):
+		return
+	active_stage_id = stage_id
+	if music_player != null:
+		music_player.stop()
+	stage_select_layer.queue_free()
+	stage_select_layer = null
 	_show_map_screen()
 
 
@@ -1251,6 +1527,7 @@ func _begin_fresh_save_slot(slot_index: int) -> void:
 	cfg.set_value(section, "unlocked_woodlawn_checkpoint", false)
 	cfg.set_value(section, "unlocked_woodlawn_park_checkpoint", false)
 	cfg.set_value(section, "area", active_slot_area)
+	cfg.set_value(section, "stage_id", active_stage_id)
 	cfg.set_value(section, "has_slingshot", false)
 	cfg.set_value(section, "lives", 3)
 	cfg.set_value(section, "player_x", 0.0)
@@ -1335,6 +1612,7 @@ func _on_save_slot_selected(slot_index: int, for_new_game: bool) -> void:
 		return
 	active_save_slot = slot_index
 	var section := _slot_section(slot_index)
+	active_stage_id = str(cfg.get_value(section, "stage_id", "woodlawn_suburbs"))
 	active_slot_unlocked_leaside = bool(cfg.get_value(section, "unlocked_leaside", false))
 	active_slot_unlocked_mcrae = bool(cfg.get_value(section, "unlocked_mcrae", false))
 	active_slot_unlocked_newleaf_checkpoint = bool(cfg.get_value(section, "unlocked_newleaf_checkpoint", false))
@@ -1349,7 +1627,7 @@ func _on_save_slot_selected(slot_index: int, for_new_game: bool) -> void:
 		save_slot_layer = null
 	if music_player != null:
 		music_player.stop()
-	_show_map_screen()
+	_show_saved_stage_mission_select()
 
 func _show_overwrite_confirmation(slot_index: int, progress_text: String) -> void:
 	if save_slot_layer != null:
@@ -5395,6 +5673,7 @@ func _save_slot_progress() -> bool:
 	cfg.set_value(section, "unlocked_woodlawn_checkpoint", active_slot_unlocked_woodlawn_checkpoint)
 	cfg.set_value(section, "unlocked_woodlawn_park_checkpoint", active_slot_unlocked_woodlawn_park_checkpoint)
 	cfg.set_value(section, "area", active_slot_area)
+	cfg.set_value(section, "stage_id", active_stage_id)
 	cfg.set_value(section, "has_slingshot", has_slingshot)
 	cfg.set_value(section, "lives", clampi(player_lives, 0, 99))
 	if player != null:
