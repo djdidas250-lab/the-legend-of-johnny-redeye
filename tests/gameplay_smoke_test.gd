@@ -107,7 +107,7 @@ func _ready() -> void:
 	var map_layer: CanvasLayer = game.get("map_layer")
 	if not _check(map_layer != null and not bool(game.get("game_started")) and game.get("intro_layer") == null, "New Game must open Mission Select after the cinematic intro finishes."): return
 	var map_art := map_layer.get_child(0) as TextureRect
-	if not _check(map_art != null and map_art.texture.resource_path == "res://images/Gemini_Generated_Image_3urpcr3urpcr3urp.jpeg", "New Mission Select artwork missing."): return
+	if not _check(map_art != null and map_art.texture.resource_path == "res://images/Gemini_Generated_Image_kglbemkglbemkglb.jpeg", "New Mission Select artwork missing."): return
 	if not _check(map_art.stretch_mode == TextureRect.STRETCH_SCALE and map_art.anchor_left == 0.0 and map_art.anchor_top == 0.0 and map_art.anchor_right == 1.0 and map_art.anchor_bottom == 1.0, "Mission artwork must fill widescreen without cropping."): return
 	var john_marker := map_layer.get_child(1) as TextureRect
 	if not _check(john_marker != null and john_marker.name == "JohnHouseCheckpointMarker" and john_marker.texture.resource_path == "res://images/map_checkpoint_x.svg", "John's Silvan Drive checkpoint marker is missing."): return
