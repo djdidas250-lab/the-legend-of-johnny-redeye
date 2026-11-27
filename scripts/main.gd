@@ -181,6 +181,7 @@ var mattijuana_health := 10
 var mattijuana_phase := 1
 var mattijuana_attack_cooldown := 1.4
 var mattijuana_fire_cooldown := 2.8
+var mattijuana_fire_projectiles: Array[Dictionary] = []
 var mattijuana_defeated := false
 var davy_saved_music_stream: AudioStream
 var davy_saved_music_position := 0.0
@@ -2969,6 +2970,7 @@ func _physics_process(delta: float) -> void:
 		_maybe_begin_mattijuana_entrance()
 	_update_davy_boss(delta)
 	_update_mattijuana_boss(delta)
+	_update_mattijuana_fire_projectiles(delta)
 	_update_location()
 	_update_character_depth_sorting()
 	save_timer += delta
@@ -3874,10 +3876,10 @@ func _begin_mattijuana_entrance() -> void:
 	mattijuana_boss_visual.light_mask = 1
 	mattijuana_boss_visual.set_script(MATTIJUANA_HUMAN_VISUAL)
 	mattijuana_boss_visual.position = Vector2(0.0, -105.0)
-	mattijuana_boss_visual.scale = Vector2(0.62, 0.62)
+	mattijuana_boss_visual.scale = Vector2(0.50, 0.50)
 	mattijuana_boss.add_child(mattijuana_boss_visual)
 	if is_instance_valid(mattijuana_health_bar):
-		mattijuana_health_bar.position = Vector2(0.0, -158.0)
+		mattijuana_health_bar.position = Vector2(0.0, -145.0)
 
 
 func _transition_mattijuana_to_joint() -> void:
@@ -3963,17 +3965,49 @@ func _transition_mattijuana_to_monster() -> void:
 func _show_mattijuana_fire_breath(direction: float) -> void:
 	if not is_instance_valid(mattijuana_boss):
 		return
-	# Use the supplied fire stream and smoke animation, aligned to
-	# the monster's mouth. The monster body remains visible behind the effect.
+	# Spawn the extracted flame as a world-space projectile. It is deliberately
+	# parented to the game root, not the boss, so it travels independently.
 	var fire := Sprite2D.new()
-	fire.name = "MattijuanaFireBreath"
+	fire.name = "MattijuanaFireProjectile"
 	fire.set_script(MATTIJUANA_MONSTER_FIRE_VISUAL)
-	fire.position = Vector2(direction * 140.0, -108.0)
+	fire.position = mattijuana_boss.position + Vector2(direction * 132.0, -108.0)
 	fire.scale = Vector2(0.85, 0.85)
 	fire.flip_h = direction < 0.0
-	fire.z_index = 35
-	mattijuana_boss.add_child(fire)
-	fire.call("play_animation", "fire", 3.5, false)
+	fire.z_index = clampi(roundi(fire.position.y), 0, 1024) + 2
+	add_child(fire)
+	fire.call("play_animation", "fire", 8.0, true)
+	mattijuana_fire_projectiles.append({
+		"node": fire,
+		"direction": direction,
+		"speed": 340.0,
+		"lifetime": 2.2,
+		"hit": false
+	})
+
+
+func _update_mattijuana_fire_projectiles(delta: float) -> void:
+	for index in range(mattijuana_fire_projectiles.size() - 1, -1, -1):
+		var projectile: Dictionary = mattijuana_fire_projectiles[index]
+		var fire := projectile.get("node") as Sprite2D
+		if not is_instance_valid(fire):
+			mattijuana_fire_projectiles.remove_at(index)
+			continue
+		fire.position.x += float(projectile.get("direction", 1.0)) * float(projectile.get("speed", 340.0)) * delta
+		projectile["lifetime"] = float(projectile.get("lifetime", 0.0)) - delta
+		fire.z_index = clampi(roundi(fire.position.y), 0, 1024) + 2
+		if not bool(projectile.get("hit", false)) and is_instance_valid(player):
+			var distance := fire.position.distance_to(player.position + Vector2(0.0, -28.0))
+			if distance <= 34.0 and player_invulnerable <= 0.0 and not player_recovery_active:
+				projectile["hit"] = true
+				_hurt_player(mattijuana_boss if is_instance_valid(mattijuana_boss) else fire)
+				fire.queue_free()
+				mattijuana_fire_projectiles.remove_at(index)
+				continue
+		if float(projectile["lifetime"]) <= 0.0 or fire.position.x < -80.0 or fire.position.x > world_end + 80.0:
+			fire.queue_free()
+			mattijuana_fire_projectiles.remove_at(index)
+			continue
+		mattijuana_fire_projectiles[index] = projectile
 
 
 func _update_mattijuana_boss(delta: float) -> void:
@@ -3990,8 +4024,6 @@ func _update_mattijuana_boss(delta: float) -> void:
 			visual.flip_h = dx < 0.0
 			visual.call("play_animation", "attack", 6.0, false)
 		_show_mattijuana_fire_breath(signf(dx))
-		if absf(dx) >= 72.0:
-			_hurt_player(mattijuana_boss)
 		return
 	var preferred_distance := 76.0 if mattijuana_boss_state != "monster_fight" else 145.0
 	if absf(dx) > preferred_distance or absf(dy) > 18.0:
