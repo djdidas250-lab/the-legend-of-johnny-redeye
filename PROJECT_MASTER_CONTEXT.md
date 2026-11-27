@@ -450,3 +450,52 @@ Visual/audio implementation:
 - Do not push more code, adjust the victory sequence, change the phone cinematic, or merge the feature branch without an explicit request.
 - Keep Build #307 (commit `482954eef2b61ea7103330f429a29c24e956cede`) recorded as the earlier user-tested baseline. Build #322 is the latest verified compiled checkpoint, not yet user-verified.
 - When resuming, read this master file, inspect the live feature branch and latest workflow/release metadata, and preserve the current Build #322 implementation as the starting point unless the user requests otherwise.
+
+
+## 19. Opening and victory cutscene full-screen fit — Build #326 (2026-11-27)
+
+**This is the latest user-tested and approved checkpoint.** The user installed and tested the Build #326 APK after the two remaining cinematic images were adjusted, then confirmed: **“Everything looks perfect.”**
+
+### User request and approved result
+
+- The user identified grey/dark vertical side bars on two images:
+  1. The Stage One opening cutscene image showing Johnny holding the flaming sword in the first-person/POV composition, before Level 1.
+  2. The Matt-ijuana boss-victory artwork showing Johnny standing with a foot on the defeated boss.
+- The user confirmed the bars also appeared on a fresh **New Game**, so the issue was not specific to Continue Game or an existing save.
+- The user wanted the existing artwork fitted to the screen from left edge to right edge, rather than centered with uncovered margins.
+- The final implementation sets the two target image TextureRects to Godot's `TextureRect.STRETCH_KEEP_ASPECT_COVERED`. This fills the viewport proportionally without stretching/distorting the image. Some edge cropping is inherent to aspect-cover when source and viewport aspect ratios differ.
+- No duplicate/blurred background image was added. The artwork remains a single foreground image using direct aspect-cover fitting.
+- The user tested the resulting APK and confirmed both scenes now look perfect.
+- The previously approved victory dialogue popup remains unchanged. Do not adjust its size, placement, typography, padding, style, text or layout.
+- Do not change the original artwork, dialogue/audio, phone cinematic, boss encounter, gameplay, maps, collisions, pickups or other presentation elements unless explicitly requested.
+
+### Exact source and successful Android build
+
+- **Android build:** #326.
+- **GitHub Actions run ID:** `45983614072`.
+- **Workflow:** `.github/workflows/build-android.yml`.
+- **Run status/conclusion:** completed / success.
+- **Source branch:** `fix/cinematic-aspect-cover`.
+- **Exact source commit:** `d8e26ae7f4b94b0687b40434b24a2c13db208fff`.
+- **Commit message:** `Run Android verification for aspect-cover cinematic fix`.
+- **Workflow run:** https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/actions/runs/45983614072
+- The run completed successfully. The source branch head was independently checked and matches the workflow's exact head commit.
+- This feature branch is the current source checkpoint for the latest implementation. Do not assume it has been merged into `main`; this master-file handoff update is being committed to `main` separately.
+
+### APK release asset verified
+
+- **Asset:** `TheLegendOfJohnnyRedeye.apk`.
+- **Size:** 147,487,742 bytes (about 147.5 MB).
+- **SHA-256:** `554d271885c5983a782adcc574f5fdb886db21157a95dd9c866481edb0668b92`.
+- **Release tag:** `android-latest`.
+- **Direct APK URL:** https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/releases/download/android-latest/TheLegendOfJohnnyRedeye.apk
+- The APK release asset was verified after the successful Build #326 workflow. This is a rolling release URL; verify its metadata and source commit before reusing it for any later build.
+
+### Current checkpoint and resume instructions
+
+1. **Current user-tested checkpoint:** Build #326, source commit `d8e26ae7f4b94b0687b40434b24a2c13db208fff`, branch `fix/cinematic-aspect-cover`, workflow run `45983614072`.
+2. The user has tested and approved the full-screen fit of both the Stage One opening cutscene image and Matt-ijuana victory artwork.
+3. Preserve the approved aspect-cover fit and the unchanged victory dialogue popup.
+4. Build #322's restored victory-to-phone-cinematic sequence remains part of the recent implementation history; preserve the full victory presentation and phone sequence.
+5. Do not begin another feature, merge branches, or modify game code until the user gives the next instruction.
+6. Before future code changes, inspect live GitHub branch heads, workflow results and release metadata. Start from the latest user-approved source checkpoint unless the user explicitly chooses another baseline.
