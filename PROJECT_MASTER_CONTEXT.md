@@ -369,3 +369,84 @@ The original next-feature note after build #271 was to create a post-final-boss 
 2. Current user-approved checkpoint is Build #307, commit `482954eef2b61ea7103330f429a29c24e956cede`, workflow run `45939817704`.
 3. Preserve the victory artwork's full-screen cover fit and the unchanged dialogue popup.
 4. Make no changes to the finished boss encounter or victory cutscene unless the user explicitly requests them.
+
+
+## 18. Post-boss victory restoration and phone cinematic — Build #322 (2026-11-27)
+
+**This is the latest verified source/build checkpoint. It supersedes Build #307 as the latest compiled implementation, but the user has not yet reported on-device testing of Build #322. Build #307 remains the last earlier user-tested checkpoint.**
+
+### Exact source and workflow result
+
+- **Android build:** #322.
+- **GitHub Actions run ID:** `45977757095`.
+- **Workflow:** `.github/workflows/build-android.yml`.
+- **Run status/conclusion:** completed / success (green).
+- **Source branch:** `feature/post-boss-phone-cinematic`.
+- **Exact source commit:** `11f5434a9ee26be063aae32d350fed332ede919f`.
+- **Commit message:** `Test restored victory sequence and animated phone scene atmosphere`.
+- **Workflow run:** https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/actions/runs/45977757095
+- Build #322 is the current feature branch head verified for this milestone. Do not assume it has been merged into `main`; keep the feature branch as the source of truth for these latest changes until the user explicitly approves a merge or another branch strategy.
+- The build completed successfully and the rolling release metadata states that the APK was exported, package-checked and signature-verified by the workflow.
+
+### APK asset verified
+
+- **Asset:** `TheLegendOfJohnnyRedeye.apk`.
+- **Size:** 147,385,342 bytes (about 147.4 MB).
+- **SHA-256:** `e6b627a63e5a93bf1829cb6121b50c46ba1cdcb5dfe5511834ebb4f33f99bc85`.
+- **Release tag:** `android-latest`.
+- **Direct APK URL:** https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/releases/download/android-latest/TheLegendOfJohnnyRedeye.apk
+- Release metadata was checked after Build #322 and showed the APK uploaded/updated at 2026-11-27 09:59:50–09:59:56 UTC. This is a rolling release URL; verify its current asset metadata and commit before sharing it again.
+
+### Restored Matt-ijuana victory presentation
+
+The user reported that the earlier Build #319 phone-cinematic APK had lost the original boss-victory presentation. Investigation identified that the new `_finish_mattijuana_encounter()` path bypassed the original victory function and launched the phone cinematic directly.
+
+Build #322 restores the original Build #307 victory presentation and changes the handoff so the full spoken victory presentation completes before the phone cinematic begins.
+
+- Restored constants:
+  - `MATTIJUANA_VICTORY_IMAGE` → `res://images/Gemini_Generated_Image_d35sdld35sdld35s.jpeg`.
+  - `MATTIJUANA_VICTORY_AUDIO` → `res://images/junkie bitch.mp3`.
+  - `MATTIJUANA_VICTORY_DIALOGUE` → the original Johnny mocking dialogue string retained from Build #307.
+- Restored the complete `_show_mattijuana_victory_cutscene()` implementation from Build #307, including the original victory artwork, dark nighttime presentation, separate atmospheric treatment, drifting fog, rising embers, ground smoke, dialogue panel and original voice audio.
+- `_finish_mattijuana_encounter()` now marks the boss defeated, stops music, frees the boss/health bar, awaits `_show_mattijuana_victory_cutscene()`, checks that the game is still active/in-tree, and only then awaits `_play_post_boss_phone_cinematic()` before returning to Mission Select.
+- The victory function awaits the voice player's actual `finished` signal. The phone cinematic therefore must not begin before the victory dialogue/audio completes.
+- Preserve the original victory image, dialogue, voice track, and presentation unless the user explicitly asks for a change.
+
+### Phone cinematic sequence and visual treatment
+
+Assets are in `images/john_gil_cinematic/` (extracted from the user's `John and Gil.zip` archive):
+- `scene 1.jpeg`: Johnny alone at the burning carnival, holding the phone.
+- `scene 2.jpeg`: split-screen with Gil on the left and Johnny on the right.
+- Audio tracks: `1 ringing phone.mp3`, `2 Gil phone answer.mp3`, `3 Johnny Phone.mp3`, `4 Gil Phone.mp3`.
+
+Expected sequence:
+1. Matt-ijuana is defeated.
+2. Original victory artwork and mocking dialogue/voice play in full.
+3. After the actual victory voice-finished signal, fade into Johnny's solo carnival phone image.
+4. Play the phone ringing track.
+5. Fade into the split-screen image.
+6. Play Gil's answer, then alternate speaker focus and play Johnny's and Gil's respective dialogue tracks.
+7. Fade out and return to Mission Select.
+
+Visual/audio implementation:
+- First solo Johnny carnival scene now has a separate animated `JohnnyCarnivalRollingFog` shader layer, plus separate rising ember particles. Artwork itself remains unmodified.
+- Gil's bedroom smoke and Johnny's embers remain separate atmosphere overlays.
+- Split-screen speaker focus dims the inactive half; the helper now targets alpha **0.52** (previously 0.28), with a smooth 0.55-second transition. The inactive half remains sharp; no blur is applied.
+- Gil speaking emphasizes the left half; Johnny speaking emphasizes the right half. Preserve the supplied artwork and audio assets.
+- Existing phone cinematic function and helpers remain in place. Keep artwork fullscreen with the established aspect-cover treatment; do not distort the source image.
+
+### Changes and smoke-test coverage in Build #322
+
+- Commit `84bf30d2501651c342da7db3598753d535e30315`: restored victory constants/function and sequential victory-to-phone handoff.
+- Commit `fe0c84c9693de587d3df83d57bfe4da5a9ea6eb3`: increased inactive-speaker dimming target to 0.52.
+- Commit `11f5434a9ee26be063aae32d350fed332ede919f`: extended `tests/gameplay_smoke_test.gd` assertions for restored victory function/assets/dialogue, rolling fog layer, phone sequence helpers and speaker-focus target.
+- Build #322 completed successfully on the exact source commit above.
+
+### User test status and next steps
+
+- The user has said that everything is looking pretty great and requested this master-file update after Build #322 showed a green check.
+- **Do not claim the user has tested Build #322 on-device yet.** The user has not reported that test result in this handoff.
+- The direct APK was provided to the user for testing. Wait for their feedback before making further changes.
+- Do not push more code, adjust the victory sequence, change the phone cinematic, or merge the feature branch without an explicit request.
+- Keep Build #307 (commit `482954eef2b61ea7103330f429a29c24e956cede`) recorded as the earlier user-tested baseline. Build #322 is the latest verified compiled checkpoint, not yet user-verified.
+- When resuming, read this master file, inspect the live feature branch and latest workflow/release metadata, and preserve the current Build #322 implementation as the starting point unless the user requests otherwise.
