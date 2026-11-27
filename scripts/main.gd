@@ -1507,6 +1507,7 @@ func _start_new_game() -> void:
 
 func _begin_fresh_save_slot(slot_index: int) -> void:
 	active_save_slot = slot_index
+	active_stage_id = "woodlawn_suburbs"
 	active_slot_unlocked_leaside = false
 	active_slot_unlocked_mcrae = false
 	active_slot_unlocked_newleaf_checkpoint = false
