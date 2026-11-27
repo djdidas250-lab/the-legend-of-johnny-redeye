@@ -2,7 +2,7 @@
 
 > **Purpose:** This file is the durable source of truth for continuing development in a new ChatGPT conversation. Read this document first, then inspect the current repository and GitHub Actions before changing code. Do not rely on conversational recollection where repository state can be verified.
 >
-> **Last handoff update:** 2026-11-26 (America/Toronto). Repository API timestamps may appear on 2026-11-26 UTC.
+> **Last handoff update:** 2026-11-27 (America/Toronto). Repository API timestamps may appear on 2026-11-27 UTC.
 
 ## 1. Project identity and repository
 
@@ -177,7 +177,6 @@ Start by fetching this document and checking live GitHub state. Never ask the us
 The user confirmed the current development focus is completing Stage One's core mechanics. Future stages will have their own map/mission-select screens, unlockable streets and mission-start briefings, but should reuse the same design system as Stage One. Keep future-stage extensibility in mind without prematurely building Stage Two.
 
 ### Implemented on main
-
 - Commit `b7c7b63c3cc257d8930daa93e0a6a8b1f2675492`: redesigned `_show_stage_one_splash()` in `scripts/main.gd`.
 - Commit `8c1eb995c2dcdb427a0d8979bb8c8369ee23153e`: updated `tests/gameplay_smoke_test.gd` for the new layout.
 - Retained the original supplied John's House background texture `images/image_a06e5bc7.jpg`.
@@ -357,8 +356,7 @@ The original next-feature note after build #271 was to create a post-final-boss 
 
 ### Scope and preservation
 
-- The user-approved change is limited to the boss-defeat artwork's viewport fitting.
-- The existing dialogue popup is unchanged.
+- The user-approved change is limited to the boss-defeat artwork's viewport fitting.- The existing dialogue popup is unchanged.
 - Preserve the working Matt-ijuana boss fight, all three phases, defeat transition, cutscene audio, nighttime grade, fog, embers/sparks and return to Mission Select.
 - Do not treat the correction to `tests/gameplay_smoke_test.gd` as a gameplay change. The test assertion was corrected so the smoke test checks the intended victory-cutscene behavior and full-screen cover setting.
 - Do not roll back to Build #295 for future work by default: Build #307 is now the user's approved tested state and supersedes it as the current checkpoint. If a future task requires rollback, first establish which exact checkpoint the user wants.
@@ -499,3 +497,56 @@ Visual/audio implementation:
 4. Build #322's restored victory-to-phone-cinematic sequence remains part of the recent implementation history; preserve the full victory presentation and phone sequence.
 5. Do not begin another feature, merge branches, or modify game code until the user gives the next instruction.
 6. Before future code changes, inspect live GitHub branch heads, workflow results and release metadata. Start from the latest user-approved source checkpoint unless the user explicitly chooses another baseline.
+
+## 20. Stage Select screen and next visual refinement — Build #351 (2026-11-27)
+
+**Build #351 is the current user-tested Stage Select implementation checkpoint.** It is on the feature branch `build/stage-select-menu`; do not assume the Stage Select code has been merged into `main`.
+
+### Implemented Stage Select flow
+
+- **Android build:** #351.
+- **GitHub Actions run ID:** `46076805329`.
+- **Workflow result:** completed / success.
+- **Source branch:** `build/stage-select-menu`.
+- **Exact branch head / source commit:** `b2914a9088466143ebacba0041ac0b2df23e4c7f`.
+- **Workflow run:** https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/actions/runs/46076805329
+- Build #351's final commit fixes a remaining Stage Select smoke-test variable collision. Earlier commits on this same feature branch introduced the cinematic Stage Select screen and stage-aware save routing.
+- The user tested the Build #351 APK and confirmed the Stage Select flow is working. Preserve it as the functional baseline for the next visual refinement.
+
+Expected navigation:
+1. **New Game** → opening intro cinematic → Stage Select.
+2. Choose **Woodlawn Suburbs** → existing Mission Select map for Stage One.
+3. **Continue Game** → choose a save slot → directly open that save's corresponding stage Mission Select map. Continue must bypass Stage Select.
+4. Keep stage selection extensible so future unlocked stages can be listed vertically. Continue/save routing must select the correct stage for each save.
+
+### Requested Stage Select visual redesign — approved direction, not yet implemented
+
+The current Stage Select implementation uses an atmospheric background and a full-width bottom menu panel. The user does not want the panel treatment and has approved a minimalist, unboxed text overlay based on the previously generated visual mockup.
+
+Required appearance:
+- Large, bold uppercase **“STAGE SELECT”** heading in the upper-right.
+- Match the approved mockup's distressed/block-like white lettering, scale, spacing and proportions as closely as possible; add the same crimson-red accent/illumination behind the heading.
+- Directly underneath, show **“STAGE 1 – WOODLAWN SUBURBS”** in bold white lettering, matching the reference.
+- Selected stage text gets a soft, diffused white glow/pulse, similar in feel to the pulsing red X on the Mission Select screen.
+- Future unlocked stages appear as a vertical list beneath Stage One, using the same typography, spacing and selected-state treatment.
+- **No** panel, box, border, full-width bottom strip, “click here” prompt, instruction text or extra button copy.
+- Preserve the approved text treatment as a separate transparent UI overlay above the background. Keep background artwork and UI overlay independent so the background can be replaced later without rebuilding the typography.
+- Do not substitute a generic font or redesign the composition. Use the approved mockup as the visual reference and recreate its letterforms/lighting as closely as the available asset workflow permits.
+
+### Background image handoff — pending user confirmation and visual inspection
+
+- The user said they are uploading a replacement Stage Select background into the repository's `images/` directory.
+- The latest `main` upload commit at the time of this handoff is `e3053b2467beaea1f9aaff7b5a3730d8f5d75901` (2026-11-27 23:11:15 UTC). It adds `images/Gemini_Generated_Image_cqsqaqcqsqaqcqsq.jpeg` (925,078 bytes; blob `3ba205f7ea4d20b8e1e90020dc59baad26ba889d`). Treat this as a newly uploaded candidate only; the user has not yet explicitly confirmed that this is the intended replacement background.
+- The previous repository image `images/stage select screen.jpeg` remains present on `main`. Do not assume it should remain the active background once the user confirms the new upload.
+- The assistant has not yet visually inspected the newly uploaded candidate in this handoff. Do not claim to have seen it or judge its composition until the actual image bytes are retrieved and inspected.
+- Wait for the user's explicit confirmation that the upload is complete / identify the intended file. Then inspect the actual image, verify its dimensions and aspect ratio, and plan the Stage Select background replacement while preserving the transparent text overlay as an independent layer.
+- Do not change game code, artwork, or the Stage Select layout until the image has been inspected and the user has approved the implementation approach.
+
+### Live repository status at this handoff
+
+- `main` head: `e3053b2467beaea1f9aaff7b5a3730d8f5d75901` — upload-only commit adding the image candidate above.
+- Latest `main` workflow: Build #352, run ID `46081059272`, completed / success. This run is for the upload commit; it does not mean the Stage Select feature branch was merged into `main`.
+- Stage Select feature branch head: `build/stage-select-menu` at `b2914a9088466143ebacba0041ac0b2df23e4c7f`; Build #351 passed on that exact commit.
+- Keep these refs distinct. For Stage Select implementation work, start from the verified `build/stage-select-menu` feature branch and preserve its working New Game / Continue routing. Do not silently switch to `main` and lose the feature branch changes.
+- Before any code changes, re-check the current branch head and latest workflow result. Keep changes limited to the Stage Select background and separately layered typography/glow requested above; do not touch the opening/victory cinematics, dialogue panels, boss sequences, gameplay, saves, maps or other systems.
+
