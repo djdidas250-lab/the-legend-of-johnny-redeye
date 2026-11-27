@@ -46,3 +46,4 @@ func _apply_frame() -> void:
 
 func is_animation_finished() -> bool:
     return finished
+
