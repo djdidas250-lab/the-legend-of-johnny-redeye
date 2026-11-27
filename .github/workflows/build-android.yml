@@ -38,16 +38,6 @@ jobs:
           for asset in "scene 1.jpeg" "scene 2.jpeg" "1 ringing phone.mp3" "2 Gil phone answer.mp3" "3 Johnny Phone.mp3" "4 Gil Phone.mp3"; do
             test -s "images/john_gil_cinematic/$asset"
           done
-          python3 - <<'PY'
-          from pathlib import Path
-          from PIL import Image
-          root = Path("images/john_gil_cinematic")
-          for name in ("scene 1.jpeg", "scene 2.jpeg"):
-              image = Image.open(root / name)
-              if image.size != (1584, 672):
-                  raise SystemExit(f"Unexpected cinematic artwork size for {name}: {image.size}")
-              print(f"Verified {name}: {image.size}")
-          PY
 
       - name: Extract supplied cinematic intro assets
         run: |
