@@ -1982,8 +1982,8 @@ func _start_woodlawn_victory_cutscene() -> void:
 	fog.material = ENVIRONMENTAL_ATMOSPHERE.create_woodlawn_victory_fog_material()
 	woodlawn_victory_layer.add_child(fog)
 
-	# Map effects to the actual letterboxed artwork rectangle, not the full
-	# viewport, so the embers stay on the fallen boss when aspect ratios differ.
+	# Map effects to the actual full-screen covered artwork rectangle, including
+	# any centered crop, so embers stay aligned with the fallen boss.
 	var viewport_size := get_viewport_rect().size
 	var source_size := Vector2(WOODLAWN_VICTORY_IMAGE.get_width(), WOODLAWN_VICTORY_IMAGE.get_height())
 	var fit_scale := maxf(viewport_size.x / source_size.x, viewport_size.y / source_size.y)
