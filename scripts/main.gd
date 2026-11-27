@@ -4071,6 +4071,7 @@ func _play_post_boss_phone_cinematic() -> void:
 	fade.color = Color(0.0, 0.0, 0.0, 1.0)
 	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fade.z_index = 100
 	post_boss_phone_cinematic_layer.add_child(fade)
 	await _fade_phone_cinematic(fade, 0.0, 0.8)
 
