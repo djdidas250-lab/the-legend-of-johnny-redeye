@@ -375,3 +375,22 @@ This is the current handoff point and supersedes the instruction in section 14 t
 3. Preserve the user-tested Stage One opening cutscene exactly as approved.
 4. Continue with the post-final-boss Woodlawn Park scene only after the user supplies its requirements.
 
+
+
+## 16. Matt-ijuana Woodlawn finale regression repair (2026-11-26)
+
+### User-reported regression
+- The user reported that the final Matt-ijuana boss, boss-fight transition title/entrance, and fight sequence had disappeared at the end of Woodlawn Park.
+- Preserve the approved Stage One opening cutscene from section 15. Do not roll back to build 244 in a way that removes that accepted cutscene.
+
+### Source investigation
+- The full Matt-ijuana sequence is still present in the live main source: waiting spawn, final-rival trigger, transition soundtrack, entrance tween, voice/dialogue, three combat phases, transformations, fire breath, and defeat handler.
+- The existing smoke test verified only that the boss node was initially waiting; it did not simulate recovery if the node disappeared or verify the entrance trigger after the final rival was removed.
+- The Woodlawn playground transition already creates the waiting boss at (110, 360), after setting the current street and spawning the five regular rivals.
+
+### Repair in progress
+- Add an idempotent runtime watchdog for WOODLAWN PARK PLAYGROUND. It recreates the waiting boss only if the encounter is not defeated and the boss node is missing/inactive.
+- The watchdog invokes the existing entrance sequence only when the regular-rival list is empty and the boss is still waiting. It does not skip enemies or bypass the existing boss dialogue/combat flow.
+- Extend gameplay smoke coverage to deliberately remove the waiting boss and confirm it is recreated.
+- Keep the approved Stage One opening cutscene, artwork, audio, all existing boss assets, and all unrelated gameplay untouched.
+- Work is isolated on branch `build/mattijuana-boss-restoration`; do not merge to main or offer an APK until the Android workflow passes and the APK is verified.
