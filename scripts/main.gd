@@ -1969,7 +1969,7 @@ func _start_woodlawn_victory_cutscene() -> void:
 	artwork.texture = WOODLAWN_VICTORY_IMAGE
 	artwork.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	artwork.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	woodlawn_victory_layer.add_child(artwork)
@@ -1986,7 +1986,7 @@ func _start_woodlawn_victory_cutscene() -> void:
 	# viewport, so the embers stay on the fallen boss when aspect ratios differ.
 	var viewport_size := get_viewport_rect().size
 	var source_size := Vector2(WOODLAWN_VICTORY_IMAGE.get_width(), WOODLAWN_VICTORY_IMAGE.get_height())
-	var fit_scale := minf(viewport_size.x / source_size.x, viewport_size.y / source_size.y)
+	var fit_scale := maxf(viewport_size.x / source_size.x, viewport_size.y / source_size.y)
 	var artwork_size := source_size * fit_scale
 	var artwork_origin := (viewport_size - artwork_size) * 0.5
 	var ember_ground := artwork_origin + Vector2(artwork_size.x * 0.665, artwork_size.y * 0.815)
@@ -2048,7 +2048,7 @@ func _start_woodlawn_victory_cutscene() -> void:
 	panel.anchor_left = 0.055
 	panel.anchor_right = 0.945
 	panel.anchor_top = 0.025
-	panel.anchor_bottom = 0.255
+	panel.anchor_bottom = 0.185
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("#07060b")
 	style.border_color = Color("#b10e2d")
@@ -2061,17 +2061,17 @@ func _start_woodlawn_victory_cutscene() -> void:
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 14)
 	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_top", 7)
-	margin.add_theme_constant_override("margin_bottom", 7)
+	margin.add_theme_constant_override("margin_top", 4)
+	margin.add_theme_constant_override("margin_bottom", 4)
 	panel.add_child(margin)
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 4)
+	content.add_theme_constant_override("separation", 2)
 	margin.add_child(content)
-	var heading := _make_hud_label("WOODLAWN PARK — VICTORY", Vector2.ZERO, 17)
+	var heading := _make_hud_label("WOODLAWN PARK — VICTORY", Vector2.ZERO, 15)
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.add_theme_color_override("font_color", Color("#ffffff"))
 	content.add_child(heading)
-	var dialogue := _make_hud_label(WOODLAWN_VICTORY_DIALOGUE, Vector2.ZERO, 12)
+	var dialogue := _make_hud_label(WOODLAWN_VICTORY_DIALOGUE, Vector2.ZERO, 11)
 	dialogue.name = "WoodlawnVictoryDialogue"
 	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
