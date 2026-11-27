@@ -177,23 +177,23 @@ void fragment() {
 
 
 static func create_woodlawn_victory_material() -> ShaderMaterial:
-	# Reuse the game's established cool nighttime grade for this victory artwork.
-	# Fog and embers are independent scene layers, so the source image stays clean.
-	return create_background_grade_material()
+    # Reuse the game's established cool nighttime grade for this victory artwork.
+    # Fog and embers are independent scene layers, so the source image stays clean.
+    return create_background_grade_material()
 
 
 static func create_woodlawn_victory_fog_material() -> ShaderMaterial:
-	var shader := Shader.new()
-	shader.code = FOG_SHADER
-	var material := ShaderMaterial.new()
-	material.shader = shader
-	material.set_shader_parameter("drift_speed", 0.010)
-	material.set_shader_parameter("opacity", 0.25)
-	material.set_shader_parameter("scale_x", 0.92)
-	material.set_shader_parameter("scale_y", 1.0)
-	material.set_shader_parameter("vertical_offset", 0.025)
-	material.set_shader_parameter("fog_tint", Color("#77869f"))
-	return material
+    var shader := Shader.new()
+    shader.code = FOG_SHADER
+    var material := ShaderMaterial.new()
+    material.shader = shader
+    material.set_shader_parameter("drift_speed", 0.010)
+    material.set_shader_parameter("opacity", 0.25)
+    material.set_shader_parameter("scale_x", 0.92)
+    material.set_shader_parameter("scale_y", 1.0)
+    material.set_shader_parameter("vertical_offset", 0.025)
+    material.set_shader_parameter("fog_tint", Color("#77869f"))
+    return material
 
 
 var _world_width := 960.0
