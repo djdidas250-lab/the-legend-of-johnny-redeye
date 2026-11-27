@@ -1854,25 +1854,14 @@ func _start_stage_one_cutscene() -> void:
 	stage_one_cutscene_layer.layer = 30
 	add_child(stage_one_cutscene_layer)
 
-	# Fill the complete viewport with a darkened, enlarged copy of the same
-	# artwork. The crisp foreground remains fully visible and uncropped above it.
-	var backdrop := TextureRect.new()
-	backdrop.name = "StageOneCutsceneBackdrop"
-	backdrop.texture = STAGE_ONE_CUTSCENE_IMAGE
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	backdrop.modulate = Color(0.20, 0.19, 0.22, 1.0)
-	backdrop.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stage_one_cutscene_layer.add_child(backdrop)
-
+	# Display the supplied image itself edge-to-edge. STRETCH_SCALE fills the
+	# viewport exactly, without adding a backdrop or cropping either side.
 	var artwork := TextureRect.new()
 	artwork.name = "StageOneCutsceneArtwork"
 	artwork.texture = STAGE_ONE_CUTSCENE_IMAGE
 	artwork.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	artwork.stretch_mode = TextureRect.STRETCH_SCALE
 	artwork.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	artwork.material = ENVIRONMENTAL_ATMOSPHERE.create_cutscene_atmosphere_material(true)
 	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -4050,25 +4039,14 @@ func _show_mattijuana_victory_cutscene() -> void:
 	victory_layer.layer = 110
 	add_child(victory_layer)
 
-	# Use a darkened, aspect-covered copy of the victory artwork behind the
-	# complete foreground image, eliminating side bars without cropping the pose.
-	var black_backdrop := TextureRect.new()
-	black_backdrop.name = "VictoryCutsceneBackdrop"
-	black_backdrop.texture = MATTIJUANA_VICTORY_IMAGE
-	black_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	black_backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	black_backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	black_backdrop.modulate = Color(0.16, 0.18, 0.24, 1.0)
-	black_backdrop.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	black_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	victory_layer.add_child(black_backdrop)
-
-	# Keep the supplied 1584x672 artwork unmodified and preserve its wide aspect.
+	# Display the original victory image edge-to-edge, without a duplicate
+	# backdrop or aspect-cover crop. This fills the viewport exactly.
+	var artwork := TextureRect.new()
 	artwork.name = "MattijuanaVictoryArtwork"
 	artwork.texture = MATTIJUANA_VICTORY_IMAGE
 	artwork.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	artwork.stretch_mode = TextureRect.STRETCH_SCALE
 	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	victory_layer.add_child(artwork)
 
