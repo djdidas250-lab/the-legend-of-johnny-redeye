@@ -3141,6 +3141,10 @@ func _physics_process(delta: float) -> void:
 	_update_brick_coke_pickup()
 	_update_slingshot_projectiles(delta)
 	_update_rivals(delta)
+	# Keep the final-boss handoff resilient to every enemy-removal path. The
+	# entrance helper is idempotent and only fires once the last rival is gone.
+	if current_street == "WOODLAWN PARK PLAYGROUND" and mattijuana_boss_state == "waiting" and rivals.is_empty():
+		_maybe_begin_mattijuana_entrance()
 	_update_davy_boss(delta)
 	_update_mattijuana_boss(delta)
 	_update_location()
@@ -3989,6 +3993,12 @@ func _create_mattijuana_waiting() -> void:
 func _maybe_begin_mattijuana_entrance() -> void:
 	if current_street != "WOODLAWN PARK PLAYGROUND":
 		return
+	# A freed enemy can otherwise leave a stale reference in the array and
+	# permanently block the final boss entrance. Prune those references before
+	# deciding whether the last regular opponent has been cleared.
+	for index in range(rivals.size() - 1, -1, -1):
+		if not is_instance_valid(rivals[index]):
+			rivals.remove_at(index)
 	if mattijuana_boss_state != "waiting" or not rivals.is_empty():
 		return
 	_begin_mattijuana_entrance()
