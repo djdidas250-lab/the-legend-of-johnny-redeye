@@ -335,3 +335,43 @@ This section supersedes older "latest build" notes in sections 7, 8, 9 and 13 fo
 3. Preserve this exact cutscene dialogue, original image/MP3, popup styling, atmospheric treatment and audio-finished gate.
 4. Do not resume the separate earlier request about the other first-level intro audio. This is the distinct Stage One — John's House Start Mission cutscene.
 5. Do not make unrelated edits or alter any other mission, pickup, boss, route, music, or gameplay behaviour.
+
+## 15. User-tested checkpoint — Stage One opening cutscene approved (2026-11-26)
+
+This is the current handoff point and supersedes the instruction in section 14 to wait for the user's first on-device test.
+
+### User acceptance
+- The user has tested the APK containing the Stage One — John's House opening cutscene and explicitly confirmed: **"Looks great, everything works as it should."**
+- Treat this cutscene implementation as approved and working. Do not modify it unless the user explicitly requests a change.
+
+### Preserved cutscene behaviour
+- Triggered only by pressing **Start Mission** on the Stage 1 — John's House briefing screen.
+- Displays the original JPEG extracted from `images/cutscene stage 1.zip` while playing `John game intro.mp3`.
+- Shows the exact user-provided dialogue in the established dark/crimson dialogue popup at the top of the image:
+  "Welland's a sweaty demon orgy and the big top's burning—so clench up, cocksuckers, because I'm turning this whole circus into a fucking bloodbath."
+- Original artwork remains unmodified and aspect-preserved.
+- Uses the approved cutscene atmospheric shader treatment, including restrained drifting fog and localized animated amber sword glow.
+- Level 1 begins only after the MP3's actual audio-finished signal. No estimated-duration timer.
+- No other mission, checkpoint, boss, pickup, audio, or gameplay sequence should be changed by this feature.
+
+### Verified implementation and build
+- Implementation commit: `ef3656cf549529465ff4ae718c9c8170305b0618`.
+- Latest verified Android workflow: **#271**, run ID `45913845352`, completed successfully.
+- Workflow passed archive extraction, audio duration check, Godot import/script validation, startup and gameplay smoke tests, rendered cutscene/transition visual capture, Android APK export, package verification and signature verification.
+- Visual QA artifact: `stage-one-cutscene-visual-qa`, artifact ID `15161686328`; the Stage One cutscene and four existing transition scenes were retrieved and visually inspected.
+- Verified APK: `TheLegendOfJohnnyRedeye.apk`, 139,346,894 bytes.
+- APK direct URL: https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/releases/download/android-latest/TheLegendOfJohnnyRedeye.apk
+- APK release asset was updated at `2026-11-27T00:00:50Z` (GitHub UTC timestamp; local Toronto date was 2026-11-26).
+
+### Next requested feature — post-final-boss Woodlawn Park scene
+- The user has identified the next development task: add the scene that appears **after the player defeats the final boss at the end of Woodlawn Park**.
+- No details of that ending scene have been specified yet. Do not infer its artwork, dialogue, audio, duration, transitions, or behaviour.
+- The user explicitly asked to update this master handoff before touching anything else. This update records the current approved checkpoint and the next task only.
+- Next step: ask the user to describe the post-final-boss scene and its desired sequence. Before implementation, inspect the current final-boss defeat/completion flow, assets, and build workflow. Preserve the approved opening cutscene and all other working gameplay.
+
+### Resume instructions
+1. Read this master file first.
+2. Verify the live `main` head, latest Android workflow run, and current `android-latest` APK asset before any code changes.
+3. Preserve the user-tested Stage One opening cutscene exactly as approved.
+4. Continue with the post-final-boss Woodlawn Park scene only after the user supplies its requirements.
+
