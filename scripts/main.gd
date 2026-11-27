@@ -58,6 +58,9 @@ const DAVY_HEALTH_BAR := preload("res://scripts/davy_boss_health_bar.gd")
 const DAVY_BOSS_MUSIC := preload("res://images/01 - Falling Apart (Prologue).ogg")
 const MATTIJUANA_BOSS_MUSIC := preload("res://images/10_Angel With The Scabbed Wings.mp3")
 const MATTIJUANA_INTRO_VOICE := preload("res://images/ElevenLabs_2026-11-25T21_47_21_Angry Rob_pvc_s50_sim75_v4.mp3")
+const MATTIJUANA_VICTORY_IMAGE := preload("res://images/Gemini_Generated_Image_d35sdld35sdld35s.jpeg")
+const MATTIJUANA_VICTORY_AUDIO := preload("res://images/junkie bitch.mp3")
+const MATTIJUANA_VICTORY_DIALOGUE := "Looks like you're the one who just got smoked like some cheap soggy wet sock weed, Mattijuana—I beat your ass so hard your mom's gonna feel the contact high. Now roll yourself up into a ditch and cry about it, bitch, 'cause the only thing that got lit today is your sorry fucking junkie ass you lil bitch!"
 const MATTIJUANA_VISUAL := preload("res://scripts/mattijuana_visual.gd")
 const MATTIJUANA_HUMAN_VISUAL := preload("res://scripts/mattijuana_human_visual.gd")
 const MATTIJUANA_JOINT_VISUAL := preload("res://scripts/mattijuana_joint_visual.gd")
@@ -4006,21 +4009,181 @@ func _update_mattijuana_boss(delta: float) -> void:
 
 
 func _finish_mattijuana_encounter() -> void:
+	if mattijuana_boss_state == "defeated":
+		return
 	mattijuana_boss_state = "defeated"
 	mattijuana_boss_active = false
 	mattijuana_defeated = true
-	if is_instance_valid(mattijuana_boss_visual):
-		mattijuana_boss_visual.call("play_animation", "attack", 3.0, false)
-	_show_notice("MATTIJUANA DEFEATED! THE PLAYGROUND IS CLEAR!")
 	if is_instance_valid(music_player):
 		music_player.stop()
-	_play_davy_victory_sting()
-	await get_tree().create_timer(1.5).timeout
 	if is_instance_valid(mattijuana_boss):
 		mattijuana_boss.queue_free()
 	mattijuana_boss = null
 	mattijuana_boss_visual = null
 	mattijuana_health_bar = null
+	await _show_mattijuana_victory_cutscene()
+	if game_started:
+		_return_to_mission_select()
+
+
+func _show_mattijuana_victory_cutscene() -> void:
+	var viewport_size := get_viewport_rect().size
+	var victory_layer := CanvasLayer.new()
+	victory_layer.name = "MattijuanaVictoryCutscene"
+	victory_layer.layer = 110
+	add_child(victory_layer)
+
+	var black_backdrop := ColorRect.new()
+	black_backdrop.name = "VictoryCutsceneBackdrop"
+	black_backdrop.color = Color("#02030a")
+	black_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	black_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	victory_layer.add_child(black_backdrop)
+
+	# Keep the supplied 1584x672 artwork unmodified and preserve its wide aspect.
+	var artwork := TextureRect.new()
+	artwork.name = "MattijuanaVictoryArtwork"
+	artwork.texture = MATTIJUANA_VICTORY_IMAGE
+	artwork.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	victory_layer.add_child(artwork)
+
+	# Night grading is a separate translucent layer; the source artwork is untouched.
+	var night_grade := ColorRect.new()
+	night_grade.name = "VictoryNightGrade"
+	night_grade.color = Color(0.018, 0.030, 0.072, 0.42)
+	night_grade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	night_grade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	victory_layer.add_child(night_grade)
+
+	# A distinct shader layer adds slow, soft, low-lying cool fog without blurring the art.
+	var fog_overlay := ColorRect.new()
+	fog_overlay.name = "VictoryDriftingFog"
+	fog_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	fog_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fog_shader := Shader.new()
+	fog_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_mix;
+void fragment() {
+	float t = TIME * 0.012;
+	float wave_a = sin(UV.x * 8.2 + t + sin(UV.y * 2.1 - t * 0.22) * 0.72);
+	float wave_b = sin(UV.x * 13.4 - t * 0.68 + sin(UV.y * 1.8 + t * 0.17) * 0.61);
+	float cloud = 0.54 + (wave_a * 0.62 + wave_b * 0.38) * 0.23;
+	float center = 0.78 + sin(UV.x * 2.0 + t * 0.27) * 0.035;
+	float lower_edge = smoothstep(0.48, 0.64, UV.y);
+	float upper_edge = 1.0 - smoothstep(center, center + 0.20, UV.y);
+	float fog_alpha = lower_edge * upper_edge * mix(0.025, 0.16, smoothstep(0.20, 0.86, cloud));
+	COLOR = vec4(0.39, 0.47, 0.62, fog_alpha);
+}
+"""
+	var fog_material := ShaderMaterial.new()
+	fog_material.shader = fog_shader
+	fog_overlay.material = fog_material
+	victory_layer.add_child(fog_overlay)
+
+	# Separate ember and smoke particle layers sit in front of the fallen boss artwork.
+	var soft_particle := _make_title_particle_texture()
+	var ember_ramp := _make_title_particle_ramp(
+		Color(1.0, 0.82, 0.42, 0.92),
+		Color(1.0, 0.30, 0.045, 0.70),
+		Color(0.72, 0.08, 0.01, 0.0)
+	)
+	var embers := CPUParticles2D.new()
+	embers.name = "VictoryRisingEmbers"
+	embers.amount = 48
+	embers.lifetime = 3.4
+	embers.preprocess = 2.0
+	embers.emitting = true
+	embers.local_coords = false
+	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	embers.emission_rect_extents = Vector2(viewport_size.x * 0.40, viewport_size.y * 0.10)
+	embers.direction = Vector2(-0.10, -1.0)
+	embers.spread = 34.0
+	embers.gravity = Vector2(2.0, -8.0)
+	embers.initial_velocity_min = 10.0
+	embers.initial_velocity_max = 30.0
+	embers.angular_velocity_min = -34.0
+	embers.angular_velocity_max = 34.0
+	embers.scale_amount_min = 0.20
+	embers.scale_amount_max = 0.72
+	embers.color = Color(1.0, 0.60, 0.20, 1.0)
+	embers.color_ramp = ember_ramp
+	embers.texture = soft_particle
+	embers.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	embers.position = Vector2(viewport_size.x * 0.50, viewport_size.y * 0.82)
+	embers.z_index = 20
+	victory_layer.add_child(embers)
+
+	var smoke := CPUParticles2D.new()
+	smoke.name = "VictoryGroundSmoke"
+	smoke.amount = 18
+	smoke.lifetime = 7.0
+	smoke.preprocess = 2.5
+	smoke.emitting = true
+	smoke.local_coords = false
+	smoke.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	smoke.emission_rect_extents = Vector2(viewport_size.x * 0.43, viewport_size.y * 0.08)
+	smoke.direction = Vector2(1.0, -0.10)
+	smoke.spread = 22.0
+	smoke.gravity = Vector2(3.0, -1.2)
+	smoke.initial_velocity_min = 2.5
+	smoke.initial_velocity_max = 7.0
+	smoke.scale_amount_min = 0.85
+	smoke.scale_amount_max = 1.8
+	smoke.color = Color(0.48, 0.56, 0.70, 0.17)
+	smoke.texture = soft_particle
+	smoke.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	smoke.position = Vector2(viewport_size.x * 0.50, viewport_size.y * 0.87)
+	smoke.z_index = 18
+	victory_layer.add_child(smoke)
+
+	# Match the established boss-dialogue popup treatment at the top of the frame.
+	var panel := PanelContainer.new()
+	panel.name = "MattijuanaVictoryDialoguePanel"
+	panel.anchor_left = 0.055
+	panel.anchor_right = 0.945
+	panel.anchor_top = 0.025
+	panel.anchor_bottom = 0.315
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#07060b")
+	panel_style.border_color = Color("#b10e2d")
+	panel_style.set_border_width_all(3)
+	panel_style.set_corner_radius_all(4)
+	panel_style.shadow_color = Color(0.82, 0.0, 0.12, 0.72)
+	panel_style.shadow_size = 16
+	panel.add_theme_stylebox_override("panel", panel_style)
+	victory_layer.add_child(panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 7)
+	margin.add_theme_constant_override("margin_bottom", 7)
+	panel.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 4)
+	margin.add_child(content)
+	var heading := _make_hud_label("MATTIJUANA DEFEATED", Vector2.ZERO, 17)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_color_override("font_color", Color("#ffffff"))
+	content.add_child(heading)
+	var dialogue := _make_hud_label(MATTIJUANA_VICTORY_DIALOGUE, Vector2.ZERO, 12)
+	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(dialogue)
+
+	var victory_voice := AudioStreamPlayer.new()
+	victory_voice.name = "MattijuanaVictoryVoice"
+	victory_voice.stream = MATTIJUANA_VICTORY_AUDIO
+	victory_voice.volume_db = 0.0
+	victory_layer.add_child(victory_voice)
+	victory_voice.play()
+	await victory_voice.finished
+	if is_instance_valid(victory_layer):
+		victory_layer.queue_free()
 
 
 func _show_mattijuana_intro() -> void:
