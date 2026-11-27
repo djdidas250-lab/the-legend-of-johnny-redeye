@@ -104,8 +104,19 @@ func _ready() -> void:
 	if not _check(intro_layer.find_child("IntroAtmosphericHaze", true, false) != null and intro_layer.find_child("IntroPracticalLightSpill", true, false) != null and intro_layer.find_child("TitleRisingEmbers", true, false) != null and intro_layer.find_child("TitleDriftingSmoke", true, false) != null, "Cinematic intro must carry over the title screen's haze, light spill, embers and smoke."): return
 	game.call("_finish_intro_sequence")
 	await get_tree().create_timer(0.55).timeout
+	var stage_select: CanvasLayer = game.get("stage_select_layer")
+	if not _check(stage_select != null and game.get("map_layer") == null and not bool(game.get("game_started")) and game.get("intro_layer") == null, "New Game must open Stage Select after the cinematic intro finishes."): return
+	var stage_art := stage_select.find_child("StageSelectArtwork", true, false) as TextureRect
+	var stage_heading := stage_select.find_child("StageSelectHeading", true, false) as Label
+	var stage_panel := stage_select.find_child("StageSelectPanel", true, false) as PanelContainer
+	var stage_button := stage_select.find_child("WoodlawnSuburbsStageButton", true, false) as Button
+	if not _check(stage_art != null and stage_art.texture.resource_path == "res://images/stage select screen.jpeg" and stage_art.stretch_mode == TextureRect.STRETCH_SCALE, "Stage Select must show the supplied panorama at its preserved aspect ratio."): return
+	if not _check(stage_heading != null and stage_heading.text == "STAGE SELECT" and stage_panel != null and stage_button != null and stage_button.text == "WOODLAWN SUBURBS", "Stage Select must show the pulsing heading and only the currently available Woodlawn Suburbs stage."): return
+	if not _check(stage_select.find_child("StageSelectPracticalLighting", true, false) != null and stage_select.find_child("StageSelectAtmosphericFog", true, false) != null and stage_select.find_child("StageSelectRisingEmbers", true, false) != null and stage_select.find_child("StageSelectDriftingSmoke", true, false) != null, "Stage Select must include separate practical lighting, animated fog, embers and smoke layers."): return
+	game.call("_on_stage_selected", "woodlawn_suburbs")
+	await get_tree().process_frame
 	var map_layer: CanvasLayer = game.get("map_layer")
-	if not _check(map_layer != null and not bool(game.get("game_started")) and game.get("intro_layer") == null, "New Game must open Mission Select after the cinematic intro finishes."): return
+	if not _check(map_layer != null and game.get("stage_select_layer") == null and not bool(game.get("game_started")), "Selecting Woodlawn Suburbs must open the existing Mission Select map."): return
 	var map_art := map_layer.get_child(0) as TextureRect
 	if not _check(map_art != null and map_art.texture.resource_path == "res://images/Gemini_Generated_Image_3urpcr3urpcr3urp.jpeg", "New Mission Select artwork missing."): return
 	if not _check(map_art.stretch_mode == TextureRect.STRETCH_SCALE and map_art.anchor_left == 0.0 and map_art.anchor_top == 0.0 and map_art.anchor_right == 1.0 and map_art.anchor_bottom == 1.0, "Mission artwork must fill widescreen without cropping."): return
