@@ -2962,6 +2962,11 @@ func _physics_process(delta: float) -> void:
 	_update_brick_coke_pickup()
 	_update_slingshot_projectiles(delta)
 	_update_rivals(delta)
+	# Fail-safe the final encounter handoff: any route that clears the last
+	# playground rival must start Matt-ijuana, even if it bypassed the normal
+	# punch/projectile defeat callback.
+	if current_street == "WOODLAWN PARK PLAYGROUND" and mattijuana_boss_state == "waiting" and rivals.is_empty():
+		_maybe_begin_mattijuana_entrance()
 	_update_davy_boss(delta)
 	_update_mattijuana_boss(delta)
 	_update_location()
