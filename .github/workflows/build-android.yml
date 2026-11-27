@@ -117,6 +117,38 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
+
+      - name: Verify Woodlawn Park victory cutscene assets and audio handoff
+        run: |
+          set -euo pipefail
+          test -s "images/Gemini_Generated_Image_d35sdld35sdld35s.jpeg"
+          test -s "images/junkie bitch.mp3"
+          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "images/junkie bitch.mp3" | tee build/woodlawn-victory-audio-duration.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import re
+          image_path = Path("images/Gemini_Generated_Image_d35sdld35sdld35s.jpeg")
+          image = Image.open(image_path)
+          assert image.size == (1536, 652), image.size
+          source = Path("scripts/main.gd").read_text()
+          checks = [
+              'preload("res://images/Gemini_Generated_Image_d35sdld35sdld35s.jpeg")',
+              'preload("res://images/junkie bitch.mp3")',
+              'WOODLAWN_VICTORY_DIALOGUE := "Looks like you\'re the one who just got smoked like some cheap soggy wet sock weed, Mattijuana—I beat your ass so hard your mom\'s gonna feel the contact high. Now roll yourself up into a ditch and cry about it, bitch, \'cause the only thing that got lit today is your sorry fucking junkie ass you lil bitch!"',
+              'woodlawn_victory_audio_player.finished.connect(_on_woodlawn_victory_audio_finished, CONNECT_ONE_SHOT)',
+              'call_deferred("_return_to_mission_select")',
+              '_start_woodlawn_victory_cutscene()',
+          ]
+          missing = [item for item in checks if item not in source]
+          if missing:
+              raise SystemExit("Missing victory cutscene wiring: " + repr(missing))
+          assert "create_woodlawn_victory_material" in Path("scripts/environmental_atmosphere.gd").read_text()
+          print("WOODLAWN_VICTORY_IMAGE_SIZE=", image.size)
+          print("WOODLAWN_VICTORY_AUDIO_HANDOFF=finished_signal")
+          print("WOODLAWN_VICTORY_MISSION_SELECT_RETURN=verified")
+          PY
+
       - name: Extract supplied character sprite sheets
         run: |
           test -s Dorval_Extracted_Sprite_Sheets.zip
