@@ -1971,34 +1971,77 @@ func _start_woodlawn_victory_cutscene() -> void:
 	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	artwork.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	artwork.material = ENVIRONMENTAL_ATMOSPHERE.create_woodlawn_victory_material()
 	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	woodlawn_victory_layer.add_child(artwork)
 
-	# The defeated boss fills the lower centre/right of the supplied artwork.
+	# Match the game's established street-scene mist as an independent overlay.
+	var fog := ColorRect.new()
+	fog.name = "WoodlawnVictoryDriftingFog"
+	fog.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	fog.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fog.material = ENVIRONMENTAL_ATMOSPHERE.create_woodlawn_victory_fog_material()
+	woodlawn_victory_layer.add_child(fog)
+
+	# Map effects to the actual letterboxed artwork rectangle, not the full
+	# viewport, so the embers stay on the fallen boss when aspect ratios differ.
+	var viewport_size := get_viewport_rect().size
+	var source_size := Vector2(WOODLAWN_VICTORY_IMAGE.get_width(), WOODLAWN_VICTORY_IMAGE.get_height())
+	var fit_scale := minf(viewport_size.x / source_size.x, viewport_size.y / source_size.y)
+	var artwork_size := source_size * fit_scale
+	var artwork_origin := (viewport_size - artwork_size) * 0.5
+	var ember_ground := artwork_origin + Vector2(artwork_size.x * 0.665, artwork_size.y * 0.815)
+
+	# Small, persistent glowing fragments cluster around the boss's scorched
+	# outline rather than spreading uniformly across the whole foreground.
 	var embers := CPUParticles2D.new()
-	embers.name = "WoodlawnGroundEmbers"
-	embers.position = Vector2(get_viewport_rect().size.x * 0.64, get_viewport_rect().size.y * 0.79)
-	embers.amount = 72
-	embers.lifetime = 1.35
+	embers.name = "WoodlawnGroundEmberFragments"
+	embers.position = ember_ground
+	embers.amount = 46
+	embers.lifetime = 1.8
 	embers.preprocess = 1.0
 	embers.emitting = true
 	embers.local_coords = false
 	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	embers.emission_rect_extents = Vector2(get_viewport_rect().size.x * 0.19, get_viewport_rect().size.y * 0.055)
-	embers.direction = Vector2(-0.08, -1.0)
-	embers.spread = 32.0
-	embers.gravity = Vector2(0.0, -13.0)
-	embers.initial_velocity_min = 10.0
-	embers.initial_velocity_max = 42.0
-	embers.angular_velocity_min = -100.0
-	embers.angular_velocity_max = 100.0
-	embers.scale_amount_min = 0.45
-	embers.scale_amount_max = 1.35
-	embers.color = Color(1.0, 0.34, 0.045, 0.92)
+	embers.emission_rect_extents = Vector2(artwork_size.x * 0.165, artwork_size.y * 0.035)
+	embers.direction = Vector2(0.0, -1.0)
+	embers.spread = 78.0
+	embers.gravity = Vector2(0.0, -2.5)
+	embers.initial_velocity_min = 1.0
+	embers.initial_velocity_max = 8.0
+	embers.angular_velocity_min = -45.0
+	embers.angular_velocity_max = 45.0
+	embers.scale_amount_min = 0.35
+	embers.scale_amount_max = 1.15
+	embers.color = Color(1.0, 0.28, 0.025, 0.88)
 	embers.texture = _make_woodlawn_ember_texture()
 	embers.z_index = 5
 	woodlawn_victory_layer.add_child(embers)
+
+	# A lighter, faster second layer creates occasional sparks lifting off
+	# individual hot fragments, with a much smaller emission footprint.
+	var sparks := CPUParticles2D.new()
+	sparks.name = "WoodlawnRisingSparks"
+	sparks.position = ember_ground + Vector2(0.0, -artwork_size.y * 0.012)
+	sparks.amount = 18
+	sparks.lifetime = 1.15
+	sparks.preprocess = 0.8
+	sparks.emitting = true
+	sparks.local_coords = false
+	sparks.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	sparks.emission_rect_extents = Vector2(artwork_size.x * 0.13, artwork_size.y * 0.018)
+	sparks.direction = Vector2(-0.05, -1.0)
+	sparks.spread = 20.0
+	sparks.gravity = Vector2(0.0, -22.0)
+	sparks.initial_velocity_min = 16.0
+	sparks.initial_velocity_max = 48.0
+	sparks.angular_velocity_min = -35.0
+	sparks.angular_velocity_max = 35.0
+	sparks.scale_amount_min = 0.3
+	sparks.scale_amount_max = 0.8
+	sparks.color = Color(1.0, 0.62, 0.18, 0.96)
+	sparks.texture = _make_woodlawn_ember_texture()
+	sparks.z_index = 6
+	woodlawn_victory_layer.add_child(sparks)
 
 	var panel := PanelContainer.new()
 	panel.name = "WoodlawnVictoryDialoguePanel"
