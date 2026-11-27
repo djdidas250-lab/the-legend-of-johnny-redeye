@@ -4051,7 +4051,7 @@ func _show_mattijuana_victory_cutscene() -> void:
 	artwork.texture = MATTIJUANA_VICTORY_IMAGE
 	artwork.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	victory_layer.add_child(artwork)
 
