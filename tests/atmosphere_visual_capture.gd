@@ -30,7 +30,7 @@ func _run_visual_capture() -> void:
 		return
 
 	# Render the actual Stage One opening cutscene before gameplay and inspect
-	# the image, dialogue panel and localized blade glow in the captured frame.
+	# the image, voice playback and localized blade glow in the captured frame.
 	game.call("_show_stage_one_splash")
 	game.call("_start_stage_one_cutscene")
 	for _frame in range(5):
@@ -40,9 +40,10 @@ func _run_visual_capture() -> void:
 	var opening_audio := game.get("stage_one_cutscene_audio_player") as AudioStreamPlayer
 	var opening_art := opening_layer.get_node_or_null("StageOneCutsceneArtwork") as TextureRect if is_instance_valid(opening_layer) else null
 	var opening_material := opening_art.material as ShaderMaterial if opening_art != null else null
-	var opening_dialogue := opening_layer.find_child("StageOneCutsceneDialogue", true, false) as Label if is_instance_valid(opening_layer) else null
-	if opening_layer == null or opening_audio == null or not opening_audio.playing or opening_art == null or opening_material == null or not bool(opening_material.get_shader_parameter("sword_glow_enabled")) or opening_dialogue == null:
-		push_error("Stage One opening cutscene is missing its active audio, image, dialogue or sword glow.")
+	var opening_dialogue := opening_layer.find_child("StageOneCutsceneDialogue", true, false) if is_instance_valid(opening_layer) else null
+	var opening_dialogue_panel := opening_layer.find_child("StageOneCutsceneDialoguePanel", true, false) if is_instance_valid(opening_layer) else null
+	if opening_layer == null or opening_audio == null or not opening_audio.playing or opening_art == null or opening_material == null or not bool(opening_material.get_shader_parameter("sword_glow_enabled")) or opening_dialogue != null or opening_dialogue_panel != null:
+		push_error("Stage One opening cutscene must retain its active voice, image and sword glow without displaying dialogue text or a dialogue panel.")
 		quit(1)
 		return
 	var opening_frame := root.get_texture().get_image()
