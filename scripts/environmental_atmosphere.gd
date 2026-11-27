@@ -175,6 +175,36 @@ void fragment() {
     material.set_shader_parameter("sword_glow_enabled", sword_glow)
     return material
 
+
+static func create_woodlawn_victory_material() -> ShaderMaterial:
+	# Preserve the sunny park palette while adding restrained drifting haze.
+	var shader := Shader.new()
+	shader.code = """
+shader_type canvas_item;
+render_mode unshaded;
+void fragment() {
+	vec4 texel = texture(TEXTURE, UV);
+	vec3 source = texel.rgb;
+	float t = TIME * 0.010;
+	float wave_a = sin(UV.x * 9.0 + t + sin(UV.y * 2.4 - t * 0.19) * 0.82);
+	float wave_b = sin(UV.x * 14.0 - t * 0.62 + sin(UV.y * 1.7 + t * 0.14) * 0.68);
+	float cloud = 0.56 + (wave_a * 0.62 + wave_b * 0.38) * 0.22;
+	float center = 0.79 + sin(UV.x * 2.2 + t * 0.31) * 0.028;
+	float ground_edge = smoothstep(0.57, 0.67, UV.y);
+	float top_edge = 1.0 - smoothstep(center, center + 0.19, UV.y);
+	float haze = ground_edge * top_edge * mix(0.025, 0.075, smoothstep(0.2, 0.86, cloud));
+	float canopy_light = (1.0 - smoothstep(0.05, 0.48, UV.y)) * 0.025;
+	vec3 graded = source * vec3(0.99, 1.015, 0.98);
+	graded += vec3(0.075, 0.090, 0.060) * canopy_light;
+	graded = mix(graded, vec3(0.66, 0.73, 0.63), haze);
+	COLOR = vec4(graded, texel.a);
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	return material
+
+
 var _world_width := 960.0
 var _street_name := ""
 var _park_mode := false
