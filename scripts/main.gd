@@ -20,6 +20,7 @@ const INTRO_SLIDE_DURATION := INTRO_TRACK_DURATION / 5.0
 const INTRO_TRANSITION_DURATION := 1.18
 const TITLE_CLICK_VOLUME_DB := -2.0
 const MAP_IMAGE := preload("res://images/Gemini_Generated_Image_kglbemkglbemkglb.jpeg")
+const STAGE_SELECT_IMAGE := preload("res://images/stage select screen.jpeg")
 const MAP_CHECKPOINT_MARKER := preload("res://images/map_checkpoint_x.svg")
 const MAP_MUSIC := preload("res://images/28. Holy Sanctuary.wav")
 const STAGE_ONE_MUSIC := preload("res://images/7. Soldier.mp3")
@@ -95,6 +96,7 @@ var active_slot_unlocked_woodlawn_checkpoint := false
 var active_slot_unlocked_woodlawn_park_checkpoint := false
 var active_slot_area := "Newleaf Crescent"
 var save_slot_layer: CanvasLayer
+var stage_select_layer: CanvasLayer
 var overwrite_slot_pending := -1
 
 class IntroFlameSpinner extends Control:
@@ -1061,6 +1063,220 @@ func _finish_intro_sequence() -> void:
 		await fade.finished
 		intro_layer.queue_free()
 	intro_layer = null
+	_show_stage_select_screen()
+
+
+func _make_stage_select_font() -> SystemFont:
+	var display_font := SystemFont.new()
+	display_font.font_names = PackedStringArray(["Arial Black", "Roboto Condensed", "sans-serif-condensed", "DejaVu Sans"])
+	display_font.font_weight = 900
+	display_font.font_italic = true
+	return display_font
+
+func _show_stage_select_screen() -> void:
+	if is_instance_valid(stage_select_layer):
+		stage_select_layer.queue_free()
+	stage_select_layer = CanvasLayer.new()
+	stage_select_layer.name = "StageSelectLayer"
+	stage_select_layer.layer = 12
+	add_child(stage_select_layer)
+	if is_instance_valid(title_layer):
+		title_layer.queue_free()
+		title_layer = null
+	if is_instance_valid(map_layer):
+		map_layer.queue_free()
+		map_layer = null
+	if music_player != null:
+		music_player.stop()
+		music_player.stream = MAP_MUSIC
+		music_player.volume_db = -10.0
+		if not music_player.finished.is_connected(_loop_stage_select_music):
+			music_player.finished.connect(_loop_stage_select_music)
+		music_player.play()
+
+	var viewport_size := get_viewport_rect().size
+	var source_ratio := float(STAGE_SELECT_IMAGE.get_width()) / maxf(float(STAGE_SELECT_IMAGE.get_height()), 1.0)
+	var viewport_ratio := viewport_size.x / maxf(viewport_size.y, 1.0)
+	var art_size := viewport_size
+	if viewport_ratio < source_ratio:
+		art_size.y = viewport_size.x / source_ratio
+	else:
+		art_size.x = viewport_size.y * source_ratio
+	var art_position := (viewport_size - art_size) * 0.5
+
+	var artwork := TextureRect.new()
+	artwork.name = "StageSelectArtwork"
+	artwork.texture = STAGE_SELECT_IMAGE
+	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	artwork.stretch_mode = TextureRect.STRETCH_SCALE
+	artwork.position = art_position
+	artwork.size = art_size
+	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage_select_layer.add_child(artwork)
+
+	# Atmospheric light, fog, embers and menu graphics are independent overlays;
+	# the original background texture is never painted on or altered.
+	var atmosphere := ColorRect.new()
+	atmosphere.name = "StageSelectAtmosphericFog"
+	atmosphere.position = art_position
+	atmosphere.size = art_size
+	atmosphere.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fog_shader := Shader.new()
+	fog_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_mix;
+void fragment() {
+ vec2 uv = UV;
+ float t = TIME;
+ float drift = sin(uv.x * 8.0 - t * 0.035 + sin(uv.y * 7.0 + t * 0.02));
+ float river = exp(-pow((uv.y - (0.78 + sin(uv.x * 4.0 - t * 0.025) * 0.025)) * 12.0, 2.0));
+ float low = exp(-pow((uv.y - 0.96) * 13.0, 2.0));
+ float alpha = river * (0.025 + 0.025 * (0.5 + drift * 0.5)) + low * 0.035;
+ COLOR = vec4(vec3(0.66, 0.70, 0.76), alpha);
+}
+"""
+	var fog_material := ShaderMaterial.new()
+	fog_material.shader = fog_shader
+	atmosphere.material = fog_material
+	stage_select_layer.add_child(atmosphere)
+
+	var ember_texture := _make_title_particle_texture(32)
+	var ember_ramp := _make_title_particle_ramp(Color(1.0, 0.82, 0.40, 0.9), Color(1.0, 0.28, 0.045, 0.65), Color(0.65, 0.08, 0.01, 0.0))
+	var embers := CPUParticles2D.new()
+	embers.name = "StageSelectRisingEmbers"
+	embers.amount = 42
+	embers.lifetime = 4.0
+	embers.preprocess = 1.5
+	embers.emitting = true
+	embers.local_coords = false
+	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	embers.emission_rect_extents = Vector2(art_size.x * 0.45, art_size.y * 0.045)
+	embers.direction = Vector2(-0.08, -1.0)
+	embers.spread = 26.0
+	embers.gravity = Vector2(0.8, -3.5)
+	embers.initial_velocity_min = 6.0
+	embers.initial_velocity_max = 16.0
+	embers.scale_amount_min = 0.10
+	embers.scale_amount_max = 0.35
+	embers.color = Color(1.0, 0.55, 0.20, 0.82)
+	embers.color_ramp = ember_ramp
+	embers.texture = ember_texture
+	embers.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	embers.position = art_position + Vector2(art_size.x * 0.52, art_size.y * 0.84)
+	embers.z_index = 3
+	stage_select_layer.add_child(embers)
+
+	# Rough crimson brush stroke behind the title, matching the approved mockups.
+	var red_stroke := ColorRect.new()
+	red_stroke.name = "StageSelectCrimsonBrushStroke"
+	red_stroke.position = Vector2(viewport_size.x * 0.555, viewport_size.y * 0.205)
+	red_stroke.size = Vector2(viewport_size.x * 0.405, viewport_size.y * 0.105)
+	red_stroke.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	red_stroke.z_index = 4
+	var stroke_shader := Shader.new()
+	stroke_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_mix;
+void fragment() {
+ vec2 uv = UV;
+ float rough = 0.5 + 0.22 * sin(uv.x * 91.0) + 0.13 * sin(uv.x * 173.0 + uv.y * 19.0);
+ float top = smoothstep(0.03, 0.25, uv.y + (rough - 0.5) * 0.20);
+ float bottom = 1.0 - smoothstep(0.72, 0.98, uv.y - (rough - 0.5) * 0.22);
+ float ends = smoothstep(0.0, 0.09, uv.x) * (1.0 - smoothstep(0.88, 1.0, uv.x));
+ float streaks = 0.72 + 0.28 * sin(uv.x * 145.0 + uv.y * 17.0);
+ float alpha = top * bottom * ends * streaks * 0.76;
+ COLOR = vec4(vec3(0.68, 0.012, 0.055), alpha);
+}
+"""
+	var stroke_material := ShaderMaterial.new()
+	stroke_material.shader = stroke_shader
+	red_stroke.material = stroke_material
+	stage_select_layer.add_child(red_stroke)
+
+	var display_font := _make_stage_select_font()
+	var heading := Label.new()
+	heading.name = "StageSelectHeading"
+	heading.text = "STAGE SELECT"
+	heading.position = Vector2(viewport_size.x * 0.535, viewport_size.y * 0.145)
+	heading.size = Vector2(viewport_size.x * 0.425, viewport_size.y * 0.19)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	heading.add_theme_font_override("font", display_font)
+	heading.add_theme_font_size_override("font_size", clampi(int(viewport_size.y * 0.082), 34, 76))
+	heading.add_theme_color_override("font_color", Color("#fffaf6"))
+	heading.add_theme_color_override("font_outline_color", Color("#1a090e"))
+	heading.add_theme_constant_override("outline_size", 3)
+	heading.add_theme_color_override("font_shadow_color", Color(0.86, 0.025, 0.09, 0.95))
+	heading.add_theme_constant_override("shadow_offset_x", 3)
+	heading.add_theme_constant_override("shadow_offset_y", 4)
+	heading.add_theme_constant_override("shadow_outline_size", 8)
+	heading.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	heading.z_index = 5
+	stage_select_layer.add_child(heading)
+
+	var subtitle_glow := ColorRect.new()
+	subtitle_glow.name = "StageSelectSubtitleGlow"
+	subtitle_glow.position = Vector2(viewport_size.x * 0.625, viewport_size.y * 0.435)
+	subtitle_glow.size = Vector2(viewport_size.x * 0.335, viewport_size.y * 0.035)
+	subtitle_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	subtitle_glow.z_index = 5
+	var glow_shader := Shader.new()
+	glow_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_add;
+void fragment() {
+ vec2 p = UV - vec2(0.5);
+ float core = exp(-pow(p.x * 5.0, 2.0) - pow(p.y * 19.0, 2.0));
+ float halo = exp(-pow(p.x * 3.0, 2.0) - pow(p.y * 5.0, 2.0));
+ float pulse = 0.72 + 0.28 * sin(TIME * 2.2);
+ COLOR = vec4(vec3(0.84, 0.90, 1.0), (core * 0.58 + halo * 0.26) * pulse);
+}
+"""
+	var glow_material := ShaderMaterial.new()
+	glow_material.shader = glow_shader
+	subtitle_glow.material = glow_material
+	stage_select_layer.add_child(subtitle_glow)
+
+	var stage_button := Button.new()
+	stage_button.name = "WoodlawnSuburbsStageButton"
+	stage_button.text = "STAGE 1 – WOODLAWN SUBURBS"
+	stage_button.position = Vector2(viewport_size.x * 0.525, viewport_size.y * 0.335)
+	stage_button.size = Vector2(viewport_size.x * 0.44, viewport_size.y * 0.13)
+	stage_button.flat = true
+	stage_button.focus_mode = Control.FOCUS_NONE
+	stage_button.add_theme_font_override("font", display_font)
+	stage_button.add_theme_font_size_override("font_size", clampi(int(viewport_size.y * 0.037), 17, 36))
+	stage_button.add_theme_color_override("font_color", Color("#fffaf6"))
+	stage_button.add_theme_color_override("font_hover_color", Color.WHITE)
+	stage_button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	stage_button.add_theme_color_override("font_outline_color", Color("#16090d"))
+	stage_button.add_theme_constant_override("outline_size", 2)
+	stage_button.add_theme_color_override("font_shadow_color", Color(0.88, 0.94, 1.0, 0.95))
+	stage_button.add_theme_constant_override("shadow_offset_x", 0)
+	stage_button.add_theme_constant_override("shadow_offset_y", 0)
+	stage_button.add_theme_constant_override("shadow_outline_size", 8)
+	stage_button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	stage_button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+	stage_button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+	stage_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	stage_button.z_index = 6
+	stage_select_layer.add_child(stage_button)
+	stage_button.pressed.connect(_on_stage_selected.bind("woodlawn_suburbs"))
+	var stage_pulse := create_tween().set_loops()
+	stage_pulse.tween_property(stage_button, "modulate", Color(1.0, 1.0, 1.0, 0.70), 1.25)
+	stage_pulse.tween_property(stage_button, "modulate", Color.WHITE, 1.25)
+
+func _loop_stage_select_music() -> void:
+	if is_instance_valid(stage_select_layer) and music_player != null:
+		music_player.play()
+
+func _on_stage_selected(stage_id: String) -> void:
+	if not is_instance_valid(stage_select_layer):
+		return
+	if stage_id != "woodlawn_suburbs":
+		return
+	stage_select_layer.queue_free()
+	stage_select_layer = null
 	_show_map_screen()
 
 
@@ -1408,6 +1624,9 @@ func _show_map_screen() -> void:
 	if title_layer != null:
 		title_layer.queue_free()
 		title_layer = null
+	if is_instance_valid(stage_select_layer):
+		stage_select_layer.queue_free()
+		stage_select_layer = null
 	if music_player != null:
 		music_player.stop()
 		music_player.stream = MAP_MUSIC
