@@ -22,6 +22,18 @@ jobs:
       - name: Check out game
         uses: actions/checkout@v4
 
+      - name: Verify Stage Select panorama asset
+        run: |
+          test -s "images/stage select screen.jpeg"
+          python3 -m pip install --user Pillow
+          python3 - <<'PY'
+          from PIL import Image
+          image = Image.open("images/stage select screen.jpeg")
+          assert image.width >= 1800 and image.height >= 600, image.size
+          assert image.width / image.height >= 2.4, image.size
+          print("Verified Stage Select panorama:", image.size)
+          PY
+
       - name: Extract Stage One opening cutscene assets
         run: |
           test -s "images/cutscene stage 1.zip"
