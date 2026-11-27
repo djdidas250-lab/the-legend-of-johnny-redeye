@@ -550,3 +550,42 @@ Required appearance:
 - Keep these refs distinct. For Stage Select implementation work, start from the verified `build/stage-select-menu` feature branch and preserve its working New Game / Continue routing. Do not silently switch to `main` and lose the feature branch changes.
 - Before any code changes, re-check the current branch head and latest workflow result. Keep changes limited to the Stage Select background and separately layered typography/glow requested above; do not touch the opening/victory cinematics, dialogue panels, boss sequences, gameplay, saves, maps or other systems.
 
+## 21. Authoritative development baseline — Build #354 (2026-11-27)
+
+**This section supersedes earlier "current checkpoint" instructions in sections 9, 10, 19 and 20 wherever they conflict. The user explicitly selected Build #354 as the version from which all future changes must proceed.**
+
+### Selected baseline APK and source
+
+- **Android build:** #354.
+- **GitHub Actions run ID:** `46082310895`.
+- **Workflow result:** completed / success; the `Export Android APK` job completed successfully.
+- **Exact source commit:** `4b46e2b9d8c045b1a65e03ca586a8e3792f489f3`.
+- **Source branch used for this fresh rebuild:** `build/rebuild-4b46e2b`.
+- **Original feature branch containing the source commit:** `feature/mission-select-map-replacement`.
+- **Workflow run:** https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/actions/runs/46082310895
+- The rebuild made no game-code or asset changes; it produced a fresh APK from the exact selected source commit.
+- **APK asset:** `TheLegendOfJohnnyRedeye.apk`.
+- **APK size:** 149,986,826 bytes.
+- **APK SHA-256:** `6fba6d59fcdacc0fd42525b35be83adf43f643ae4d9fadc78a8aae867094506f`.
+- **Rolling release URL:** https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/releases/download/android-latest/TheLegendOfJohnnyRedeye.apk
+- The APK was verified against Build #354's successful run and release metadata at the time it was provided. Because `android-latest` is a rolling release, re-check the release commit and asset before reusing this URL.
+- The user explicitly confirmed that Build #354 is the version to use as the development starting point going forward. Do not default to Build #326, #351, or another older checkpoint.
+
+### Features that must be present in this baseline
+
+1. **Updated Mission Select screen artwork:** source commit `4b46e2b` updates the Mission Select art smoke-test expectation to `res://images/Gemini_Generated_Image_kglbemkglbemkglb.jpeg`, replacing the previous `3urpcr3urpcr3urp` image expectation. The mission-select replacement implementation and its art are part of this source history.
+2. **Updated Matt-ijuana victory screen:** the selected source history includes the updated victory artwork and the restored Matt-ijuana victory presentation. Preserve the artwork, dialogue popup, nighttime atmosphere, audio and victory-to-phone-cinematic sequence already in this baseline.
+3. Preserve all existing Stage One gameplay, maps, boss phases/animations, music, sound effects, pickup behaviour, save progression and cinematic sequences.
+
+### Stage Select work going forward — correct branching strategy
+
+- The user wants to add the Stage Select screen **on top of Build #354**, not switch to the older Stage Select implementation branch as the new baseline.
+- Build #351 on `build/stage-select-menu` (`b2914a9088466143ebacba0041ac0b2df23e4c7f`) is historical reference material for the previously implemented Stage Select navigation and visual direction only. It is not the source baseline for new work because it predates the selected Build #354 Mission Select/victory-screen source.
+- Before implementing Stage Select, inspect and compare the Build #351 Stage Select changes against the Build #354 source. Port/re-implement only the required Stage Select functionality onto a new working branch created from exact commit `4b46e2b9d8c045b1a65e03ca586a8e3792f489f3`. Do not merge or reset Build #354 onto the older #351 branch in a way that drops the updated Mission Select or Matt-ijuana victory work.
+- Preserve the previously user-approved Stage Select navigation intent: New Game → opening intro → Stage Select → choose Woodlawn Suburbs → existing Stage One Mission Select map; Continue Game → select save → open that save's corresponding Mission Select map directly, bypassing Stage Select.
+- Preserve the approved minimalist, unboxed Stage Select visual direction recorded in section 20, subject to checking it against the selected baseline and the user's latest instructions.
+- Any future Stage Select APK must be built from a descendant of Build #354's exact source commit, and its workflow run must be green before an APK is provided. Confirm the resulting APK still contains both updated screens.
+
+### Resume instruction
+
+Read this master file first. **Start all future implementation from Build #354 source commit `4b46e2b9d8c045b1a65e03ca586a8e3792f489f3` (or a verified descendant), not from Build #326 or the older Build #351 Stage Select branch.** Build #354 is the user's selected authoritative base for adding Stage Select while retaining the updated Mission Select and Matt-ijuana victory screens.
