@@ -2067,11 +2067,11 @@ func _start_woodlawn_victory_cutscene() -> void:
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 2)
 	margin.add_child(content)
-	var heading := _make_hud_label("WOODLAWN PARK — VICTORY", Vector2.ZERO, 15)
+	var heading := _make_hud_label("WOODLAWN PARK — VICTORY", Vector2.ZERO, 17)
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.add_theme_color_override("font_color", Color("#ffffff"))
 	content.add_child(heading)
-	var dialogue := _make_hud_label(WOODLAWN_VICTORY_DIALOGUE, Vector2.ZERO, 11)
+	var dialogue := _make_hud_label(WOODLAWN_VICTORY_DIALOGUE, Vector2.ZERO, 12)
 	dialogue.name = "WoodlawnVictoryDialogue"
 	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
