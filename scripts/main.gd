@@ -38,11 +38,9 @@ const ITEM_COLLECTED_SOUND := preload("res://images/alexis_gaming_cam-item-colle
 const STAGE_ONE_IMAGE := preload("res://images/image_a06e5bc7.jpg")
 const STAGE_ONE_CUTSCENE_IMAGE := preload("res://images/stage1_cutscene/cutscene stage 1.jpeg")
 const STAGE_ONE_CUTSCENE_AUDIO := preload("res://images/stage1_cutscene/John game intro.mp3")
-const STAGE_ONE_CUTSCENE_DIALOGUE := "Welland's a sweaty demon orgy and the big top's burning—so clench up, cocksuckers, because I'm turning this whole circus into a fucking bloodbath."
 const POST_BOSS_PHONE_SCENE_JOHNNY := preload("res://images/john_gil_cinematic/scene 1.jpeg")
 const MATTIJUANA_VICTORY_IMAGE := preload("res://images/Gemini_Generated_Image_d35sdld35sdld35s.jpeg")
 const MATTIJUANA_VICTORY_AUDIO := preload("res://images/junkie bitch.mp3")
-const MATTIJUANA_VICTORY_DIALOGUE := "Looks like you're the one who just got smoked like some cheap soggy wet sock weed, Mattijuana—I beat your ass so hard your mom's gonna feel the contact high. Now roll yourself up into a ditch and cry about it, bitch, 'cause the only thing that got lit today is your sorry fucking junkie ass you lil bitch!"
 const POST_BOSS_PHONE_SCENE_SPLIT := preload("res://images/john_gil_cinematic/scene 2.jpeg")
 const POST_BOSS_PHONE_RING := preload("res://images/john_gil_cinematic/1 ringing phone.mp3")
 const POST_BOSS_PHONE_GIL_ANSWER := preload("res://images/john_gil_cinematic/2 Gil phone answer.mp3")
@@ -1867,50 +1865,12 @@ func _start_stage_one_cutscene() -> void:
 	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage_one_cutscene_layer.add_child(artwork)
 
-	# Match the top-of-screen dialogue treatment used by the boss encounters.
-	var panel := PanelContainer.new()
-	panel.name = "StageOneCutsceneDialoguePanel"
-	panel.anchor_left = 0.06
-	panel.anchor_right = 0.94
-	panel.anchor_top = 0.025
-	panel.anchor_bottom = 0.225
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#07060b")
-	style.border_color = Color("#b10e2d")
-	style.set_border_width_all(3)
-	style.set_corner_radius_all(4)
-	style.shadow_color = Color(0.82, 0.0, 0.12, 0.72)
-	style.shadow_size = 16
-	panel.add_theme_stylebox_override("panel", style)
-	stage_one_cutscene_layer.add_child(panel)
-
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
-	panel.add_child(margin)
-
-	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 5)
-	margin.add_child(content)
-
-	var heading := _make_hud_label("STAGE 1 — OPENING CUTSCENE", Vector2.ZERO, 17)
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	heading.add_theme_color_override("font_color", Color("#ffffff"))
-	content.add_child(heading)
-
-	var dialogue := _make_hud_label(STAGE_ONE_CUTSCENE_DIALOGUE, Vector2.ZERO, 13)
-	dialogue.name = "StageOneCutsceneDialogue"
-	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content.add_child(dialogue)
-
+	# Spoken narration remains audible without an on-screen dialogue panel.
 	stage_one_cutscene_audio_player = AudioStreamPlayer.new()
 	stage_one_cutscene_audio_player.name = "StageOneCutsceneAudio"
 	stage_one_cutscene_audio_player.stream = STAGE_ONE_CUTSCENE_AUDIO
 	stage_one_cutscene_audio_player.volume_db = 0.0
-	stage_one_cutscene_layer.add_child(stage_one_cutscene_audio_player)
+	add_child(stage_one_cutscene_audio_player)
 	stage_one_cutscene_audio_player.finished.connect(_on_stage_one_cutscene_audio_finished, CONNECT_ONE_SHOT)
 
 	# Defer audio start until the image and dialogue nodes have entered the
@@ -1932,6 +1892,8 @@ func _on_stage_one_cutscene_audio_finished() -> void:
 	if is_instance_valid(stage_one_cutscene_layer):
 		stage_one_cutscene_layer.queue_free()
 	stage_one_cutscene_layer = null
+	if is_instance_valid(stage_one_cutscene_audio_player):
+		stage_one_cutscene_audio_player.queue_free()
 	stage_one_cutscene_audio_player = null
 	_begin_stage_one_mission()
 
@@ -2461,42 +2423,8 @@ func _davy_boss_visual_animation(name: String, fps: float, loop: bool) -> void:
 
 
 func _show_davy_boss_intro() -> void:
-	if davy_boss_dialogue_layer != null and is_instance_valid(davy_boss_dialogue_layer):
-		davy_boss_dialogue_layer.queue_free()
-	davy_boss_dialogue_layer = CanvasLayer.new()
-	davy_boss_dialogue_layer.layer = 30
-	add_child(davy_boss_dialogue_layer)
-	var panel := PanelContainer.new()
-	panel.anchor_left = 0.10
-	panel.anchor_right = 0.90
-	panel.anchor_top = 0.035
-	panel.anchor_bottom = 0.245
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#07060b")
-	style.border_color = Color("#b10e2d")
-	style.set_border_width_all(3)
-	style.set_corner_radius_all(4)
-	style.shadow_color = Color(0.82, 0.0, 0.12, 0.72)
-	style.shadow_size = 16
-	panel.add_theme_stylebox_override("panel", style)
-	davy_boss_dialogue_layer.add_child(panel)
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_top", 5)
-	margin.add_theme_constant_override("margin_bottom", 5)
-	panel.add_child(margin)
-	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 4)
-	margin.add_child(content)
-	var heading := _make_hud_label("MINI BOSS FIGHT  —  DAVY JONES", Vector2.ZERO, 16)
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	heading.add_theme_color_override("font_color", Color("#ffffff"))
-	content.add_child(heading)
-	var dialogue := _make_hud_label("Ha ha ha, did you really think you could just come into my neighborhood and come and go as you please? You'll have to defeat me first before you can access the secret pathway", Vector2.ZERO, 12)
-	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content.add_child(dialogue)
+	# Keep the original voice timing and music ducking, but show no dialogue UI.
+	davy_boss_dialogue_layer = null
 	await get_tree().create_timer(0.45).timeout
 	if is_instance_valid(davy_voice_player):
 		if is_instance_valid(music_player) and music_player.playing:
@@ -3853,6 +3781,8 @@ func _begin_mattijuana_entrance() -> void:
 	# Keep the intro panel and ducked boss music tied to the actual voice playback.
 	if is_instance_valid(mattijuana_voice_player):
 		await mattijuana_voice_player.finished
+		mattijuana_voice_player.queue_free()
+		mattijuana_voice_player = null
 	if is_instance_valid(mattijuana_dialogue_layer):
 		mattijuana_dialogue_layer.queue_free()
 		mattijuana_dialogue_layer = null
@@ -4140,41 +4070,7 @@ void fragment() {
 	smoke.z_index = 18
 	victory_layer.add_child(smoke)
 
-	# Match the established boss-dialogue popup treatment at the top of the frame.
-	var panel := PanelContainer.new()
-	panel.name = "MattijuanaVictoryDialoguePanel"
-	panel.anchor_left = 0.055
-	panel.anchor_right = 0.945
-	panel.anchor_top = 0.025
-	panel.anchor_bottom = 0.315
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color("#07060b")
-	panel_style.border_color = Color("#b10e2d")
-	panel_style.set_border_width_all(3)
-	panel_style.set_corner_radius_all(4)
-	panel_style.shadow_color = Color(0.82, 0.0, 0.12, 0.72)
-	panel_style.shadow_size = 16
-	panel.add_theme_stylebox_override("panel", panel_style)
-	victory_layer.add_child(panel)
-
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_top", 7)
-	margin.add_theme_constant_override("margin_bottom", 7)
-	panel.add_child(margin)
-	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 4)
-	margin.add_child(content)
-	var heading := _make_hud_label("MATTIJUANA DEFEATED", Vector2.ZERO, 17)
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	heading.add_theme_color_override("font_color", Color("#ffffff"))
-	content.add_child(heading)
-	var dialogue := _make_hud_label(MATTIJUANA_VICTORY_DIALOGUE, Vector2.ZERO, 12)
-	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content.add_child(dialogue)
-
+	# The victory taunt is delivered through voice only; keep the artwork and atmosphere unobstructed.
 	var victory_voice := AudioStreamPlayer.new()
 	victory_voice.name = "MattijuanaVictoryVoice"
 	victory_voice.stream = MATTIJUANA_VICTORY_AUDIO
@@ -4390,50 +4286,17 @@ func _make_phone_cinematic_particles(
 
 
 func _show_mattijuana_intro() -> void:
+	# Play the boss introduction voice directly, without a dialogue panel or text.
 	if is_instance_valid(mattijuana_dialogue_layer):
 		mattijuana_dialogue_layer.queue_free()
-	mattijuana_dialogue_layer = CanvasLayer.new()
-	mattijuana_dialogue_layer.layer = 30
-	add_child(mattijuana_dialogue_layer)
-	var panel := PanelContainer.new()
-	panel.anchor_left = 0.06
-	panel.anchor_right = 0.94
-	panel.anchor_top = 0.035
-	panel.anchor_bottom = 0.27
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#07060b")
-	style.border_color = Color("#b10e2d")
-	style.set_border_width_all(3)
-	style.set_corner_radius_all(4)
-	style.shadow_color = Color(0.82, 0.0, 0.12, 0.72)
-	style.shadow_size = 16
-	panel.add_theme_stylebox_override("panel", style)
-	mattijuana_dialogue_layer.add_child(panel)
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
-	panel.add_child(margin)
-	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 5)
-	margin.add_child(content)
-	var heading := _make_hud_label("MATTIJUANA", Vector2.ZERO, 19)
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	heading.add_theme_color_override("font_color", Color("#ffffff"))
-	content.add_child(heading)
-	var dialogue := _make_hud_label("You stepped into the wrong damn park, motherfucker—I’m gonna smoke your ass like a cheap dime bag and leave your bitch-ass swinging from the monkey bars!", Vector2.ZERO, 14)
-	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content.add_child(dialogue)
-	# Duck the boss music for the spoken line, matching the Davy Jones intro.
+	mattijuana_dialogue_layer = null
 	if is_instance_valid(music_player) and music_player.playing:
 		music_player.volume_db = DAVY_DIALOGUE_MUSIC_VOLUME_DB
-	# The dialogue panel is removed as soon as this voice player's finished signal fires.
 	mattijuana_voice_player = AudioStreamPlayer.new()
+	mattijuana_voice_player.name = "MattijuanaIntroVoice"
 	mattijuana_voice_player.stream = MATTIJUANA_INTRO_VOICE
 	mattijuana_voice_player.volume_db = 0.0
-	mattijuana_dialogue_layer.add_child(mattijuana_voice_player)
+	add_child(mattijuana_voice_player)
 	mattijuana_voice_player.play()
 
 
