@@ -2959,6 +2959,7 @@ func _physics_process(delta: float) -> void:
 	_update_brick_coke_pickup()
 	_update_slingshot_projectiles(delta)
 	_update_rivals(delta)
+	_ensure_mattijuana_boss_sequence()
 	_update_davy_boss(delta)
 	_update_mattijuana_boss(delta)
 	_update_location()
@@ -3802,6 +3803,20 @@ func _create_mattijuana_waiting() -> void:
 	mattijuana_health = 10
 	mattijuana_phase = 1
 	mattijuana_attack_cooldown = 1.4
+
+
+func _ensure_mattijuana_boss_sequence() -> void:
+	# Fail-safe for the Woodlawn finale: keep the waiting boss instantiated,
+	# and start the entrance as soon as the final regular rival is gone.
+	# This is deliberately idempotent and cannot restart a defeated encounter.
+	if current_street != "WOODLAWN PARK PLAYGROUND" or mattijuana_defeated:
+		return
+	if mattijuana_boss_state == "inactive":
+		_create_mattijuana_waiting()
+	elif mattijuana_boss_state == "waiting" and not is_instance_valid(mattijuana_boss):
+		_create_mattijuana_waiting()
+	if mattijuana_boss_state == "waiting" and is_instance_valid(mattijuana_boss) and rivals.is_empty():
+		_maybe_begin_mattijuana_entrance()
 
 
 func _maybe_begin_mattijuana_entrance() -> void:
