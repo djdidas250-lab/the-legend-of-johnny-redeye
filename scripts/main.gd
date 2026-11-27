@@ -4046,6 +4046,16 @@ func _play_post_boss_phone_cinematic() -> void:
 	post_boss_phone_cinematic_layer.layer = 40
 	add_child(post_boss_phone_cinematic_layer)
 
+	# Fade the actual victory image to black before revealing the new scene.
+	var fade := ColorRect.new()
+	fade.name = "PhoneCinematicFade"
+	fade.color = Color(0.0, 0.0, 0.0, 0.0)
+	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fade.z_index = 100
+	post_boss_phone_cinematic_layer.add_child(fade)
+	await _fade_phone_cinematic(fade, 1.0, 0.65)
+
 	var artwork := TextureRect.new()
 	artwork.name = "PhoneCinematicArtwork"
 	artwork.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -4065,14 +4075,6 @@ func _play_post_boss_phone_cinematic() -> void:
 		18.0, 42.0, 0.55, 1.05, 6.5
 	)
 	post_boss_phone_cinematic_layer.add_child(carnival_embers)
-
-	var fade := ColorRect.new()
-	fade.name = "PhoneCinematicFade"
-	fade.color = Color(0.0, 0.0, 0.0, 1.0)
-	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	fade.z_index = 100
-	post_boss_phone_cinematic_layer.add_child(fade)
 	await _fade_phone_cinematic(fade, 0.0, 0.8)
 
 	# The first supplied image stays on screen for the complete ringing track.
