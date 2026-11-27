@@ -319,3 +319,53 @@ The original next-feature note after build #271 was to create a post-final-boss 
 2. Verify the live GitHub refs and release metadata. Use `rollback/verified-boss-defeat-cutscene-build-295` as the source branch for any future work on this feature.
 3. Preserve Build #295's working Matt-ijuana encounter and boss-defeat cutscene.
 4. Make no changes until the user explicitly requests the next task. If the user later resumes the visual refinement, change only the artwork's left/right fill; leave the dialogue popup untouched.
+
+## 17. User-approved victory artwork full-screen fit — Build #307 (2026-11-27)
+
+**This section supersedes the remaining visual-request and “do not implement” notes in sections 9, 10, and 16. The requested image-fit change is complete and the user has tested and approved it.**
+
+### User request and confirmation
+
+- The user explicitly chose to retain the existing Woodlawn Park / Matt-ijuana boss-defeat artwork; no replacement image was supplied or used.
+- The only requested visual change was to remove the black/dark vertical bars at the left and right edges by fitting the existing artwork to the full game viewport.
+- The dialogue popup/context box was to remain exactly as it was on the other cutscene screens. Its dimensions, position, typography, padding, styling and text layout were not to be changed.
+- The implementation uses proportional cover fitting on the actual boss-defeat artwork node, so the viewport is covered without distorting the image. Any crop is a consequence of cover fitting; do not change this without a new request.
+- The user installed and tested the resulting APK and explicitly confirmed: **“Okay, perfect. Looks great.”**
+- This is now the approved appearance. Do not revisit or alter the victory artwork fit or dialogue popup unless the user explicitly asks.
+
+### Exact source and successful build
+
+- **Android build:** #307.
+- **GitHub Actions run ID:** `45939817704`.
+- **Workflow:** `.github/workflows/build-android.yml`.
+- **Run status/conclusion:** completed / success.
+- **Exact source commit:** `482954eef2b61ea7103330f429a29c24e956cede`.
+- **Source branch:** `build/boss-defeat-fullscreen-fit`.
+- **Commit message:** `Fix victory cutscene smoke test assertion`.
+- **Workflow run:** https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/actions/runs/45939817704
+- The Android export job completed successfully. The workflow produced and published the APK to the rolling prerelease release tag `android-latest`.
+- The successful workflow also published visual-QA/source-frame artifacts; do not claim that the assistant independently visually inspected those frames unless actually retrieved and inspected.
+
+### APK release asset verified
+
+- **Asset:** `TheLegendOfJohnnyRedeye.apk`.
+- **Size:** 141,026,724 bytes (about 141 MB).
+- **SHA-256:** `f7197127796563a31014343b8f97454edb3483e7f1416d4ecfbcf74f0af400c2`.
+- **Release tag:** `android-latest`.
+- **Direct APK URL:** https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/releases/download/android-latest/TheLegendOfJohnnyRedeye.apk
+- The release asset metadata was checked after Build #307 and showed the asset updated at 2026-11-27 04:29:03 UTC. This is the rolling URL; always verify its current metadata before reusing it for a later build.
+
+### Scope and preservation
+
+- The user-approved change is limited to the boss-defeat artwork's viewport fitting.
+- The existing dialogue popup is unchanged.
+- Preserve the working Matt-ijuana boss fight, all three phases, defeat transition, cutscene audio, nighttime grade, fog, embers/sparks and return to Mission Select.
+- Do not treat the correction to `tests/gameplay_smoke_test.gd` as a gameplay change. The test assertion was corrected so the smoke test checks the intended victory-cutscene behavior and full-screen cover setting.
+- Do not roll back to Build #295 for future work by default: Build #307 is now the user's approved tested state and supersedes it as the current checkpoint. If a future task requires rollback, first establish which exact checkpoint the user wants.
+
+### Resume instructions
+
+1. Read this master file first and verify live GitHub state.
+2. Current user-approved checkpoint is Build #307, commit `482954eef2b61ea7103330f429a29c24e956cede`, workflow run `45939817704`.
+3. Preserve the victory artwork's full-screen cover fit and the unchanged dialogue popup.
+4. Make no changes to the finished boss encounter or victory cutscene unless the user explicitly requests them.
