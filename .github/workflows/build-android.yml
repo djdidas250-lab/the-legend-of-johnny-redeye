@@ -132,7 +132,7 @@ jobs:
           import re
           image_path = Path("images/Gemini_Generated_Image_d35sdld35sdld35s.jpeg")
           image = Image.open(image_path)
-          assert image.size == (1536, 652), image.size
+          assert image.size == (1584, 672), image.size
           source = Path("scripts/main.gd").read_text()
           checks = [
               'preload("res://images/Gemini_Generated_Image_d35sdld35sdld35s.jpeg")',
