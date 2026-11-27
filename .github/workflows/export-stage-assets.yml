@@ -1,26 +1,54 @@
-name: Export Stage Artwork for Local Assembly
+name: Inspect Stage Select Reference Images
 on:
   push:
     paths:
       - '.github/workflows/export-stage-assets.yml'
   workflow_dispatch:
 jobs:
-  export-assets:
+  inspect:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Package stage artwork and panorama references
+      - name: Create contact sheet and package originals
         run: |
-          mkdir -p /tmp/dorval-assets
-          cp -a images /tmp/dorval-assets/
-          cp -a docs/NEWLEAF_PROPERTY_MAP.md /tmp/dorval-assets/
-          cp -a tools/create_newleaf_panorama.py /tmp/dorval-assets/
-          find /tmp/dorval-assets -type f -printf '%P\n' | sort
+          python -m pip install --quiet pillow
+          mkdir -p /tmp/stage-select-inspection
+          cp "images/file_0000000019d8822f8ccec539f9c5570c.png" /tmp/stage-select-inspection/
+          cp "images/file_000000004860822fabe70313fb487f31.png" /tmp/stage-select-inspection/
+          cp "images/file_00000000b374822f8eb8da16bdd14ea7.png" /tmp/stage-select-inspection/
+          cp "images/stage select screen.jpeg" /tmp/stage-select-inspection/
+          python - <<'PY'
+          from PIL import Image, ImageOps, ImageDraw
+          from pathlib import Path
+          p=Path('/tmp/stage-select-inspection')
+          files=[
+            'file_0000000019d8822f8ccec539f9c5570c.png',
+            'file_000000004860822fabe70313fb487f31.png',
+            'file_00000000b374822f8eb8da16bdd14ea7.png',
+            'stage select screen.jpeg'
+          ]
+          thumb_w, thumb_h=900, 620
+          gap, label_h=24, 54
+          sheet=Image.new('RGB',(thumb_w*2+gap*3,(thumb_h+label_h)*2+gap*3),(24,24,28))
+          draw=ImageDraw.Draw(sheet)
+          for i,name in enumerate(files):
+            im=Image.open(p/name).convert('RGB')
+            original=im.size
+            im.thumbnail((thumb_w,thumb_h),Image.Resampling.LANCZOS)
+            tile=Image.new('RGB',(thumb_w,thumb_h),(8,8,10))
+            tile.paste(im,((thumb_w-im.width)//2,(thumb_h-im.height)//2))
+            x=gap+(i%2)*(thumb_w+gap); y=gap+(i//2)*(thumb_h+label_h+gap)
+            sheet.paste(tile,(x,y))
+            draw.text((x,y+thumb_h+8),f'{name} | {original[0]}x{original[1]}',fill=(245,245,245))
+          sheet.save(p/'stage-select-contact-sheet.jpg',quality=94)
+          PY
           cd /tmp
-          zip -qr dorval-stage-assets.zip dorval-assets
+          zip -qr stage-select-reference-images.zip stage-select-inspection
       - uses: actions/upload-artifact@v4
         with:
-          name: dorval-stage-assets
-          path: /tmp/dorval-stage-assets.zip
+          name: stage-select-reference-inspection
+          path: |
+            /tmp/stage-select-reference-images.zip
+            /tmp/stage-select-inspection/stage-select-contact-sheet.jpg
           if-no-files-found: error
           retention-days: 3
