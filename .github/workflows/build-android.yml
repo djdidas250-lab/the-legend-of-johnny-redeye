@@ -121,6 +121,8 @@ jobs:
       - name: Verify Woodlawn Park victory cutscene assets and audio handoff
         run: |
           set -euo pipefail
+          mkdir -p build
+          python3 -m pip install --user Pillow
           test -s "images/Gemini_Generated_Image_d35sdld35sdld35s.jpeg"
           test -s "images/junkie bitch.mp3"
           ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "images/junkie bitch.mp3" | tee build/woodlawn-victory-audio-duration.txt
