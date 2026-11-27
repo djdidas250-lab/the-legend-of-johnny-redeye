@@ -4,7 +4,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [main, "build/*", "feature/cinematic-new-game-intro"]
+    branches: [main, "build/*", "feature/cinematic-new-game-intro", "feature/post-boss-phone-cinematic"]
   workflow_dispatch:
 
 concurrency:
@@ -29,6 +29,25 @@ jobs:
           unzip -o "images/cutscene stage 1.zip" -d images/stage1_cutscene
           test -s "images/stage1_cutscene/cutscene stage 1.jpeg"
           test -s "images/stage1_cutscene/John game intro.mp3"
+
+      - name: Extract post-boss John and Gil phone cinematic assets
+        run: |
+          test -s "images/John and Gil.zip"
+          mkdir -p images/john_gil_cinematic
+          unzip -o "images/John and Gil.zip" -d images/john_gil_cinematic
+          for asset in "scene 1.jpeg" "scene 2.jpeg" "1 ringing phone.mp3" "2 Gil phone answer.mp3" "3 Johnny Phone.mp3" "4 Gil Phone.mp3"; do
+            test -s "images/john_gil_cinematic/$asset"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          root = Path("images/john_gil_cinematic")
+          for name in ("scene 1.jpeg", "scene 2.jpeg"):
+              image = Image.open(root / name)
+              if image.size != (1584, 672):
+                  raise SystemExit(f"Unexpected cinematic artwork size for {name}: {image.size}")
+              print(f"Verified {name}: {image.size}")
+          PY
 
       - name: Extract supplied cinematic intro assets
         run: |
