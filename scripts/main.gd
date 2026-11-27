@@ -2048,7 +2048,7 @@ func _start_woodlawn_victory_cutscene() -> void:
 	panel.anchor_left = 0.055
 	panel.anchor_right = 0.945
 	panel.anchor_top = 0.025
-	panel.anchor_bottom = 0.185
+	panel.anchor_bottom = 0.145
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("#07060b")
 	style.border_color = Color("#b10e2d")
