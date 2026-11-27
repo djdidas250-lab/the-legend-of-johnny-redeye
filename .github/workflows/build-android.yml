@@ -4,7 +4,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [main, "build/*", "feature/cinematic-new-game-intro", "feature/post-boss-phone-cinematic", "fix/cinematic-fullscreen-side-bars", "fix/cinematic-aspect-cover"]
+    branches: [main, "build/*", "feature/cinematic-new-game-intro", "feature/post-boss-phone-cinematic", "fix/cinematic-fullscreen-side-bars", "fix/cinematic-aspect-cover", "experiment/remove-dialogue-panels"]
   workflow_dispatch:
 
 concurrency:
