@@ -1860,7 +1860,7 @@ func _start_stage_one_cutscene() -> void:
 	artwork.texture = STAGE_ONE_CUTSCENE_IMAGE
 	artwork.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	artwork.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	artwork.material = ENVIRONMENTAL_ATMOSPHERE.create_cutscene_atmosphere_material(true)
 	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
