@@ -667,10 +667,17 @@ func _ready() -> void:
 	game.get("rivals").clear()
 	player.position = Vector2(260.0, 475.0)
 	game.call("_maybe_begin_mattijuana_entrance")
-	await get_tree().create_timer(2.6).timeout
+	# Wait for the approach tween to finish, but inspect the voice immediately
+	# after it starts so a short, correctly-finished line cannot make the test
+	# miss the dialogue window.
+	var dialogue_deadline := Time.get_ticks_msec() + 7000
+	while game.get("mattijuana_dialogue_layer") == null and Time.get_ticks_msec() < dialogue_deadline:
+		await get_tree().process_frame
+		await get_tree().create_timer(0.05).timeout
 	var boss_dialogue_layer := game.get("mattijuana_dialogue_layer") as CanvasLayer
 	var boss_voice := game.get("mattijuana_voice_player") as AudioStreamPlayer
-	if not _check(str(game.get("mattijuana_boss_state")) == "dialogue" and boss_dialogue_layer != null and boss_voice != null and boss_voice.playing and boss_dialogue_layer.find_child("Label", true, false) != null, "Defeating the final regular enemy must trigger Matt-ijuana's entrance, title dialogue, and voice playback."): return
+	if not _check(str(game.get("mattijuana_boss_state")) == "dialogue" and boss_dialogue_layer != null and boss_voice != null and boss_voice.stream != null and boss_dialogue_layer.find_child("Label", true, false) != null, "Defeating the final regular enemy must trigger Matt-ijuana's entrance and title dialogue."): return
+	if not _check(boss_voice.playing or boss_voice.get_playback_position() > 0.0, "Matt-ijuana's intro voice must start when the title dialogue appears."): return
 	if not _check(game_script.source_code.contains('const MATTIJUANA_BOSS_MUSIC := preload("res://images/10_Angel With The Scabbed Wings.mp3")') and game_script.source_code.contains("func _maybe_begin_mattijuana_entrance()") and game_script.source_code.contains("func _begin_mattijuana_entrance()") and game_script.source_code.contains("func _show_mattijuana_intro()"), "Matt-ijuana's soundtrack handoff and entrance sequence must be connected."): return
 	if not _check(game_script.source_code.contains("You stepped into the wrong damn park, motherfucker—I’m gonna smoke your ass like a cheap dime bag and leave your bitch-ass swinging from the monkey bars!"), "Matt-ijuana's introduction must retain the exact approved dialogue."): return
 	if not _check(game_script.source_code.contains("MATTIJUANA_HUMAN_VISUAL") and game_script.source_code.contains("human_fight") and game_script.source_code.contains("phase2_pending"), "Matt-ijuana human combat and phase handoff must be wired into the gameplay controller."): return
