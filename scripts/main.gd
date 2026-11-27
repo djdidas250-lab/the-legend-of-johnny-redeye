@@ -4350,8 +4350,8 @@ func _fade_phone_cinematic(fade: ColorRect, target_alpha: float, duration: float
 func _set_phone_speaker_focus(left_dim: ColorRect, right_dim: ColorRect, gil_active: bool) -> void:
 	if not is_instance_valid(left_dim) or not is_instance_valid(right_dim):
 		return
-	var target_left := 0.0 if gil_active else 0.28
-	var target_right := 0.28 if gil_active else 0.0
+	var target_left := 0.0 if gil_active else 0.52
+	var target_right := 0.52 if gil_active else 0.0
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(left_dim, "modulate:a", target_left, 0.55)
