@@ -31,6 +31,15 @@ jobs:
           test -s "images/stage1_cutscene/cutscene stage 1.jpeg"
           test -s "images/stage1_cutscene/John game intro.mp3"
 
+      - name: Extract and inventory Stage Two mission assets
+        run: |
+          test -s "images/Stage 2.zip"
+          mkdir -p images/stage2_mission1_assets
+          unzip -o "images/Stage 2.zip" -d images/stage2_mission1_assets
+          echo "STAGE_TWO_ASSET_INVENTORY_BEGIN"
+          find images/stage2_mission1_assets -type f -printf "%P\t%s bytes\n" | sort
+          echo "STAGE_TWO_ASSET_INVENTORY_END"
+
       - name: Extract post-boss John and Gil phone cinematic assets
         run: |
           test -s "images/John and Gil.zip"
