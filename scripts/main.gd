@@ -1901,7 +1901,8 @@ func _show_map_screen() -> void:
 	map_layer.add_child(stage_return)
 	var stage_return_pulse := stage_return.create_tween().set_loops()
 	stage_return_pulse.tween_property(stage_return, "modulate:a", 0.70, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	stage_return_pulse.tween_property
+	stage_return_pulse.tween_property(stage_return, "modulate:a", 1.0, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
 
 func _add_stage_two_mission_one_marker() -> void:
 	var marker := _make_checkpoint_marker(0.465, 0.42, 0.535, 0.58, false)
