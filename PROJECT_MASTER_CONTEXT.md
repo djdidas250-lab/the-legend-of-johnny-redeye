@@ -405,3 +405,13 @@ The original next-feature note after build #271 was to create a post-final-boss 
 - Current implementation adds the first pulsing X marker and hitbox to the Stage Two map; marker launches the supplied image/audio cinematic; audio completion fades to the supplied Mission 1 briefing artwork and shared briefing panel. The briefing's action currently returns to the Stage Two mission-select map because no Stage Two gameplay route has yet been specified.
 - Regression checks added for all three extracted assets, marker wiring, cinematic image/audio, and exact objective text.
 - Do not call this complete until GDScript validation, gameplay smoke tests, Android export, APK signature/package checks, and workflow success are verified.
+
+
+## 24. Recovery note — correct Stage Two source and APK mismatch (2026-11-28)
+
+- The user was mistakenly given the rolling `android-latest` APK from Build #417, which was built from `main` at `1bbe5df09ed4ca1016902e08a957ef72ca07187f`. That is NOT the Stage Two Mission One branch build and must not be presented as the Stage Two APK.
+- **Confirmed Stage Two branch build:** GitHub Actions Build #413, run ID `46131281646`, branch `build/stage2-mission1`, source commit `b29926f31f2ece7549b6a96d3d0a82cd000503fd`, conclusion `success`. The run successfully completed asset extraction (including the Stage Two archive), Godot project import, GDScript validation, startup/core gameplay smoke tests, Android export, package verification, and release publication.
+- Subsequent branch commits `9e512b6`, `f18cf8e` failed and `d613f5f` was cancelled; therefore #413 is the last confirmed successful Stage Two branch APK. Its rolling release asset was subsequently overwritten by Build #417 from `main`.
+- The Stage Two implementation branch remains available and contains the game source plus the Stage Two cinematic/briefing implementation. The user's game source has not been erased by the wrong APK; the error was distributing the wrong build artifact.
+- Current PR #2 targets `main`, but GitHub reports it as dirty because main and the feature branch diverged. Do NOT force-merge or reset main. Reconcile from the correct Build #408/Stage Two lineage, preserving all newer gameplay features and testing before promotion.
+- Recovery action: trigger a fresh Android build from the latest corrected `build/stage2-mission1` branch, verify the exact head SHA in the run, and confirm the APK release asset is produced from that SHA before sharing it. Never reuse the mutable `android-latest` link without checking the asset's source commit and timestamp.
