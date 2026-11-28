@@ -593,9 +593,11 @@ Read this master file first. **Start all future implementation from Build #354 s
 
 ## 21. User-confirmed working baseline — Stage 1 map APK (2026-11-28)
 
-- **Authoritative starting point going forward:** the exact source revision used for the Android APK the user has now installed and tested successfully: commit `e5de8a40b3475fa037bef34ad728e6d6f80b085b` on branch `build/375-stage1-map-image`.
-- **Verification:** GitHub Actions Android workflow run #392 (`46115006113`) completed with conclusion `success` for that exact commit. The user independently confirmed that the APK they tested works.
+- **User-tested GitHub Actions build:** **Build #392** (Android workflow run #392, run ID `46115006113`). This is the build number the user sees on GitHub and the APK they installed and confirmed working.
+- **Authoritative source revision for Build #392:** commit `e5de8a40b3475fa037bef34ad728e6d6f80b085b`.
+- **Source branch name:** `build/375-stage1-map-image`. The number `375` is part of the branch name only; it is **not** the tested build number and must not be referred to as the working APK's build number.
+- **Verification:** GitHub Actions run #392 completed with conclusion `success` for that exact commit. The user independently confirmed that the APK they tested works.
 - **Mission Select artwork:** use the exact supplied file `images/stage 1 map.jpeg`; `scripts/main.gd` references it as `res://images/stage 1 map.jpeg`. Preserve the image unchanged.
-- Treat this exact tested source revision—not the older Build #354 note above and not the failed workflow run #391—as the current user-approved development starting point. Build #391 (`46114542527`) failed and is not the baseline.
+- Treat Build #392 and its exact tested source revision—not the older Build #354 note above and not the failed workflow run #391—as the current user-approved development starting point. Build #391 (`46114542527`) failed and is not the baseline.
 - Create all future feature branches from `e5de8a40b3475fa037bef34ad728e6d6f80b085b` (or a verified descendant). Do not silently substitute another branch, commit, or older build. Keep the tested branch and commit intact as the recovery checkpoint.
 - The current `main` branch has diverged from this tested branch. Do not force-reset or overwrite `main` to promote the baseline; reconcile the histories deliberately before changing the default branch. This note records the exact source the user approved so future work starts from the working APK's code.
