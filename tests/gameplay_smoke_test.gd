@@ -107,7 +107,7 @@ func _ready() -> void:
 	var stage_select: CanvasLayer = game.get("stage_select_layer")
 	if not _check(stage_select != null and game.get("map_layer") == null and not bool(game.get("game_started")) and game.get("intro_layer") == null, "New Game must open Stage Select after the cinematic intro finishes."): return
 	var stage_art := stage_select.find_child("StageSelectArtwork", true, false) as TextureRect
-	var stage_heading := stage_select.find_child("StageSelectHeading", true, false) as Label
+	var stage_select_heading := stage_select.find_child("StageSelectHeading", true, false) as Label
 	var stage_button := stage_select.find_child("WoodlawnSuburbsStageButton", true, false) as Button
 	var stage_glow := stage_select.find_child("StageSelectSubtitleGlow", true, false) as ColorRect
 	var stage_viewport: Vector2 = game.get_viewport().get_visible_rect().size
@@ -115,7 +115,7 @@ func _ready() -> void:
 	var stage_ratio := float(stage_art.texture.get_width()) / maxf(float(stage_art.texture.get_height()), 1.0)
 	var stage_display_ratio := stage_art.size.x / maxf(stage_art.size.y, 1.0)
 	if not _check(absf(stage_ratio - stage_display_ratio) < 0.01, "Stage Select background must preserve the original image aspect ratio."): return
-	if not _check(stage_heading != null and stage_heading.text == "STAGE SELECT" and stage_heading.position.x > stage_viewport.x * 0.50 and stage_button != null and stage_button.text == "STAGE 1 – WOODLAWN SUBURBS" and stage_button.position.x > stage_viewport.x * 0.50, "Stage Select heading and stage name must use the approved right-side hierarchy."): return
+	if not _check(stage_select_heading != null and stage_select_heading.text == "STAGE SELECT" and stage_select_heading.position.x > stage_viewport.x * 0.50 and stage_button != null and stage_button.text == "STAGE 1 – WOODLAWN SUBURBS" and stage_button.position.x > stage_viewport.x * 0.50, "Stage Select heading and stage name must use the approved right-side hierarchy."): return
 	if not _check(stage_select.find_child("StageSelectPanel", true, false) == null and stage_glow != null and stage_glow.material is ShaderMaterial and (stage_glow.material as ShaderMaterial).shader.code.contains("sin(TIME"), "Stage Select must have no menu box and must use a soft animated white selection glow."): return
 	if not _check(stage_button.flat and stage_button.get_theme_stylebox("normal") is StyleBoxEmpty and stage_button.get_theme_stylebox("hover") is StyleBoxEmpty and stage_button.get_theme_stylebox("pressed") is StyleBoxEmpty, "Stage selection must be a text-only interactive element without a button panel or border."): return
 	game.call("_on_stage_selected", "woodlawn_suburbs")
