@@ -2340,7 +2340,16 @@ func _return_to_title_screen() -> void:
 
 
 func _return_to_stage_select() -> void:
-	_queue_game_return("stage_select")
+	if game_started:
+		_queue_game_return("stage_select")
+		return
+	# Mission Select is outside gameplay, so its shortcut can switch directly.
+	if is_instance_valid(map_layer):
+		if music_player != null:
+			music_player.stop()
+		map_layer.queue_free()
+		map_layer = null
+		_show_stage_select_screen()
 
 
 func _return_to_mission_select() -> void:
