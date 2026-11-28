@@ -9,7 +9,8 @@ on:
 
 concurrency:
   group: android-apk-build
-  cancel-in-progress: true
+  # Queue new builds instead of cancelling an active APK export.
+  cancel-in-progress: false
 
 permissions:
   contents: write
