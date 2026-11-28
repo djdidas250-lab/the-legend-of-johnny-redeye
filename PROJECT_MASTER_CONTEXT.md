@@ -383,11 +383,21 @@ The original next-feature note after build #271 was to create a post-final-boss 
 - **Safe exits:** All in-game destinations route through the shared deferred gameplay teardown. The active save slot is persisted before leaving; if saving fails, gameplay remains active. The teardown stops music, clears regular enemies, Matt-ijuana and attached phase/fire visuals, projectiles/pickups/touch controls and atmosphere, and then opens the requested destination.
 - **Regression coverage:** `tests/gameplay_smoke_test.gd` checks the reused Stage 1 click-audio path, Mission Select's text-only pulsing shortcut, exact hamburger option order, and the existing Mission Select save/cleanup behavior.
 - **Do not deliver an APK until:** the latest GitHub Actions Android build completes successfully, the APK is signed/verified, and the actual downloadable release asset URL is confirmed.
-## 14. Title soundtrack restart on every title return — implementation pending build verification (2026-11-27)
+## 18. Title soundtrack restart on every title return — Build #375 verified and user-approved (2026-11-27)
 
 - **Cause confirmed:** the shared _complete_game_return() teardown stops music_player before switching screens. Its destination == "title" branch previously called _show_title() without restarting the title theme. The save-slot picker cancel route also called _show_title() without restarting the soundtrack.
 - **Code fix:** scripts/main.gd now has _restart_title_music(). It reuses the existing AudioStreamPlayer (preserving its finished/loop callback), restores the original TITLE_MUSIC stream and TITLE_MUSIC_VOLUME_DB (-18 dB), and calls play() from the beginning. If the player is no longer valid, it falls back to _start_title_music(). Both the in-game return-to-title branch and _cancel_save_slot_picker() invoke this helper immediately after _show_title(). The death-screen return path already frees its old player and starts a fresh title player, so it remains unchanged.
 - **Regression tests:** tests/gameplay_smoke_test.gd exercises returning to title from gameplay and cancelling the save-slot picker. Both checks verify that the title layer is restored and the original res://images/02 - Title Theme.wav is actively playing at -18 dB.
 - **Scope:** no music assets, title artwork, title-screen layout, gameplay, boss logic, or other audio paths were changed.
 - **Implementation commits:** gameplay return fix 7e455577098a93cd9db68362c3cbf5b4ed0a1649; save-picker return fix 888c9feb2edde5250e367df14fc39f58fe9e4e0f; smoke test f7c46abb360352deb6ca601d48edaab0cf59c738.
-- **Verification:** awaiting the Android GitHub Actions run for the final handoff-file commit. Do not provide an APK until that run is green and its release asset is verified.
+- **Verified Android build:** #375.
+- **GitHub Actions run ID:** `46090077458`.
+- **Run status/conclusion:** completed / success.
+- **Exact source commit:** `c4836c4446accbab1bda2e2884e5194fde0c4590`.
+- **Source branch:** `feature/navigation-shortcuts-build361`.
+- **Workflow:** `.github/workflows/build-android.yml`; the Android build and validation job completed successfully.
+- **Verified APK asset:** `TheLegendOfJohnnyRedeye.apk` on release tag `android-latest`.
+- **Direct APK URL:** https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/releases/download/android-latest/TheLegendOfJohnnyRedeye.apk
+- **Workflow URL:** https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/actions/runs/46090077458
+- **User's on-device test:** the user installed and tested Build #375 and confirmed: **“everything looks great and seems to function as should.”** This confirms the title music restart behavior and current build are accepted by the user.
+- **Current checkpoint:** Build #375 / commit `c4836c4446accbab1bda2e2884e5194fde0c4590` is now the latest user-tested checkpoint. Preserve it as the working baseline for the next task. Do not make additional game changes until the user specifies what to do next.
