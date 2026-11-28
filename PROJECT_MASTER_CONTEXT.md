@@ -369,3 +369,17 @@ The original next-feature note after build #271 was to create a post-final-boss 
 2. Current user-approved checkpoint is Build #307, commit `482954eef2b61ea7103330f429a29c24e956cede`, workflow run `45939817704`.
 3. Preserve the victory artwork's full-screen cover fit and the unchanged dialogue popup.
 4. Make no changes to the finished boss encounter or victory cutscene unless the user explicitly requests them.
+
+## 13. Navigation shortcuts — Build #361 baseline follow-up (2026-11-27)
+
+- **Starting baseline:** Build #361, derived from the user's approved Build #354 baseline. The implementation branch was created from commit `64f33e5181e9a9a2178a5ddb82cdb1d2bac7d665` on `build/stage-select-build354`.
+- **Working branch:** `feature/navigation-shortcuts-build361`. Keep the original Build #361 branch unchanged until the new Android workflow is green and the APK has been verified.
+- **Stage Select → Mission Select audio:** Stage 1 selection must reuse the existing `TITLE_CLICK_SOUND` via `_run_title_button_action()` / `_play_title_click()`, matching the exact click audio and wait behavior used by the Stage 1 briefing's “CLICK HERE TO BEGIN MISSION” button. Do not add or duplicate an audio asset.
+- **Mission Select → Stage Select:** A flat, white, text-only `RETURN TO STAGE SELECT` shortcut sits in the upper-right of the map. It has a soft alpha pulse and no visible button panel or border.
+- **In-game hamburger menu order (exact):**
+  1. `RETURN TO TITLE SCREEN`
+  2. `RETURN TO STAGE SELECT`
+  3. `RETURN TO MISSION SELECT`
+- **Safe exits:** All in-game destinations route through the shared deferred gameplay teardown. The active save slot is persisted before leaving; if saving fails, gameplay remains active. The teardown stops music, clears active actors/projectiles/pickups/touch controls and atmosphere, and then opens the requested destination.
+- **Regression coverage:** `tests/gameplay_smoke_test.gd` checks the reused Stage 1 click-audio path, Mission Select's text-only pulsing shortcut, exact hamburger option order, and the existing Mission Select save/cleanup behavior.
+- **Do not deliver an APK until:** the latest GitHub Actions Android build completes successfully, the APK is signed/verified, and the actual downloadable release asset URL is confirmed.
