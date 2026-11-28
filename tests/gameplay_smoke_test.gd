@@ -695,6 +695,7 @@ func _ready() -> void:
 	var stage_menu_action := active_menu_contents.get_node("ReturnToStageSelectButton") as Button
 	var mission_select_action := active_menu_contents.get_node("ReturnToMissionSelectButton") as Button
 	if not _check(active_menu_contents.get_child_count() == 3 and title_menu_action.text == "RETURN TO TITLE SCREEN" and stage_menu_action.text == "RETURN TO STAGE SELECT" and mission_select_action.text == "RETURN TO MISSION SELECT" and active_menu_contents.get_child(0) == title_menu_action and active_menu_contents.get_child(1) == stage_menu_action and active_menu_contents.get_child(2) == mission_select_action, "The in-game menu must list Title Screen, Stage Select, then Mission Select in the exact requested order."): return
+	if not _check(game_script.source_code.contains('func _queue_game_return(destination: String)') and game_script.source_code.contains('call_deferred("_complete_game_return", destination)') and game_script.source_code.contains('if destination == "stage_select":') and game_script.source_code.contains('elif destination == "title":') and game_script.source_code.contains('mattijuana_boss.free()'), "Every in-game navigation exit must use deferred save-safe teardown and clear active boss state."): return
 	var expected_saved_position: Vector2 = player.position
 	var expected_active_slot := int(game.get("active_save_slot"))
 	var expected_lives := int(game.get("player_lives"))
