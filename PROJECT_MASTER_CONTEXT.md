@@ -404,3 +404,5 @@ The original next-feature note after build #271 was to create a post-final-boss 
 - **Next:** validate Step 1 with the project's Android workflow and a targeted smoke test; then implement the supplied Stage Two opening cinematic and connect the X marker hitbox; finally implement the Stage Two Mission One briefing.
 
 - Android workflow validation branch: `build/stage2-step1-marker` (same Step 1 source, created solely to match the repository's configured Android-build branch filter).
+
+- **Step 1 Android verification:** GitHub Actions Build #419 (commit `1a12e984034f418738e6a9b75068353eac1c4f03`) completed successfully. All workflow steps passed, including project resource import, script validation, startup smoke test, core gameplay loop test, Android APK export, package/launcher verification, and release publication. A second queued run, Build #420 (commit `17cb8fce75b2a794712d1b597e5130e7891717e4`), also completed successfully with the same checks. Installable APK is published at the `android-latest` release. Marker remains visual-only pending Step 2 interaction/cinematic work.
