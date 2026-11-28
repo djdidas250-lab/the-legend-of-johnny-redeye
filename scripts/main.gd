@@ -333,6 +333,16 @@ func _start_title_music() -> void:
 	)
 	music_player.play()
 
+func _restart_title_music() -> void:
+	# Reuse the existing player so the title loop's finished callback remains
+	# connected, while restarting the title theme from its opening beat.
+	if not is_instance_valid(music_player):
+		_start_title_music()
+		return
+	music_player.stream = TITLE_MUSIC
+	music_player.volume_db = TITLE_MUSIC_VOLUME_DB
+	music_player.play()
+
 func _make_title_music() -> AudioStreamWAV:
 	var melody := [659.25, 783.99, 987.77, 783.99, 659.25, 523.25, 587.33, 659.25,
 		783.99, 987.77, 1174.66, 987.77, 783.99, 659.25, 587.33, 523.25,
@@ -2463,6 +2473,7 @@ func _complete_game_return(destination: String) -> void:
 		_show_stage_select_screen()
 	elif destination == "title":
 		_show_title()
+		_restart_title_music()
 	else:
 		_show_map_screen()
 	queue_redraw()
