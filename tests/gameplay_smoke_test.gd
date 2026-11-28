@@ -777,7 +777,15 @@ func _ready() -> void:
 	var restarted_title_music := game.get("music_player") as AudioStreamPlayer
 	if not _check(not bool(game.get("game_started")) and returned_title_layer != null and is_instance_valid(returned_title_layer), "Returning from gameplay must restore the title screen."): return
 	if not _check(restarted_title_music != null and restarted_title_music.playing and restarted_title_music.stream != null and restarted_title_music.stream.resource_path == "res://images/02 - Title Theme.wav" and is_equal_approx(restarted_title_music.volume_db, -18.0), "Returning to the title screen must restart the original title soundtrack at its established volume."): return
-	print("Dorval quality checks passed: title, title-music return, Mission Select, gameplay, baggy health power-up, extended briefings, McRae, Newleaf, Woodlawn Park, and in-game menu navigation.")
+	# The save-slot cancel button is a second route back to the title screen.
+	game.call("_show_save_slot_picker", false)
+	restarted_title_music.stop()
+	game.call("_cancel_save_slot_picker")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var cancelled_picker_music := game.get("music_player") as AudioStreamPlayer
+	if not _check(game.get("save_slot_layer") == null and game.get("title_layer") != null and cancelled_picker_music != null and cancelled_picker_music.playing and cancelled_picker_music.stream.resource_path == "res://images/02 - Title Theme.wav" and is_equal_approx(cancelled_picker_music.volume_db, -18.0), "Cancelling the save-slot picker must restore the title screen and restart its soundtrack."): return
+	print("Dorval quality checks passed: title, title-music return routes, Mission Select, gameplay, baggy health power-up, extended briefings, McRae, Newleaf, Woodlawn Park, and in-game menu navigation.")
 	get_tree().quit(0)
 
 func _frame_baseline(texture: Texture2D) -> int:
