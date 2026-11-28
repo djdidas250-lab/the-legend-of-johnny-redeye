@@ -3803,7 +3803,7 @@ func _begin_mcrae_transition() -> void:
 	# McRae has a different panorama width and street profile from Leaside.
 	_setup_horror_atmosphere()
 	active_slot_unlocked_mcrae = true
-	active_slot_area = "McRae Drive"
+	active_slot_area = "McCrae Drive"
 	_save_slot_progress()
 	# Enter at McRae's far-right playable edge, matching the street boundary,
 	# with the complete character sprite on-screen and facing left toward Newleaf.
@@ -5030,7 +5030,7 @@ func _update_location() -> void:
 	if distance_from_home < 1500.0:
 		location_label.text = "NEWLEAF CRESCENT"
 	elif distance_from_home < 2500.0:
-		location_label.text = "McRAE DRIVE"
+		location_label.text = "McCRAE DRIVE"
 	elif distance_from_home < 3500.0:
 		location_label.text = "LEASIDE DRIVE"
 	else:
