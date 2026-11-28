@@ -402,3 +402,5 @@ The original next-feature note after build #271 was to create a post-final-boss 
 - No Stage One gameplay, checkpoint logic, artwork, music, or audio was intentionally changed in this step.
 - **Verification status:** source change committed; no Android workflow run or APK has yet been verified for this branch. Do not call Step 1 complete or provide a test APK until the Android build and relevant smoke tests pass.
 - **Next:** validate Step 1 with the project's Android workflow and a targeted smoke test; then implement the supplied Stage Two opening cinematic and connect the X marker hitbox; finally implement the Stage Two Mission One briefing.
+
+- Android workflow validation branch: `build/stage2-step1-marker` (same Step 1 source, created solely to match the repository's configured Android-build branch filter).
