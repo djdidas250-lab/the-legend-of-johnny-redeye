@@ -1821,7 +1821,7 @@ func _show_map_screen() -> void:
 		stage_return.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	stage_return.pressed.connect(_return_to_stage_select)
 	map_layer.add_child(stage_return)
-	var stage_return_pulse := create_tween().set_loops()
+	var stage_return_pulse := stage_return.create_tween().set_loops()
 	stage_return_pulse.tween_property(stage_return, "modulate:a", 0.70, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	stage_return_pulse.tween_property(stage_return, "modulate:a", 1.0, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
