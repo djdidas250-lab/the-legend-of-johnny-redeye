@@ -648,3 +648,17 @@ Read this master file first. **Start all future implementation from Build #354 s
 4. Preserve all working Stage One content, map artwork, gameplay, bosses, cinematics, music, sound effects, save progression and Mission Select behaviour.
 5. Keep Stage Two named **Death Drive** on both Stage Select and Mission Select. Build and verify an Android APK with a green Actions result before providing it.
 6. The master handoff file is maintained on `main` separately from the feature branch. This documentation update does not merge or change game code on `build/stage2-map`.
+
+
+## 23. Stage Two Mission One cinematic and briefing — implementation branch / CI pending (2026-11-28)
+
+- The user requested that selecting the first X on Stage Two Mission Select play a full-screen cinematic image with its supplied audio, then transition smoothly to the Stage Two Mission One briefing when the audio finishes.
+- The briefing objective must read exactly: **“Make your way down Woodlawn Road to meet with Al at Toke Cannabis.”**
+- The user requested smooth transitions; preserve the existing fade-in/fade-out treatment and do not make abrupt cuts.
+- Implementation branch: `build/stage2-mission1`, created as a descendant of the verified Build #408 source branch `build/stage2-map` at commit `408c50fd27fa257222ecef3027e1edbe9f344a99`.
+- The branch contains the Stage Two Mission One marker, opening cinematic, audio-finished handoff, briefing artwork, heading and objective, plus gameplay smoke-test coverage. The supplied archive is `images/Stage 2.zip`; the workflow extracts it to `images/stage2_mission1_assets/`.
+- **Defect found and corrected:** in `scripts/main.gd`, the existing Stage Two Mission Select return-button pulse had its second `tween_property(..., 1.0, 1.15)` call truncated to the incomplete line `stage_return_pulse.tween_property`. Restored the complete second tween call exactly as it appears in the Build #408 baseline.
+- **Fix commit:** `d613f5f33758bae9ae65d0f156b3a920192b4183` — “Fix truncated Stage Two mission branch tween call”.
+- The fix is committed on `build/stage2-mission1`. This is a descendant of Build #408 and preserves the Build #408 recovery checkpoint.
+- **CI is not yet verified for the fix commit.** Do not claim an APK is ready or that the build is green until the GitHub Actions run for commit `d613f5f33758bae9ae65d0f156b3a920192b4183` completes successfully and the APK/release is verified. If it fails again, inspect the exact failing workflow step and logs, then make the smallest targeted correction.
+- Resume by checking the latest Actions run for `build/stage2-mission1` / commit `d613f5f33758bae9ae65d0f156b3a920192b4183`. Do not ask the user to paste logs or re-explain the project. Preserve all Build #408 gameplay, art, audio, progression and Stage One behaviour.
