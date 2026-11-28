@@ -1862,6 +1862,13 @@ func _show_map_screen() -> void:
 			park_hitbox.pressed.connect(_show_woodlawn_park_checkpoint_from_map)
 			map_layer.add_child(park_hitbox)
 
+	# Stage Two Mission One starts with a single red X on the supplied map.
+	# Its interaction will be wired to the opening cinematic in Step 2.
+	if active_stage_id == "stage_two":
+		var stage_two_marker := _make_checkpoint_marker(0.465, 0.42, 0.535, 0.58, false)
+		stage_two_marker.name = "StageTwoMissionOneMarker"
+		map_layer.add_child(stage_two_marker)
+
 	# Compact reusable Mission Select header. Keep it shallow so the supplied map
 	# remains visible; future stages only need different title strings.
 	var mission_header := _create_mission_select_header("STAGE TWO", "DEATH DRIVE", "MISSION SELECT") if active_stage_id == "stage_two" else _create_mission_select_header("STAGE ONE", "WOODLAWN SUBURBS", "MISSION SELECT")
