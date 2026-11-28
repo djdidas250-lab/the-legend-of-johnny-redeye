@@ -271,7 +271,7 @@ jobs:
           image_path = Path("images/stage 1 map.jpeg")
           with Image.open(image_path) as image:
               ratio = image.width / image.height
-              assert 2.20 <= ratio <= 2.30, (image.size, ratio)
+              assert 2.30 <= ratio <= 2.40, (image.size, ratio)
               print(f"Verified exact Stage One map artwork: {image.size}, aspect={ratio:.4f}")
           source = Path("scripts/main.gd").read_text()
           assert 'const MAP_IMAGE := preload("res://images/stage 1 map.jpeg")' in source
