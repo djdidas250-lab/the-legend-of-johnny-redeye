@@ -139,10 +139,12 @@ func _ready() -> void:
 	var stage_two_marker := stage_two_map_layer.find_child("StageTwoMissionOneMarker", true, false) as TextureRect
 	var stage_two_hitbox := stage_two_map_layer.find_child("StageTwoMissionOneHitbox", true, false) as Button
 	if not _check(stage_two_marker != null and stage_two_hitbox != null and stage_two_hitbox.is_connected("pressed", game._start_stage_two_opening_cinematic), "Stage 2 Mission 1 must have a pulsing first X marker with a working hit target."): return
+	if not _check(is_equal_approx(stage_two_marker.anchor_left, 0.848) and is_equal_approx(stage_two_marker.anchor_right, 0.968) and is_equal_approx(stage_two_marker.anchor_top, 0.154) and is_equal_approx(stage_two_marker.anchor_bottom, 0.311) and stage_two_marker.stretch_mode == TextureRect.STRETCH_SCALE, "The first Stage 2 X must match the upper-right Woodlawn Road position above Woodlawn Park in the supplied reference image."): return
+	if not _check(stage_two_map_layer.find_child("StageTwoMissionTwoMarker", true, false) == null and stage_two_map_layer.find_child("StageTwoMissionThreeMarker", true, false) == null and stage_two_map_layer.find_child("StageTwoMissionFourMarker", true, false) == null, "Future Stage 2 checkpoint markers must remain hidden until their progression milestones are unlocked."): return
 	for stage_two_asset in ["Stage 2 cinematic cutscene.jpg", "Stage 2 mission brief .jpg", "stage 2 cutscene cinematic.mp3"]:
 		if not _check(ResourceLoader.exists("res://images/stage2_mission1_assets/" + stage_two_asset), "Stage 2 Mission 1 supplied asset missing: " + stage_two_asset): return
 	if not _check(davy_script_text.contains("func _start_stage_two_opening_cinematic") and davy_script_text.contains("func _on_stage_two_cinematic_audio_finished") and davy_script_text.contains("func _show_stage_two_mission_one_briefing") and davy_script_text.contains("Make your way down Woodlawn Road to meet with Al at Toke Cannabis.") and davy_script_text.contains("STAGE 2  —  DEATH DRIVE"), "Stage 2 cinematic-to-briefing sequence or approved objective text is missing."): return
-	game.call("_start_stage_two_opening_cinematic")
+	stage_two_hitbox.emit_signal("pressed")
 	await get_tree().process_frame
 	var stage_two_cinematic := game.get("stage_two_cutscene_layer") as CanvasLayer
 	var stage_two_audio := game.get("stage_two_cutscene_audio_player") as AudioStreamPlayer
