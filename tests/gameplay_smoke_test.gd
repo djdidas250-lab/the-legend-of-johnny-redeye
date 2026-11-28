@@ -128,12 +128,18 @@ func _ready() -> void:
 	var map_art := map_layer.get_child(0) as TextureRect
 	if not _check(map_art != null and map_art.texture.resource_path == "res://images/stage 1 map.jpeg", "New Mission Select artwork missing."): return
 	if not _check(map_art.stretch_mode == TextureRect.STRETCH_SCALE and map_art.anchor_left == 0.0 and map_art.anchor_top == 0.0 and map_art.anchor_right == 1.0 and map_art.anchor_bottom == 1.0, "Mission artwork must fill widescreen without cropping."): return
+	var mission_header := map_layer.find_child("MissionSelectHeaderOverlay", true, false) as Control
+	var mission_stage_title := map_layer.find_child("MissionSelectStageTitle", true, false) as Label
+	var mission_location_title := map_layer.find_child("MissionSelectLocationTitle", true, false) as Label
+	var mission_screen_title := map_layer.find_child("MissionSelectScreenTitle", true, false) as Label
+	if not _check(mission_header != null and is_equal_approx(mission_header.offset_bottom, 62.0) and mission_header.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Mission Select must use a shallow 62px full-width header that does not intercept map taps."): return
+	if not _check(mission_stage_title != null and mission_stage_title.text == "STAGE ONE" and mission_location_title != null and mission_location_title.text == "WOODLAWN SUBURBS" and mission_screen_title != null and mission_screen_title.text == "MISSION SELECT" and game.get_script().source_code.contains("func _create_mission_select_header(stage_title: String, location_title: String, screen_title: String)"), "Mission Select header must use the approved three-line copy and a reusable stage-title template."): return
 	var john_marker := map_layer.get_child(1) as TextureRect
 	if not _check(john_marker != null and john_marker.name == "JohnHouseCheckpointMarker" and john_marker.texture.resource_path == "res://images/map_checkpoint_x.svg", "John's Silvan Drive checkpoint marker is missing."): return
 	var marker_button := map_layer.get_child(2) as Button
 	if not _check(marker_button != null and marker_button.name == "JohnHouseCheckpointHitbox" and is_equal_approx(marker_button.anchor_left, 0.79) and is_equal_approx(marker_button.anchor_right, 0.835) and is_equal_approx(marker_button.anchor_top, 0.745) and is_equal_approx(marker_button.anchor_bottom, 0.855), "John's marker tap area must match the marker between the fourth and fifth houses right of SILVAN DR."): return
 	if not _check(game.get_script().source_code.contains("john_hitbox.pressed.connect(_show_stage_one_splash)") and game.get_script().source_code.contains("john_hitbox.pressed.connect(_play_map_click)"), "Tapping John's checkpoint must play the map click and open the selected mission."): return
-	if not _check(map_layer.get_child_count() == 4, "A new save must show the map, one John checkpoint marker, its matching tap target, and the Stage Select shortcut."): return
+	if not _check(map_layer.get_child_count() == 5, "A new save must show the map, one John checkpoint marker, its matching tap target, and the Stage Select shortcut."): return
 	if not _check(map_art.material == null and not game.get_script().source_code.contains("func _remove_old_david_house_marker"), "The clean supplied Mission Select artwork must be displayed directly without old-marker cleanup."): return
 	if not _check(game.get_script().source_code.contains("if active_slot_unlocked_mcrae:") and not game.get_script().source_code.contains("LeasideCheckpointMarker") and game.get_script().source_code.contains("func _slot_section(slot_index: int)") and game.get_script().source_code.contains("func _show_overwrite_confirmation"), "Separate checkpoint visibility and three-slot save management are missing."): return
 	var slot_cfg := ConfigFile.new()
@@ -160,7 +166,7 @@ func _ready() -> void:
 	game.call("_on_save_slot_selected", 2, false)
 	await get_tree().process_frame
 	map_layer = game.get("map_layer")
-	if not _check(bool(game.get("active_slot_unlocked_leaside")) and bool(game.get("active_slot_unlocked_mcrae")) and map_layer != null and map_layer.get_child_count() == 6 and map_layer.get_node_or_null("McRaeCheckpointMarker") != null, "Continue after McRae must restore exactly one additional intersection marker."): return
+	if not _check(bool(game.get("active_slot_unlocked_leaside")) and bool(game.get("active_slot_unlocked_mcrae")) and map_layer != null and map_layer.get_child_count() == 7 and map_layer.get_node_or_null("McRaeCheckpointMarker") != null, "Continue after McRae must restore exactly one additional intersection marker."): return
 	var saved_cfg := ConfigFile.new()
 	if not _check(saved_cfg.load("user://dorval_save.cfg") == OK and bool(saved_cfg.get_value("slot_3", "unlocked_leaside", false)) and bool(saved_cfg.get_value("slot_3", "unlocked_mcrae", false)), "Both checkpoint unlocks must persist independently in the save slot."): return
 	game.call("_on_save_slot_selected", 0, false)
