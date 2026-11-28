@@ -154,43 +154,43 @@ func _ready() -> void:
 	game.call("_on_save_slot_selected", 2, false)
 	await get_tree().process_frame
 	map_layer = game.get("map_layer")
-	if not _check(int(game.get("active_save_slot")) == 2 and bool(game.get("active_slot_unlocked_leaside")) and not bool(game.get("active_slot_unlocked_mcrae")) and bool(game.get("has_slingshot")) and str(game.get("active_slot_area")) == "Leaside Drive" and int(game.get("player_lives")) == 2 and map_layer != null and map_layer.get_child_count() == 3, "Continue before McRae must restore progress and inventory without showing a second map marker."): return
+	if not _check(int(game.get("active_save_slot")) == 2 and bool(game.get("active_slot_unlocked_leaside")) and not bool(game.get("active_slot_unlocked_mcrae")) and bool(game.get("has_slingshot")) and str(game.get("active_slot_area")) == "Leaside Drive" and int(game.get("player_lives")) == 2 and map_layer != null and map_layer.get_child_count() == 4, "Continue before McRae must restore progress and inventory without showing a second map marker."): return
 	game.set("active_slot_unlocked_mcrae", true)
 	game.call("_save_slot_progress")
 	game.call("_on_save_slot_selected", 2, false)
 	await get_tree().process_frame
 	map_layer = game.get("map_layer")
-	if not _check(bool(game.get("active_slot_unlocked_leaside")) and bool(game.get("active_slot_unlocked_mcrae")) and map_layer != null and map_layer.get_child_count() == 5 and map_layer.get_node_or_null("McRaeCheckpointMarker") != null, "Continue after McRae must restore exactly one additional intersection marker."): return
+	if not _check(bool(game.get("active_slot_unlocked_leaside")) and bool(game.get("active_slot_unlocked_mcrae")) and map_layer != null and map_layer.get_child_count() == 6 and map_layer.get_node_or_null("McRaeCheckpointMarker") != null, "Continue after McRae must restore exactly one additional intersection marker."): return
 	var saved_cfg := ConfigFile.new()
 	if not _check(saved_cfg.load("user://dorval_save.cfg") == OK and bool(saved_cfg.get_value("slot_3", "unlocked_leaside", false)) and bool(saved_cfg.get_value("slot_3", "unlocked_mcrae", false)), "Both checkpoint unlocks must persist independently in the save slot."): return
 	game.call("_on_save_slot_selected", 0, false)
 	await get_tree().process_frame
 	map_layer = game.get("map_layer")
-	if not _check(int(game.get("active_save_slot")) == 0 and not bool(game.get("active_slot_unlocked_leaside")) and not bool(game.get("has_slingshot")) and map_layer != null and map_layer.get_child_count() == 3, "Selecting another slot must load its independent progress without leaking another slot's unlocks or inventory."): return
+	if not _check(int(game.get("active_save_slot")) == 0 and not bool(game.get("active_slot_unlocked_leaside")) and not bool(game.get("has_slingshot")) and map_layer != null and map_layer.get_child_count() == 4, "Selecting another slot must load its independent progress without leaking another slot's unlocks or inventory."): return
 	game.set("active_slot_unlocked_leaside", true)
 	game.call("_show_map_screen")
 	await get_tree().process_frame
 	map_layer = game.get("map_layer")
-	if not _check(map_layer != null and map_layer.get_child_count() == 3 and map_layer.get_node_or_null("McRaeCheckpointMarker") == null, "Leaside progress alone must not add a second mission marker."): return
+	if not _check(map_layer != null and map_layer.get_child_count() == 4 and map_layer.get_node_or_null("McRaeCheckpointMarker") == null, "Leaside progress alone must not add a second mission marker."): return
 	game.set("active_slot_unlocked_leaside", false)
 	game.set("active_slot_unlocked_mcrae", false)
 	game.call("_show_map_screen")
 	await get_tree().process_frame
 	map_layer = game.get("map_layer")
 	marker_button = map_layer.get_child(2) as Button
-	if not _check(map_layer.get_child_count() == 3, "A slot without the Leaside unlock must show only the John checkpoint X."): return
+	if not _check(map_layer.get_child_count() == 4, "A slot without the Leaside unlock must show only the John checkpoint X."): return
 	game.set("active_slot_unlocked_leaside", true)
 	game.set("active_slot_unlocked_mcrae", false)
 	game.call("_show_map_screen")
 	await get_tree().process_frame
 	map_layer = game.get("map_layer")
-	if not _check(map_layer.get_child_count() == 3 and map_layer.get_node_or_null("McRaeCheckpointMarker") == null, "Reaching Leaside must still show only the John house marker."): return
+	if not _check(map_layer.get_child_count() == 4 and map_layer.get_node_or_null("McRaeCheckpointMarker") == null, "Reaching Leaside must still show only the John house marker."): return
 	game.set("active_slot_unlocked_mcrae", true)
 	game.call("_show_map_screen")
 	await get_tree().process_frame
 	map_layer = game.get("map_layer")
 	var mcrae_marker := map_layer.get_node_or_null("McRaeCheckpointMarker") as TextureRect
-	if not _check(map_layer.get_child_count() == 5 and mcrae_marker != null and mcrae_marker.texture != null and mcrae_marker.texture.resource_path == "res://images/map_checkpoint_x.svg" and is_equal_approx(mcrae_marker.anchor_left, 0.528) and is_equal_approx(mcrae_marker.anchor_right, 0.608) and is_equal_approx(mcrae_marker.anchor_top, 0.62) and is_equal_approx(mcrae_marker.anchor_bottom, 0.75), "Reaching McRae must add exactly one red X at the Leeside–McRae intersection."): return
+	if not _check(map_layer.get_child_count() == 6 and mcrae_marker != null and mcrae_marker.texture != null and mcrae_marker.texture.resource_path == "res://images/map_checkpoint_x.svg" and is_equal_approx(mcrae_marker.anchor_left, 0.528) and is_equal_approx(mcrae_marker.anchor_right, 0.608) and is_equal_approx(mcrae_marker.anchor_top, 0.62) and is_equal_approx(mcrae_marker.anchor_bottom, 0.75), "Reaching McRae must add exactly one red X at the Leeside–McRae intersection."): return
 	if not _check(game.get_script().source_code.contains("mcrae_hitbox.pressed.connect(_show_mcrae_checkpoint_from_map)") and game.get_script().source_code.contains('current_street = "McRAE DRIVE"'), "Selecting the McRae marker must resume the McRae street checkpoint."): return
 	var map_music := game.get("music_player") as AudioStreamPlayer
 	if not _check(map_music != null and map_music.stream.resource_path == "res://images/28. Holy Sanctuary.wav", "Sanctuary background music missing."): return
