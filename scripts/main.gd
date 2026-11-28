@@ -464,11 +464,16 @@ func _first_empty_save_slot() -> int:
 			return i
 	return -1
 
+func _corrected_area_spelling(area: String) -> String:
+	# Correct legacy save-slot text without changing internal street IDs.
+	return area.replace("McRae", "McCrae").replace("McRAE", "McCRAE")
+
 func _slot_summary(cfg: ConfigFile, slot_index: int) -> String:
 	if not _slot_exists(cfg, slot_index):
 		return "EMPTY SLOT"
 	var section := _slot_section(slot_index)
-	return "LATEST AREA: " + str(cfg.get_value(section, "area", "Newleaf Crescent"))
+	var saved_area := str(cfg.get_value(section, "area", "Newleaf Crescent"))
+	return "LATEST AREA: " + _corrected_area_spelling(saved_area)
 
 func _show_title() -> void:
 	queue_redraw()
@@ -1568,7 +1573,7 @@ func _on_save_slot_selected(slot_index: int, for_new_game: bool) -> void:
 	active_slot_unlocked_newleaf_checkpoint = bool(cfg.get_value(section, "unlocked_newleaf_checkpoint", false))
 	active_slot_unlocked_woodlawn_checkpoint = bool(cfg.get_value(section, "unlocked_woodlawn_checkpoint", false))
 	active_slot_unlocked_woodlawn_park_checkpoint = bool(cfg.get_value(section, "unlocked_woodlawn_park_checkpoint", false))
-	active_slot_area = str(cfg.get_value(section, "area", "Newleaf Crescent"))
+	active_slot_area = _corrected_area_spelling(str(cfg.get_value(section, "area", "Newleaf Crescent")))
 	has_slingshot = bool(cfg.get_value(section, "has_slingshot", false))
 	player_lives = clampi(int(cfg.get_value(section, "lives", 3)), 0, 99)
 	game_over_pending = false
@@ -1960,7 +1965,7 @@ func _show_mcrae_checkpoint_from_map() -> void:
 	street_panorama = MCRAE_PANORAMA_IMAGE
 	world_end = float(street_panorama.get_width())
 	current_street = "McRAE DRIVE"
-	active_slot_area = "McRae Drive"
+	active_slot_area = "McCrae Drive"
 	_save_slot_progress()
 	_start_game(world_end - 45.0, 475.0)
 	if is_instance_valid(player):
@@ -3760,7 +3765,7 @@ func _begin_mcrae_transition() -> void:
 	briefing_margin.add_child(briefing_content)
 
 	var street_title := Label.new()
-	street_title.text = "NOW ENTERING McRAE"
+	street_title.text = "NOW ENTERING McCRAE"
 	street_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	street_title.add_theme_font_size_override("font_size", 25)
 	street_title.add_theme_color_override("font_color", Color("#f2c879"))
@@ -3771,7 +3776,7 @@ func _begin_mcrae_transition() -> void:
 	briefing_content.add_child(street_title)
 
 	var objective := Label.new()
-	objective.text = "Make your way down McRae to Newleaf Crescent."
+	objective.text = "Make your way down McCrae to Newleaf Crescent."
 	objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	objective.add_theme_font_size_override("font_size", 18)
@@ -5013,7 +5018,7 @@ func _update_location() -> void:
 		return
 	var x := player.position.x
 	if current_street == "McRAE DRIVE":
-		location_label.text = "McRAE DRIVE"
+		location_label.text = "McCRAE DRIVE"
 		return
 	if current_street == "LEASIDE DRIVE":
 		location_label.text = "LEASIDE DRIVE"
