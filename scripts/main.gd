@@ -1659,7 +1659,7 @@ func _show_map_screen() -> void:
 	var viewport_size := get_viewport_rect().size
 	var source_ratio := float(MAP_IMAGE.get_width()) / maxf(float(MAP_IMAGE.get_height()), 1.0)
 	var art_size := viewport_size
-	if viewport_size.x / maxf(viewport_size.y, 1.0) > source_ratio:
+	if viewport_size.x / maxf(viewport_size.y, 1.0) < source_ratio:
 		art_size.y = viewport_size.x / source_ratio
 	else:
 		art_size.x = viewport_size.y * source_ratio
