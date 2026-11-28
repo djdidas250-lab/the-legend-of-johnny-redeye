@@ -118,10 +118,13 @@ func _ready() -> void:
 	if not _check(stage_select_heading != null and stage_select_heading.text == "STAGE SELECT" and stage_select_heading.position.x > stage_viewport.x * 0.50 and stage_button != null and stage_button.text == "STAGE 1 – WOODLAWN SUBURBS" and stage_button.position.x > stage_viewport.x * 0.50, "Stage Select heading and stage name must use the approved right-side hierarchy."): return
 	if not _check(stage_select.find_child("StageSelectPanel", true, false) == null and stage_glow != null and stage_glow.material is ShaderMaterial and (stage_glow.material as ShaderMaterial).shader.code.contains("sin(TIME"), "Stage Select must have no menu box and must use a soft animated white selection glow."): return
 	if not _check(stage_button.flat and stage_button.get_theme_stylebox("normal") is StyleBoxEmpty and stage_button.get_theme_stylebox("hover") is StyleBoxEmpty and stage_button.get_theme_stylebox("pressed") is StyleBoxEmpty, "Stage selection must be a text-only interactive element without a button panel or border."): return
+	if not _check(game.get_script().source_code.contains('const TITLE_CLICK_SOUND := preload("res://images/freesound_community-game-start-6104.mp3")') and game.get_script().source_code.contains('_run_title_button_action(stage_button, Callable(self, "_on_stage_selected").bind("woodlawn_suburbs"))'), "Selecting Stage 1 must reuse the exact existing briefing-screen click audio path."): return
 	game.call("_on_stage_selected", "woodlawn_suburbs")
 	await get_tree().process_frame
 	var map_layer: CanvasLayer = game.get("map_layer")
 	if not _check(map_layer != null and game.get("stage_select_layer") == null and not bool(game.get("game_started")), "Selecting Woodlawn Suburbs must open the existing Mission Select screen."): return
+	var stage_return_button := map_layer.find_child("ReturnToStageSelectButton", true, false) as Button
+	if not _check(stage_return_button != null and stage_return_button.text == "RETURN TO STAGE SELECT" and stage_return_button.flat and stage_return_button.get_theme_stylebox("normal") is StyleBoxEmpty and stage_return_button.get_theme_stylebox("hover") is StyleBoxEmpty and stage_return_button.get_theme_stylebox("pressed") is StyleBoxEmpty and game.get_script().source_code.contains("stage_return_pulse"), "Mission Select must show a text-only white pulsing Return to Stage Select shortcut in the top-right corner."): return
 	var map_art := map_layer.get_child(0) as TextureRect
 	if not _check(map_art != null and map_art.texture.resource_path == "res://images/Gemini_Generated_Image_kglbemkglbemkglb.jpeg", "New Mission Select artwork missing."): return
 	if not _check(map_art.stretch_mode == TextureRect.STRETCH_SCALE and map_art.anchor_left == 0.0 and map_art.anchor_top == 0.0 and map_art.anchor_right == 1.0 and map_art.anchor_bottom == 1.0, "Mission artwork must fill widescreen without cropping."): return
@@ -130,7 +133,7 @@ func _ready() -> void:
 	var marker_button := map_layer.get_child(2) as Button
 	if not _check(marker_button != null and marker_button.name == "JohnHouseCheckpointHitbox" and is_equal_approx(marker_button.anchor_left, 0.79) and is_equal_approx(marker_button.anchor_right, 0.835) and is_equal_approx(marker_button.anchor_top, 0.745) and is_equal_approx(marker_button.anchor_bottom, 0.855), "John's marker tap area must match the marker between the fourth and fifth houses right of SILVAN DR."): return
 	if not _check(game.get_script().source_code.contains("john_hitbox.pressed.connect(_show_stage_one_splash)") and game.get_script().source_code.contains("john_hitbox.pressed.connect(_play_map_click)"), "Tapping John's checkpoint must play the map click and open the selected mission."): return
-	if not _check(map_layer.get_child_count() == 3, "A new save must show the map, one John checkpoint marker, and its matching tap target."): return
+	if not _check(map_layer.get_child_count() == 4, "A new save must show the map, one John checkpoint marker, its matching tap target, and the Stage Select shortcut."): return
 	if not _check(map_art.material == null and not game.get_script().source_code.contains("func _remove_old_david_house_marker"), "The clean supplied Mission Select artwork must be displayed directly without old-marker cleanup."): return
 	if not _check(game.get_script().source_code.contains("if active_slot_unlocked_mcrae:") and not game.get_script().source_code.contains("LeasideCheckpointMarker") and game.get_script().source_code.contains("func _slot_section(slot_index: int)") and game.get_script().source_code.contains("func _show_overwrite_confirmation"), "Separate checkpoint visibility and three-slot save management are missing."): return
 	var slot_cfg := ConfigFile.new()
@@ -688,7 +691,10 @@ func _ready() -> void:
 	var active_hud: CanvasLayer = game.get("hud")
 	var active_menu_panel := active_hud.get_child(1) as PanelContainer
 	var active_menu_contents := active_menu_panel.get_child(0) as VBoxContainer
-	var mission_select_action := active_menu_contents.get_child(0) as Button
+	var title_menu_action := active_menu_contents.get_node("ReturnToTitleScreenButton") as Button
+	var stage_menu_action := active_menu_contents.get_node("ReturnToStageSelectButton") as Button
+	var mission_select_action := active_menu_contents.get_node("ReturnToMissionSelectButton") as Button
+	if not _check(active_menu_contents.get_child_count() == 3 and title_menu_action.text == "RETURN TO TITLE SCREEN" and stage_menu_action.text == "RETURN TO STAGE SELECT" and mission_select_action.text == "RETURN TO MISSION SELECT" and active_menu_contents.get_child(0) == title_menu_action and active_menu_contents.get_child(1) == stage_menu_action and active_menu_contents.get_child(2) == mission_select_action, "The in-game menu must list Title Screen, Stage Select, then Mission Select in the exact requested order."): return
 	var expected_saved_position: Vector2 = player.position
 	var expected_active_slot := int(game.get("active_save_slot"))
 	var expected_lives := int(game.get("player_lives"))
