@@ -377,8 +377,8 @@ func _ready() -> void:
 	if not _check(menu_button != null and menu_button.text == "—" and is_equal_approx(menu_button.position.x, 32.0) and is_equal_approx(menu_button.position.y, 24.0) and menu_button.size.x >= 48.0 and menu_button.size.y >= 40.0, "Top-left dropdown must be inset from the edges and have a larger phone-friendly touch target."): return
 	var gameplay_menu_panel := game.get("hud").get_child(1) as PanelContainer
 	var gameplay_menu_contents := gameplay_menu_panel.get_child(0) as VBoxContainer if gameplay_menu_panel != null else null
-	if not _check(gameplay_menu_contents != null and gameplay_menu_contents.get_child_count() == 2 and (gameplay_menu_contents.get_child(0) as Button).text == "RETURN TO MISSION SELECT" and (gameplay_menu_contents.get_child(1) as Button).text == "RETURN TO MAIN SCREEN", "In-game menu must offer separate Mission Select and Main Screen destinations."): return
-	if not _check(gameplay_menu_panel.position == Vector2(32, 74) and gameplay_menu_panel.custom_minimum_size == Vector2(250, 112), "In-game dropdown panel must sit below the repositioned menu control and fit both options."): return
+	if not _check(gameplay_menu_contents != null and gameplay_menu_contents.get_child_count() == 3 and (gameplay_menu_contents.get_child(0) as Button).text == "RETURN TO TITLE SCREEN" and (gameplay_menu_contents.get_child(1) as Button).text == "RETURN TO STAGE SELECT" and (gameplay_menu_contents.get_child(2) as Button).text == "RETURN TO MISSION SELECT", "In-game menu must list Title Screen, Stage Select, then Mission Select in the requested order."): return
+	if not _check(gameplay_menu_panel.position == Vector2(32, 74) and gameplay_menu_panel.custom_minimum_size == Vector2(250, 170), "In-game dropdown panel must sit below the repositioned menu control and fit all three destinations."): return
 	var visual := player.get_child(0)
 	visual.set("action_kind", "")
 	visual.set("action_timer", 0.0)
