@@ -380,6 +380,6 @@ The original next-feature note after build #271 was to create a post-final-boss 
   1. `RETURN TO TITLE SCREEN`
   2. `RETURN TO STAGE SELECT`
   3. `RETURN TO MISSION SELECT`
-- **Safe exits:** All in-game destinations route through the shared deferred gameplay teardown. The active save slot is persisted before leaving; if saving fails, gameplay remains active. The teardown stops music, clears active actors/projectiles/pickups/touch controls and atmosphere, and then opens the requested destination.
+- **Safe exits:** All in-game destinations route through the shared deferred gameplay teardown. The active save slot is persisted before leaving; if saving fails, gameplay remains active. The teardown stops music, clears regular enemies, Matt-ijuana and attached phase/fire visuals, projectiles/pickups/touch controls and atmosphere, and then opens the requested destination.
 - **Regression coverage:** `tests/gameplay_smoke_test.gd` checks the reused Stage 1 click-audio path, Mission Select's text-only pulsing shortcut, exact hamburger option order, and the existing Mission Select save/cleanup behavior.
 - **Do not deliver an APK until:** the latest GitHub Actions Android build completes successfully, the APK is signed/verified, and the actual downloadable release asset URL is confirmed.
