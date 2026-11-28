@@ -601,3 +601,50 @@ Read this master file first. **Start all future implementation from Build #354 s
 - Treat Build #392 and its exact tested source revision—not the older Build #354 note above and not the failed workflow run #391—as the current user-approved development starting point. Build #391 (`46114542527`) failed and is not the baseline.
 - Create all future feature branches from `e5de8a40b3475fa037bef34ad728e6d6f80b085b` (or a verified descendant). Do not silently substitute another branch, commit, or older build. Keep the tested branch and commit intact as the recovery checkpoint.
 - The current `main` branch has diverged from this tested branch. Do not force-reset or overwrite `main` to promote the baseline; reconcile the histories deliberately before changing the default branch. This note records the exact source the user approved so future work starts from the working APK's code.
+
+
+## 22. Stage Two map and “Death Drive” naming — Build #408 (2026-11-28)
+
+**This section supersedes earlier current-checkpoint and next-task instructions wherever they conflict.** The latest verified development checkpoint is Build #408 on the Stage Two feature branch.
+
+### Current verified Android build
+
+- **Android build:** #408.
+- **GitHub Actions run ID:** `46126463646`.
+- **Workflow result:** completed / success.
+- **Source branch:** `build/stage2-map`.
+- **Exact source commit:** `408c50fd27fa257222ecef3027e1edbe9f344a99`.
+- **Parent source commit:** `ead9791437a5945a7c781c9b661e2779439bb19c`.
+- **Workflow run:** https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/actions/runs/46126463646
+- The final workflow run completed successfully for the exact branch head above. Do not confuse the branch's earlier build/source numbers with the actual tested build number #408.
+- The user reviewed the latest result and said it looks great. Do not claim a separate fresh-install/device test unless the user explicitly reports one.
+
+### Stage Two naming now implemented
+
+- Stage Two's official display name is **Death Drive**.
+- The Stage Select entry displays **STAGE 2 — DEATH DRIVE** when unlocked and **STAGE 2 — DEATH DRIVE — LOCKED** while locked.
+- The Stage Two Mission Select header displays **STAGE TWO / DEATH DRIVE / MISSION SELECT**.
+- The smoke tests were updated to assert both the locked/unlocked Stage Select labels and the Mission Select title.
+- Main implementation commit: `ead9791437a5945a7c781c9b661e2779439bb19c`.
+- Final test commit and Build #408 source: `408c50fd27fa257222ecef3027e1edbe9f344a99`.
+- Preserve the exact name “Death Drive” and capitalization in both locations. Do not change Stage One naming or other screens as part of this feature.
+
+### APK release verified for Build #408
+
+- **Asset:** `TheLegendOfJohnnyRedeye.apk`.
+- **Size:** 153,542,786 bytes.
+- **SHA-256:** `e43d5f4d36ea7ef47afc861a4ff86640ffb30e222d2d8163516fc5bd234b8b5f`.
+- **Release tag:** `android-latest`.
+- **Asset updated:** 2026-11-28 08:40:57 UTC.
+- **Direct APK URL:** https://github.com/djdidas250-lab/the-legend-of-johnny-redeye/releases/download/android-latest/TheLegendOfJohnnyRedeye.apk
+- The release body identifies source commit `408c50fd27fa257222ecef3027e1edbe9f344a99`; the APK was exported, package-checked and signature-verified by the successful workflow.
+- This is a rolling release URL. Always verify the asset timestamp and source commit before presenting it as a later build.
+
+### Current development baseline and resume instructions
+
+1. Start future Stage Two work from `build/stage2-map` at exact commit `408c50fd27fa257222ecef3027e1edbe9f344a99`, or a verified descendant—not from the older Build #392, #354, or #351 checkpoints.
+2. Keep the tested Build #392 source branch and commit intact as a historical recovery checkpoint. Do not force-reset or rewrite `main` to promote a feature branch.
+3. The Stage Two map implementation and its current navigation/progression are part of the Build #408 source branch. Inspect the live branch and relevant files before extending it; do not assume the feature branch has been merged into `main`.
+4. Preserve all working Stage One content, map artwork, gameplay, bosses, cinematics, music, sound effects, save progression and Mission Select behaviour.
+5. Keep Stage Two named **Death Drive** on both Stage Select and Mission Select. Build and verify an Android APK with a green Actions result before providing it.
+6. The master handoff file is maintained on `main` separately from the feature branch. This documentation update does not merge or change game code on `build/stage2-map`.
