@@ -1805,6 +1805,11 @@ func _show_map_screen() -> void:
 		park_hitbox.pressed.connect(_show_woodlawn_park_checkpoint_from_map)
 		map_layer.add_child(park_hitbox)
 
+	# Compact reusable Mission Select header. Keep it shallow so the supplied map
+	# remains visible; future stages only need different title strings.
+	var mission_header := _create_mission_select_header("STAGE ONE", "WOODLAWN SUBURBS", "MISSION SELECT")
+	map_layer.add_child(mission_header)
+
 	# A quiet text-only return shortcut sits in the upper-right corner without
 	# covering the checkpoint markers or adding a panel to the supplied map.
 	var stage_return := Button.new()
@@ -1835,6 +1840,93 @@ func _show_map_screen() -> void:
 	var stage_return_pulse := stage_return.create_tween().set_loops()
 	stage_return_pulse.tween_property(stage_return, "modulate:a", 0.70, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	stage_return_pulse.tween_property(stage_return, "modulate:a", 1.0, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+func _create_mission_select_header(stage_title: String, location_title: String, screen_title: String) -> Control:
+	var header := Control.new()
+	header.name = "MissionSelectHeaderOverlay"
+	header.anchor_left = 0.0
+	header.anchor_right = 1.0
+	header.anchor_top = 0.0
+	header.anchor_bottom = 0.0
+	header.offset_left = 0.0
+	header.offset_right = 0.0
+	header.offset_top = 0.0
+	header.offset_bottom = 62.0
+	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header.z_index = 20
+
+	var backing := ColorRect.new()
+	backing.name = "MissionSelectHeaderBacking"
+	backing.color = Color(0.012, 0.010, 0.020, 0.84)
+	backing.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backing.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header.add_child(backing)
+
+	var display_font := _make_stage_select_font()
+	var stage_label := Label.new()
+	stage_label.name = "MissionSelectStageTitle"
+	stage_label.text = stage_title
+	stage_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	stage_label.offset_top = 2.0
+	stage_label.offset_bottom = -43.0
+	stage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stage_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	stage_label.add_theme_font_override("font", display_font)
+	stage_label.add_theme_font_size_override("font_size", 11)
+	stage_label.add_theme_color_override("font_color", Color("#e5e5e5"))
+	stage_label.add_theme_color_override("font_outline_color", Color(0.015, 0.012, 0.02, 0.95))
+	stage_label.add_theme_constant_override("outline_size", 2)
+	stage_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header.add_child(stage_label)
+
+	var location_label := Label.new()
+	location_label.name = "MissionSelectLocationTitle"
+	location_label.text = location_title
+	location_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	location_label.offset_top = 13.0
+	location_label.offset_bottom = -18.0
+	location_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	location_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	location_label.add_theme_font_override("font", display_font)
+	location_label.add_theme_font_size_override("font_size", 19)
+	location_label.add_theme_color_override("font_color", Color("#f2f0ed"))
+	location_label.add_theme_color_override("font_outline_color", Color(0.015, 0.012, 0.02, 0.98))
+	location_label.add_theme_constant_override("outline_size", 3)
+	location_label.add_theme_color_override("font_shadow_color", Color(0.55, 0.04, 0.08, 0.78))
+	location_label.add_theme_constant_override("shadow_offset_x", 0)
+	location_label.add_theme_constant_override("shadow_offset_y", 1)
+	location_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header.add_child(location_label)
+
+	var screen_label := Label.new()
+	screen_label.name = "MissionSelectScreenTitle"
+	screen_label.text = screen_title
+	screen_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	screen_label.offset_top = 39.0
+	screen_label.offset_bottom = -2.0
+	screen_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	screen_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	screen_label.add_theme_font_override("font", display_font)
+	screen_label.add_theme_font_size_override("font_size", 10)
+	screen_label.add_theme_color_override("font_color", Color("#f4f0ee"))
+	screen_label.add_theme_color_override("font_outline_color", Color(0.015, 0.012, 0.02, 0.95))
+	screen_label.add_theme_constant_override("outline_size", 2)
+	screen_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header.add_child(screen_label)
+
+	var red_accent := ColorRect.new()
+	red_accent.name = "MissionSelectHeaderRedAccent"
+	red_accent.anchor_left = 0.39
+	red_accent.anchor_right = 0.61
+	red_accent.anchor_top = 1.0
+	red_accent.anchor_bottom = 1.0
+	red_accent.offset_top = -2.0
+	red_accent.offset_bottom = 0.0
+	red_accent.color = Color("#bd102d")
+	red_accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header.add_child(red_accent)
+	return header
 
 func _make_checkpoint_marker(left: float, top: float, right: float, bottom: float, should_pulse: bool = true) -> TextureRect:
 	var marker := TextureRect.new()
