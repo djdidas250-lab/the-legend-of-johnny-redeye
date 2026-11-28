@@ -465,7 +465,8 @@ func _first_empty_save_slot() -> int:
 	return -1
 
 func _corrected_area_spelling(area: String) -> String:
-	# Correct legacy save-slot text without changing internal street IDs.
+	# McCrae is the correct player-facing spelling; keep legacy saves readable.
+	# Internal street IDs intentionally retain their existing names.
 	return area.replace("McRae", "McCrae").replace("McRAE", "McCRAE")
 
 func _slot_summary(cfg: ConfigFile, slot_index: int) -> String:
