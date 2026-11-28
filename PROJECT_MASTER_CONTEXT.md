@@ -391,3 +391,14 @@ The original next-feature note after build #271 was to create a post-final-boss 
 - **Scope:** no music assets, title artwork, title-screen layout, gameplay, boss logic, or other audio paths were changed.
 - **Implementation commits:** gameplay return fix 7e455577098a93cd9db68362c3cbf5b4ed0a1649; save-picker return fix 888c9feb2edde5250e367df14fc39f58fe9e4e0f; smoke test f7c46abb360352deb6ca601d48edaab0cf59c738.
 - **Verification:** awaiting the Android GitHub Actions run for the final handoff-file commit. Do not provide an APK until that run is green and its release asset is verified.
+
+
+## 12. Stage Two incremental implementation checkpoint (2026-11-28)
+
+- User confirmed their uploaded `TheLegendOfJohnnyRedeye.apk` is the correct working baseline before the Stage Two X marker, cinematic, and briefing additions. Its SHA-256 exactly matches the recorded Build #408 APK.
+- **Recovery/source baseline:** commit `408c50fd27fa257222ecef3027e1edbe9f344a99` (Build #408).
+- **Active incremental branch:** `stage2/step1-mission-marker`, created directly from that baseline.
+- **Step 1 commit:** `49497e6635e654740f185d7b3f491ca25accd898` — adds the first Stage Two Mission One red X marker to the Stage Two map using the existing `images/map_checkpoint_x.svg` asset and normalized map bounds (0.465, 0.42) to (0.535, 0.58). The marker is intentionally visual-only until Step 2 connects its hit target to the cinematic.
+- No Stage One gameplay, checkpoint logic, artwork, music, or audio was intentionally changed in this step.
+- **Verification status:** source change committed; no Android workflow run or APK has yet been verified for this branch. Do not call Step 1 complete or provide a test APK until the Android build and relevant smoke tests pass.
+- **Next:** validate Step 1 with the project's Android workflow and a targeted smoke test; then implement the supplied Stage Two opening cinematic and connect the X marker hitbox; finally implement the Stage Two Mission One briefing.
