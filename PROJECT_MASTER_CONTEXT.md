@@ -391,3 +391,17 @@ The original next-feature note after build #271 was to create a post-final-boss 
 - **Scope:** no music assets, title artwork, title-screen layout, gameplay, boss logic, or other audio paths were changed.
 - **Implementation commits:** gameplay return fix 7e455577098a93cd9db68362c3cbf5b4ed0a1649; save-picker return fix 888c9feb2edde5250e367df14fc39f58fe9e4e0f; smoke test f7c46abb360352deb6ca601d48edaab0cf59c738.
 - **Verification:** awaiting the Android GitHub Actions run for the final handoff-file commit. Do not provide an APK until that run is green and its release asset is verified.
+
+
+## 18. Stage Two Mission 1 opening sequence — implementation in progress (2026-11-28)
+
+- User explicitly requested the first X marker on the Stage Two / Death Drive mission-select map, the supplied Stage Two cinematic image with its matching audio, then the Stage Two Mission 1 briefing.
+- Supplied archive: `images/Stage 2.zip`. Workflow extraction inventory confirms:
+  - `Stage 2 cinematic cutscene.jpg`
+  - `stage 2 cutscene cinematic.mp3`
+  - `Stage 2 mission brief .jpg`
+- Approved Mission 1 objective copy: “Make your way down Woodlawn Road to meet with Al at Toke Cannabis.”
+- Implementation branch: `build/stage2-mission1`, starting from commit `b29926f31f2ece7549b6a96d3d0a82cd000503fd` (Build #413 asset inventory).
+- Current implementation adds the first pulsing X marker and hitbox to the Stage Two map; marker launches the supplied image/audio cinematic; audio completion fades to the supplied Mission 1 briefing artwork and shared briefing panel. The briefing's action currently returns to the Stage Two mission-select map because no Stage Two gameplay route has yet been specified.
+- Regression checks added for all three extracted assets, marker wiring, cinematic image/audio, and exact objective text.
+- Do not call this complete until GDScript validation, gameplay smoke tests, Android export, APK signature/package checks, and workflow success are verified.

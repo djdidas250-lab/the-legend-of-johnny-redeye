@@ -136,6 +136,25 @@ func _ready() -> void:
 	var stage_two_map_art := stage_two_map_layer.find_child("StageTwoMapArtwork", true, false) as TextureRect
 	var stage_two_header_location := stage_two_map_layer.find_child("MissionSelectLocationTitle", true, false) as Label
 	if not _check(stage_two_map_layer != null and stage_two_map_art != null and stage_two_map_art.texture.resource_path == "res://images/Stage 2 map.jpg" and stage_two_header_location != null and stage_two_header_location.text == "DEATH DRIVE" and stage_two_map_layer.get_node_or_null("JohnHouseCheckpointMarker") == null and stage_two_map_layer.get_node_or_null("McRaeCheckpointMarker") == null, "Selecting Stage 2 must display its own map and header without Stage 1 checkpoint markers."): return
+	var stage_two_marker := stage_two_map_layer.find_child("StageTwoMissionOneMarker", true, false) as TextureRect
+	var stage_two_hitbox := stage_two_map_layer.find_child("StageTwoMissionOneHitbox", true, false) as Button
+	if not _check(stage_two_marker != null and stage_two_hitbox != null and stage_two_hitbox.is_connected("pressed", game._start_stage_two_opening_cinematic), "Stage 2 Mission 1 must have a pulsing first X marker with a working hit target."): return
+	for stage_two_asset in ["Stage 2 cinematic cutscene.jpg", "Stage 2 mission brief .jpg", "stage 2 cutscene cinematic.mp3"]:
+		if not _check(ResourceLoader.exists("res://images/stage2_mission1_assets/" + stage_two_asset), "Stage 2 Mission 1 supplied asset missing: " + stage_two_asset): return
+	if not _check(davy_script_text.contains("func _start_stage_two_opening_cinematic") and davy_script_text.contains("func _on_stage_two_cinematic_audio_finished") and davy_script_text.contains("func _show_stage_two_mission_one_briefing") and davy_script_text.contains("Make your way down Woodlawn Road to meet with Al at Toke Cannabis.") and davy_script_text.contains("STAGE 2  —  DEATH DRIVE"), "Stage 2 cinematic-to-briefing sequence or approved objective text is missing."): return
+	game.call("_start_stage_two_opening_cinematic")
+	await get_tree().process_frame
+	var stage_two_cinematic := game.get("stage_two_cutscene_layer") as CanvasLayer
+	var stage_two_audio := game.get("stage_two_cutscene_audio_player") as AudioStreamPlayer
+	if not _check(stage_two_cinematic != null and stage_two_cinematic.name == "StageTwoOpeningCinematic" and stage_two_cinematic.find_child("StageTwoCinematicArtwork", true, false) != null and stage_two_audio != null and stage_two_audio.stream.resource_path == "res://images/stage2_mission1_assets/stage 2 cutscene cinematic.mp3", "Stage 2 opening cinematic must show the supplied image and play its supplied soundtrack."): return
+	game.call("_on_stage_two_cinematic_audio_finished")
+	await get_tree().create_timer(1.0).timeout
+	var stage_two_briefing := game.get("splash_layer") as CanvasLayer
+	var stage_two_objective := stage_two_briefing.find_child("StageObjective", true, false) as Label if stage_two_briefing != null else null
+	if not _check(stage_two_briefing != null and stage_two_briefing.name == "StageTwoMissionOneBriefing" and stage_two_briefing.find_child("StageTwoBriefingArtwork", true, false) != null and stage_two_objective != null and stage_two_objective.text == "Make your way down Woodlawn Road to meet with Al at Toke Cannabis.", "Stage 2 Mission 1 briefing must follow the cinematic with the approved objective."): return
+	stage_two_briefing.queue_free()
+	game.set("splash_layer", null)
+	game.set("active_stage_id", "woodlawn_suburbs")
 	game.set("active_slot_unlocked_stage2", false)
 	game.call("_return_to_stage_select")
 	await get_tree().process_frame
