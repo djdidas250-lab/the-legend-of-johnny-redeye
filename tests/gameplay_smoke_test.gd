@@ -768,7 +768,16 @@ func _ready() -> void:
 	game.set("player_bonus_heart", true)
 	game.call("_reset_player_health")
 	if not _check(int(game.get("player_health")) == 5 and not bool(game.get("player_bonus_heart")), "A depleted six-heart set must reset to five hearts on the next life."): return
-	print("Dorval quality checks passed: title, Mission Select, gameplay, baggy health power-up, extended briefings, McRae, Newleaf, Woodlawn Park, and in-game menu navigation.")
+	# Exercise the in-game return-to-title route and verify that the soundtrack
+	# is actively playing again with the original title theme and volume.
+	game.call("_queue_game_return", "title")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var returned_title_layer := game.get("title_layer") as CanvasLayer
+	var restarted_title_music := game.get("music_player") as AudioStreamPlayer
+	if not _check(not bool(game.get("game_started")) and returned_title_layer != null and is_instance_valid(returned_title_layer), "Returning from gameplay must restore the title screen."): return
+	if not _check(restarted_title_music != null and restarted_title_music.playing and restarted_title_music.stream != null and restarted_title_music.stream.resource_path == "res://images/02 - Title Theme.wav" and is_equal_approx(restarted_title_music.volume_db, -18.0), "Returning to the title screen must restart the original title soundtrack at its established volume."): return
+	print("Dorval quality checks passed: title, title-music return, Mission Select, gameplay, baggy health power-up, extended briefings, McRae, Newleaf, Woodlawn Park, and in-game menu navigation.")
 	get_tree().quit(0)
 
 func _frame_baseline(texture: Texture2D) -> int:
