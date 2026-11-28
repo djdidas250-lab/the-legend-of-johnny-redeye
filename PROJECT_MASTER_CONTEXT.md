@@ -383,3 +383,11 @@ The original next-feature note after build #271 was to create a post-final-boss 
 - **Safe exits:** All in-game destinations route through the shared deferred gameplay teardown. The active save slot is persisted before leaving; if saving fails, gameplay remains active. The teardown stops music, clears regular enemies, Matt-ijuana and attached phase/fire visuals, projectiles/pickups/touch controls and atmosphere, and then opens the requested destination.
 - **Regression coverage:** `tests/gameplay_smoke_test.gd` checks the reused Stage 1 click-audio path, Mission Select's text-only pulsing shortcut, exact hamburger option order, and the existing Mission Select save/cleanup behavior.
 - **Do not deliver an APK until:** the latest GitHub Actions Android build completes successfully, the APK is signed/verified, and the actual downloadable release asset URL is confirmed.
+## 14. Title soundtrack restart on return — implementation pending build verification (2026-11-27)
+
+- **Cause confirmed:** the shared _complete_game_return() teardown stops music_player before switching screens. The destination == "title" branch previously called _show_title() without restarting the title theme.
+- **Code fix:** scripts/main.gd now has _restart_title_music(). It reuses the existing AudioStreamPlayer (preserving its finished/loop callback), restores the original TITLE_MUSIC stream and TITLE_MUSIC_VOLUME_DB (-18 dB), and calls play() from the beginning. If the player is no longer valid, it falls back to _start_title_music(). The title-return branch invokes this helper immediately after _show_title().
+- **Regression test:** tests/gameplay_smoke_test.gd now exercises _queue_game_return("title") after gameplay and checks that the title layer is restored and the player is actively playing res://images/02 - Title Theme.wav at -18 dB.
+- **Scope:** no music assets, title artwork, title-screen layout, gameplay, boss logic, or other audio paths were changed.
+- **Implementation commits:** main script 7e455577098a93cd9db68362c3cbf5b4ed0a1649; smoke test 8929b902b6bf38e841ac2438a548eb2b549b5baa.
+- **Verification:** awaiting the Android GitHub Actions run for the final handoff-file commit. Do not provide an APK until that run is green and its release asset is verified.
