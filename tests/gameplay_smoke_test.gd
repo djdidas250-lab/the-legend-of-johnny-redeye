@@ -123,7 +123,7 @@ func _ready() -> void:
 	# use the uploaded map and the same Stage Select / Mission Select presentation.
 	var stage_two_button := stage_select.find_child("StageTwoButton", true, false) as Button
 	if not _check(stage_two_button != null and stage_two_button.disabled and stage_two_button.text == "STAGE 2 — LOCKED" and not bool(game.get("active_slot_unlocked_stage2")), "Stage 2 must remain visibly locked until Matt-ijuana is defeated."): return
-	if not _check(ResourceLoader.exists("res://images/Stage 2 map.jpg") and game_script.source_code.contains('const STAGE_TWO_MAP_IMAGE := preload("res://images/Stage 2 map.jpg")') and game_script.source_code.contains("active_slot_unlocked_stage2 = true") and game_script.source_code.contains('cfg.set_value(section, "unlocked_stage2", active_slot_unlocked_stage2)'), "Stage 2 map asset and persistent boss-defeat unlock must be wired into the game."): return
+	if not _check(ResourceLoader.exists("res://images/Stage 2 map.jpg") and davy_script_text.contains('const STAGE_TWO_MAP_IMAGE := preload("res://images/Stage 2 map.jpg")') and davy_script_text.contains("active_slot_unlocked_stage2 = true") and davy_script_text.contains('cfg.set_value(section, "unlocked_stage2", active_slot_unlocked_stage2)'), "Stage 2 map asset and persistent boss-defeat unlock must be wired into the game."): return
 	game.set("active_slot_unlocked_stage2", true)
 	game.call("_show_stage_select_screen")
 	await get_tree().process_frame
