@@ -589,3 +589,13 @@ Required appearance:
 ### Resume instruction
 
 Read this master file first. **Start all future implementation from Build #354 source commit `4b46e2b9d8c045b1a65e03ca586a8e3792f489f3` (or a verified descendant), not from Build #326 or the older Build #351 Stage Select branch.** Build #354 is the user's selected authoritative base for adding Stage Select while retaining the updated Mission Select and Matt-ijuana victory screens.
+
+
+## 21. User-confirmed working baseline — Stage 1 map APK (2026-11-28)
+
+- **Authoritative starting point going forward:** the exact source revision used for the Android APK the user has now installed and tested successfully: commit `e5de8a40b3475fa037bef34ad728e6d6f80b085b` on branch `build/375-stage1-map-image`.
+- **Verification:** GitHub Actions Android workflow run #392 (`46115006113`) completed with conclusion `success` for that exact commit. The user independently confirmed that the APK they tested works.
+- **Mission Select artwork:** use the exact supplied file `images/stage 1 map.jpeg`; `scripts/main.gd` references it as `res://images/stage 1 map.jpeg`. Preserve the image unchanged.
+- Treat this exact tested source revision—not the older Build #354 note above and not the failed workflow run #391—as the current user-approved development starting point. Build #391 (`46114542527`) failed and is not the baseline.
+- Create all future feature branches from `e5de8a40b3475fa037bef34ad728e6d6f80b085b` (or a verified descendant). Do not silently substitute another branch, commit, or older build. Keep the tested branch and commit intact as the recovery checkpoint.
+- The current `main` branch has diverged from this tested branch. Do not force-reset or overwrite `main` to promote the baseline; reconcile the histories deliberately before changing the default branch. This note records the exact source the user approved so future work starts from the working APK's code.
