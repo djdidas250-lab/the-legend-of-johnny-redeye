@@ -1791,7 +1791,7 @@ func _show_map_screen() -> void:
 		park_hitbox.add_theme_stylebox_override("pressed", clear_style)
 		park_hitbox.add_theme_stylebox_override("focus", clear_style)
 		park_hitbox.pressed.connect(_play_map_click)
-			park_hitbox.pressed.connect(_show_woodlawn_park_checkpoint_from_map)
+		park_hitbox.pressed.connect(_show_woodlawn_park_checkpoint_from_map)
 		map_layer.add_child(park_hitbox)
 
 	# A quiet text-only return shortcut sits in the upper-right corner without
