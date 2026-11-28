@@ -2,7 +2,7 @@
 
 > **Purpose:** This file is the durable source of truth for continuing development in a new ChatGPT conversation. Read this document first, then inspect the current repository and GitHub Actions before changing code. Do not rely on conversational recollection where repository state can be verified.
 >
-> **Last handoff update:** 2026-11-26 (America/Toronto). Repository API timestamps may appear on 2026-11-26 UTC.
+> **Last handoff update:** 2026-11-27 (America/Toronto). Repository API timestamps may appear on 2026-11-26 UTC.
 
 ## 1. Project identity and repository
 
