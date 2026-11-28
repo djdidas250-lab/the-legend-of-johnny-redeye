@@ -1854,7 +1854,6 @@ func _create_mission_select_header(stage_title: String, location_title: String, 
 	header.offset_top = 0.0
 	header.offset_bottom = 62.0
 	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	header.z_index = 20
 
 	var backing := ColorRect.new()
 	backing.name = "MissionSelectHeaderBacking"
@@ -1869,7 +1868,7 @@ func _create_mission_select_header(stage_title: String, location_title: String, 
 	stage_label.text = stage_title
 	stage_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	stage_label.offset_top = 2.0
-	stage_label.offset_bottom = -43.0
+	stage_label.offset_bottom = -48.0
 	stage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stage_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	stage_label.add_theme_font_override("font", display_font)
@@ -1885,7 +1884,7 @@ func _create_mission_select_header(stage_title: String, location_title: String, 
 	location_label.text = location_title
 	location_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	location_label.offset_top = 13.0
-	location_label.offset_bottom = -18.0
+	location_label.offset_bottom = -24.0
 	location_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	location_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	location_label.add_theme_font_override("font", display_font)
