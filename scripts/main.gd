@@ -1667,103 +1667,6 @@ func _show_map_screen() -> void:
 	map_atmosphere.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	map_art.add_child(map_atmosphere)
 
-	# Reusable Mission Select frame: these UI overlays cover the map artwork's
-	# baked-in plaque and thin outer border without resizing the map or moving
-	# any checkpoint marker/hitbox. Keep this frame independent of the artwork.
-	var map_header := ColorRect.new()
-	map_header.name = "MissionSelectHeaderOverlay"
-	map_header.color = Color("#18212b")
-	map_header.anchor_left = 0.0
-	map_header.anchor_right = 1.0
-	map_header.anchor_top = 0.0
-	map_header.anchor_bottom = 0.18155
-	map_header.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_layer.add_child(map_header)
-
-	# Subtle metallic bevels on the new full-width header.
-	var header_top_edge := ColorRect.new()
-	header_top_edge.name = "MissionSelectHeaderTopBevel"
-	header_top_edge.color = Color("#87919b")
-	header_top_edge.anchor_right = 1.0
-	header_top_edge.anchor_bottom = 0.0045
-	header_top_edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_layer.add_child(header_top_edge)
-	var header_bottom_edge := ColorRect.new()
-	header_bottom_edge.name = "MissionSelectHeaderBottomBevel"
-	header_bottom_edge.color = Color("#070b10")
-	header_bottom_edge.anchor_top = 0.176
-	header_bottom_edge.anchor_right = 1.0
-	header_bottom_edge.anchor_bottom = 0.182
-	header_bottom_edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_layer.add_child(header_bottom_edge)
-
-	var header_stage_title := Label.new()
-	header_stage_title.name = "MissionSelectStageTitle"
-	header_stage_title.text = "STAGE 1 - WOODLAWN SUBURBS"
-	header_stage_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header_stage_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	header_stage_title.anchor_left = 0.18
-	header_stage_title.anchor_right = 0.82
-	header_stage_title.anchor_top = 0.012
-	header_stage_title.anchor_bottom = 0.092
-	header_stage_title.add_theme_font_size_override("font_size", 34)
-	header_stage_title.add_theme_color_override("font_color", Color("#f0784b"))
-	header_stage_title.add_theme_color_override("font_outline_color", Color("#090d12"))
-	header_stage_title.add_theme_constant_override("outline_size", 6)
-	header_stage_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_layer.add_child(header_stage_title)
-
-	var header_mission_title := Label.new()
-	header_mission_title.name = "MissionSelectHeaderTitle"
-	header_mission_title.text = "MISSION SELECT"
-	header_mission_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header_mission_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	header_mission_title.anchor_left = 0.25
-	header_mission_title.anchor_right = 0.75
-	header_mission_title.anchor_top = 0.083
-	header_mission_title.anchor_bottom = 0.174
-	header_mission_title.add_theme_font_size_override("font_size", 43)
-	header_mission_title.add_theme_color_override("font_color", Color("#e85b3b"))
-	header_mission_title.add_theme_color_override("font_outline_color", Color("#090d12"))
-	header_mission_title.add_theme_constant_override("outline_size", 7)
-	header_mission_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_layer.add_child(header_mission_title)
-
-	# Matching narrow metal rails cover the old left, right, and bottom border.
-	var map_frame_left := ColorRect.new()
-	map_frame_left.name = "MissionSelectLeftFrameOverlay"
-	map_frame_left.color = Color("#303943")
-	map_frame_left.anchor_right = 0.0127
-	map_frame_left.anchor_bottom = 1.0
-	map_frame_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_layer.add_child(map_frame_left)
-	var map_frame_right := ColorRect.new()
-	map_frame_right.name = "MissionSelectRightFrameOverlay"
-	map_frame_right.color = Color("#303943")
-	map_frame_right.anchor_left = 0.9873
-	map_frame_right.anchor_right = 1.0
-	map_frame_right.anchor_bottom = 1.0
-	map_frame_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_layer.add_child(map_frame_right)
-	var map_frame_bottom := ColorRect.new()
-	map_frame_bottom.name = "MissionSelectBottomFrameOverlay"
-	map_frame_bottom.color = Color("#303943")
-	map_frame_bottom.anchor_top = 0.9717
-	map_frame_bottom.anchor_right = 1.0
-	map_frame_bottom.anchor_bottom = 1.0
-	map_frame_bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_layer.add_child(map_frame_bottom)
-	var map_frame_inner_edge := ColorRect.new()
-	map_frame_inner_edge.name = "MissionSelectFrameInnerEdge"
-	map_frame_inner_edge.color = Color("#929ba3")
-	map_frame_inner_edge.anchor_left = 0.0127
-	map_frame_inner_edge.anchor_right = 0.014
-	map_frame_inner_edge.anchor_top = 0.182
-	map_frame_inner_edge.anchor_bottom = 0.972
-	map_frame_inner_edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_layer.add_child(map_frame_inner_edge)
-
-
 	# John's X is centred in the gap between the fourth and fifth houses
 	# to the right of the SILVAN DR label. The hitbox shares its bounds.
 	var john_marker := _make_checkpoint_marker(0.79, 0.745, 0.835, 0.855, not active_slot_unlocked_mcrae)
@@ -1907,17 +1810,17 @@ func _show_map_screen() -> void:
 	var stage_return := Button.new()
 	stage_return.name = "ReturnToStageSelectButton"
 	stage_return.text = "RETURN TO STAGE SELECT"
-	stage_return.anchor_left = 0.75
+	stage_return.anchor_left = 0.69
 	stage_return.anchor_right = 0.985
-	stage_return.anchor_top = 0.112
-	stage_return.anchor_bottom = 0.171
+	stage_return.anchor_top = 0.018
+	stage_return.anchor_bottom = 0.085
 	stage_return.offset_left = 0
 	stage_return.offset_right = 0
 	stage_return.offset_top = 0
 	stage_return.offset_bottom = 0
 	stage_return.flat = true
 	stage_return.focus_mode = Control.FOCUS_NONE
-	stage_return.add_theme_font_size_override("font_size", 11)
+	stage_return.add_theme_font_size_override("font_size", 15)
 	stage_return.add_theme_color_override("font_color", Color("#ffffff"))
 	stage_return.add_theme_color_override("font_hover_color", Color("#ffffff"))
 	stage_return.add_theme_color_override("font_pressed_color", Color("#ffffff"))
