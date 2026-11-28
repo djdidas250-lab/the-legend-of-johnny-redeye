@@ -1615,6 +1615,7 @@ func _on_save_slot_selected(slot_index: int, for_new_game: bool) -> void:
 	if cfg.load(SAVE_PATH) != OK or not _slot_exists(cfg, slot_index):
 		return
 	active_save_slot = slot_index
+	active_stage_id = "woodlawn_suburbs"
 	var section := _slot_section(slot_index)
 	active_slot_unlocked_leaside = bool(cfg.get_value(section, "unlocked_leaside", false))
 	active_slot_unlocked_mcrae = bool(cfg.get_value(section, "unlocked_mcrae", false))
