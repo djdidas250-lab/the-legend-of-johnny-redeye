@@ -1291,7 +1291,7 @@ void fragment() {
 	# pulse as Stage One. It remains visible but unavailable until Matt-ijuana falls.
 	var stage_two_button := Button.new()
 	stage_two_button.name = "StageTwoButton"
-	stage_two_button.text = "STAGE 2" if active_slot_unlocked_stage2 else "STAGE 2 — LOCKED"
+	stage_two_button.text = "STAGE 2 — DEATH DRIVE" if active_slot_unlocked_stage2 else "STAGE 2 — DEATH DRIVE — LOCKED"
 	stage_two_button.position = Vector2(viewport_size.x * 0.525, viewport_size.y * 0.49)
 	stage_two_button.size = Vector2(viewport_size.x * 0.44, viewport_size.y * 0.13)
 	stage_two_button.flat = true
@@ -1864,7 +1864,7 @@ func _show_map_screen() -> void:
 
 	# Compact reusable Mission Select header. Keep it shallow so the supplied map
 	# remains visible; future stages only need different title strings.
-	var mission_header := _create_mission_select_header("STAGE TWO", "STAGE TWO MAP", "MISSION SELECT") if active_stage_id == "stage_two" else _create_mission_select_header("STAGE ONE", "WOODLAWN SUBURBS", "MISSION SELECT")
+	var mission_header := _create_mission_select_header("STAGE TWO", "DEATH DRIVE", "MISSION SELECT") if active_stage_id == "stage_two" else _create_mission_select_header("STAGE ONE", "WOODLAWN SUBURBS", "MISSION SELECT")
 	map_layer.add_child(mission_header)
 
 	# A quiet text-only return shortcut sits in the upper-right corner without
