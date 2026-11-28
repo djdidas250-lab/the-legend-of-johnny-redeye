@@ -127,7 +127,9 @@ func _ready() -> void:
 	if not _check(stage_return_button != null and stage_return_button.text == "RETURN TO STAGE SELECT" and stage_return_button.flat and stage_return_button.get_theme_stylebox("normal") is StyleBoxEmpty and stage_return_button.get_theme_stylebox("hover") is StyleBoxEmpty and stage_return_button.get_theme_stylebox("pressed") is StyleBoxEmpty and game.get_script().source_code.contains("stage_return_pulse"), "Mission Select must show a text-only white pulsing Return to Stage Select shortcut in the top-right corner."): return
 	var map_art := map_layer.get_child(0) as TextureRect
 	if not _check(map_art != null and map_art.texture.resource_path == "res://images/stage 1 map.jpeg", "New Mission Select artwork missing."): return
-	if not _check(map_art.stretch_mode == TextureRect.STRETCH_SCALE and map_art.anchor_left == 0.0 and map_art.anchor_top == 0.0 and map_art.anchor_right == 1.0 and map_art.anchor_bottom == 1.0, "Mission artwork must fill widescreen without cropping."): return
+	var map_source_ratio := float(map_art.texture.get_width()) / maxf(float(map_art.texture.get_height()), 1.0)
+	var map_display_ratio := map_art.size.x / maxf(map_art.size.y, 1.0)
+	if not _check(map_art.stretch_mode == TextureRect.STRETCH_SCALE and absf(map_source_ratio - map_display_ratio) < 0.01 and map_art.size.x > 0.0 and map_art.size.y > 0.0 and map_art.position.x >= -1.0 and map_art.position.y >= -1.0, "Mission artwork must display the supplied map at its original aspect ratio without cropping."): return
 	var john_marker := map_layer.get_child(1) as TextureRect
 	if not _check(john_marker != null and john_marker.name == "JohnHouseCheckpointMarker" and john_marker.texture.resource_path == "res://images/map_checkpoint_x.svg", "John's Silvan Drive checkpoint marker is missing."): return
 	var marker_button := map_layer.get_child(2) as Button
