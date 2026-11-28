@@ -1623,6 +1623,7 @@ func _cancel_save_slot_picker() -> void:
 		save_slot_layer.queue_free()
 		save_slot_layer = null
 	_show_title()
+	_restart_title_music()
 
 func _show_map_screen() -> void:
 	intro_active = false
