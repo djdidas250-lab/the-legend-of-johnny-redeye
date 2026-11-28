@@ -618,7 +618,7 @@ func _ready() -> void:
 	game.set("active_slot_unlocked_leaside", true)
 
 	# Exercise the Newleaf-to-McRae handoff and verify the correct travel direction.
-	if not _check(game_script.source_code.contains('objective.text = "Make your way down McRae to Newleaf Crescent."') and game_script.source_code.contains('street_title.text = "NOW ENTERING McRAE"'), "McRae street-entry briefing must name Leaside Drive and the correct street."): return
+	if not _check(game_script.source_code.contains('objective.text = "Make your way down McCrae to Newleaf Crescent."') and game_script.source_code.contains('street_title.text = "NOW ENTERING McCRAE"'), "McCrae street-entry briefing must name Leaside Drive and the correct street."): return
 	game.call("_begin_mcrae_transition")
 	await get_tree().create_timer(7.0).timeout
 	if not _check(not bool(game.get("street_transition_active")) and str(game.get("current_street")) == "McRAE DRIVE", "McRae transition did not complete."): return
