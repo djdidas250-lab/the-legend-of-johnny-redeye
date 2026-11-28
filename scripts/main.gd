@@ -19,7 +19,7 @@ const INTRO_TRACK_DURATION := 81.690256
 const INTRO_SLIDE_DURATION := INTRO_TRACK_DURATION / 5.0
 const INTRO_TRANSITION_DURATION := 1.18
 const TITLE_CLICK_VOLUME_DB := -2.0
-const MAP_IMAGE := preload("res://images/Gemini_Generated_Image_kglbemkglbemkglb.jpeg")
+const MAP_IMAGE := preload("res://images/stage 1 map.jpeg")
 const STAGE_SELECT_IMAGE := preload("res://images/stage select screen.jpeg")
 const MAP_CHECKPOINT_MARKER := preload("res://images/map_checkpoint_x.svg")
 const MAP_MUSIC := preload("res://images/28. Holy Sanctuary.wav")
@@ -1653,25 +1653,45 @@ func _show_map_screen() -> void:
 	map_layer.layer = 10
 	add_child(map_layer)
 
-	# Keep the complete supplied neighborhood map visible edge-to-edge.
+	# Fit the supplied ultra-wide artwork at its native aspect ratio. The map
+	# and every checkpoint marker share this same content rectangle, so neither
+	# the artwork nor its interactive coordinates are stretched or cropped.
+	var viewport_size := get_viewport_rect().size
+	var source_ratio := float(MAP_IMAGE.get_width()) / maxf(float(MAP_IMAGE.get_height()), 1.0)
+	var art_size := viewport_size
+	if viewport_size.x / maxf(viewport_size.y, 1.0) > source_ratio:
+		art_size.y = viewport_size.x / source_ratio
+	else:
+		art_size.x = viewport_size.y * source_ratio
+	var art_position := (viewport_size - art_size) * 0.5
 	var map_art := TextureRect.new()
+	map_art.name = "StageOneNeighborhoodMapArtwork"
 	map_art.texture = MAP_IMAGE
-	map_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	map_art.position = art_position
+	map_art.size = art_size
 	map_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	map_art.stretch_mode = TextureRect.STRETCH_SCALE
 	map_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	map_layer.add_child(map_art)
-	# Attach atmosphere to the map image itself; checkpoint markers remain siblings above it.
+	# Atmosphere remains an independent overlay above the untouched artwork.
 	var map_atmosphere := MISSION_SELECT_ATMOSPHERE.new()
 	map_atmosphere.name = "MissionSelectAtmosphere"
 	map_atmosphere.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	map_art.add_child(map_atmosphere)
+	# Checkpoint markers and hit targets are normalized to the original map,
+	# not to the screen or the separate title header.
+	var map_content := Control.new()
+	map_content.name = "MissionSelectMapCoordinateSpace"
+	map_content.position = art_position
+	map_content.size = art_size
+	map_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	map_layer.add_child(map_content)
 
 	# John's X is centred in the gap between the fourth and fifth houses
 	# to the right of the SILVAN DR label. The hitbox shares its bounds.
 	var john_marker := _make_checkpoint_marker(0.79, 0.745, 0.835, 0.855, not active_slot_unlocked_mcrae)
 	john_marker.name = "JohnHouseCheckpointMarker"
-	map_layer.add_child(john_marker)
+	map_content.add_child(john_marker)
 
 	var john_hitbox := Button.new()
 	john_hitbox.name = "JohnHouseCheckpointHitbox"
@@ -1695,7 +1715,7 @@ func _show_map_screen() -> void:
 	john_hitbox.add_theme_stylebox_override("focus", clear_style)
 	john_hitbox.pressed.connect(_play_map_click)
 	john_hitbox.pressed.connect(_show_stage_one_splash)
-	map_layer.add_child(john_hitbox)
+	map_content.add_child(john_hitbox)
 
 	# The only additional mission marker is the Leeside–McRae intersection.
 	# It remains hidden until the player reaches that intersection and the
@@ -1705,7 +1725,7 @@ func _show_map_screen() -> void:
 		# Coordinates are normalized to the supplied Mission Select artwork.
 		var mcrae_marker := _make_checkpoint_marker(0.528, 0.62, 0.608, 0.75, not active_slot_unlocked_newleaf_checkpoint)
 		mcrae_marker.name = "McRaeCheckpointMarker"
-		map_layer.add_child(mcrae_marker)
+		map_content.add_child(mcrae_marker)
 		var mcrae_hitbox := Button.new()
 		mcrae_hitbox.name = "McRaeCheckpointHitbox"
 		mcrae_hitbox.anchor_left = 0.533
@@ -1721,14 +1741,14 @@ func _show_map_screen() -> void:
 		mcrae_hitbox.add_theme_stylebox_override("focus", clear_style)
 		mcrae_hitbox.pressed.connect(_play_map_click)
 		mcrae_hitbox.pressed.connect(_show_mcrae_checkpoint_from_map)
-		map_layer.add_child(mcrae_hitbox)
+		map_content.add_child(mcrae_hitbox)
 
 	# The Newleaf–McRae checkpoint unlocks only after the player has
 	# travelled from McRae back onto Newleaf during normal progression.
 	if active_slot_unlocked_newleaf_checkpoint:
 		var newleaf_marker := _make_checkpoint_marker(0.519, 0.345, 0.581, 0.505, not active_slot_unlocked_woodlawn_checkpoint)
 		newleaf_marker.name = "NewleafMcRaeCheckpointMarker"
-		map_layer.add_child(newleaf_marker)
+		map_content.add_child(newleaf_marker)
 		var newleaf_hitbox := Button.new()
 		newleaf_hitbox.name = "NewleafMcRaeCheckpointHitbox"
 		newleaf_hitbox.anchor_left = 0.525
@@ -1748,7 +1768,7 @@ func _show_map_screen() -> void:
 		newleaf_hitbox.add_theme_stylebox_override("focus", clear_style)
 		newleaf_hitbox.pressed.connect(_play_map_click)
 		newleaf_hitbox.pressed.connect(_show_newleaf_checkpoint_from_map)
-		map_layer.add_child(newleaf_hitbox)
+		map_content.add_child(newleaf_hitbox)
 
 	# The Road to Woodlawn checkpoint appears only after the secret-path handoff
 	# has delivered the player into Woodlawn Park. Its position matches the
@@ -1756,7 +1776,7 @@ func _show_map_screen() -> void:
 	if active_slot_unlocked_woodlawn_checkpoint:
 		var woodlawn_marker := _make_checkpoint_marker(0.216, 0.145, 0.279, 0.285, not active_slot_unlocked_woodlawn_park_checkpoint)
 		woodlawn_marker.name = "RoadToWoodlawnCheckpointMarker"
-		map_layer.add_child(woodlawn_marker)
+		map_content.add_child(woodlawn_marker)
 		var woodlawn_hitbox := Button.new()
 		woodlawn_hitbox.name = "RoadToWoodlawnCheckpointHitbox"
 		woodlawn_hitbox.anchor_left = 0.225
@@ -1776,14 +1796,14 @@ func _show_map_screen() -> void:
 		woodlawn_hitbox.add_theme_stylebox_override("focus", clear_style)
 		woodlawn_hitbox.pressed.connect(_play_map_click)
 		woodlawn_hitbox.pressed.connect(_show_woodlawn_checkpoint_from_map)
-		map_layer.add_child(woodlawn_hitbox)
+		map_content.add_child(woodlawn_hitbox)
 
 	# The actual Woodlawn Park checkpoint sits within the wooded park area,
 	# left of the vertical WOODLAWN PARK lettering so the label remains clear.
 	if active_slot_unlocked_woodlawn_park_checkpoint:
 		var park_marker := _make_checkpoint_marker(0.025, 0.545, 0.095, 0.685, not mattijuana_defeated)
 		park_marker.name = "WoodlawnParkCheckpointMarker"
-		map_layer.add_child(park_marker)
+		map_content.add_child(park_marker)
 		var park_hitbox := Button.new()
 		park_hitbox.name = "WoodlawnParkCheckpointHitbox"
 		park_hitbox.anchor_left = 0.025
@@ -1803,38 +1823,162 @@ func _show_map_screen() -> void:
 		park_hitbox.add_theme_stylebox_override("focus", clear_style)
 		park_hitbox.pressed.connect(_play_map_click)
 		park_hitbox.pressed.connect(_show_woodlawn_park_checkpoint_from_map)
-		map_layer.add_child(park_hitbox)
+		map_content.add_child(park_hitbox)
 
-	# A quiet text-only return shortcut sits in the upper-right corner without
-	# covering the checkpoint markers or adding a panel to the supplied map.
+	_add_mission_select_header(viewport_size)
+
+
+func _add_mission_select_header(viewport_size: Vector2) -> void:
+	# Reuse the approved Stage Select visual language: crimson painted light,
+	# crisp outlined lettering, and restrained cool-white glow. The map artwork
+	# remains an untouched texture beneath these independent UI layers.
+	var header_height := minf(104.0, viewport_size.y * 0.205)
+	var header := ColorRect.new()
+	header.name = "MissionSelectHeaderAtmosphere"
+	header.position = Vector2.ZERO
+	header.size = Vector2(viewport_size.x, header_height)
+	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header.z_index = 20
+	var header_shader := Shader.new()
+	header_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_mix;
+void fragment() {
+	vec2 uv = UV;
+	float lower_fade = 1.0 - smoothstep(0.68, 1.0, uv.y);
+	float side_shade = 0.92 + 0.08 * sin(uv.x * 3.14159);
+	float alpha = (0.96 * lower_fade + 0.72 * (1.0 - lower_fade)) * side_shade;
+	COLOR = vec4(vec3(0.008, 0.009, 0.016), alpha);
+}
+"""
+	var header_material := ShaderMaterial.new()
+	header_material.shader = header_shader
+	header.material = header_material
+	map_layer.add_child(header)
+
+	var display_font := _make_stage_select_font()
+	var crimson_stroke := ColorRect.new()
+	crimson_stroke.name = "MissionSelectCrimsonTitleStroke"
+	crimson_stroke.position = Vector2(20.0, header_height * 0.22)
+	crimson_stroke.size = Vector2(minf(viewport_size.x * 0.43, 430.0), header_height * 0.42)
+	crimson_stroke.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	crimson_stroke.z_index = 21
+	var stroke_shader := Shader.new()
+	stroke_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_mix;
+void fragment() {
+	vec2 uv = UV;
+	float rough = 0.5 + 0.19 * sin(uv.x * 89.0) + 0.12 * sin(uv.x * 157.0 + uv.y * 23.0);
+	float top_edge = smoothstep(0.02, 0.24, uv.y + (rough - 0.5) * 0.18);
+	float bottom_edge = 1.0 - smoothstep(0.73, 0.98, uv.y - (rough - 0.5) * 0.20);
+	float ends = smoothstep(0.0, 0.08, uv.x) * (1.0 - smoothstep(0.91, 1.0, uv.x));
+	float grain = 0.78 + 0.22 * sin(uv.x * 139.0 + uv.y * 19.0);
+	float alpha = top_edge * bottom_edge * ends * grain * 0.78;
+	COLOR = vec4(vec3(0.66, 0.012, 0.048), alpha);
+}
+"""
+	var stroke_material := ShaderMaterial.new()
+	stroke_material.shader = stroke_shader
+	crimson_stroke.material = stroke_material
+	map_layer.add_child(crimson_stroke)
+
+	var heading := Label.new()
+	heading.name = "MissionSelectHeading"
+	heading.text = "MISSION SELECT"
+	heading.position = Vector2(29.0, 3.0)
+	heading.size = Vector2(viewport_size.x * 0.56, header_height * 0.66)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	heading.add_theme_font_override("font", display_font)
+	heading.add_theme_font_size_override("font_size", clampi(int(viewport_size.y * 0.073), 30, 64))
+	heading.add_theme_color_override("font_color", Color("#fffaf6"))
+	heading.add_theme_color_override("font_outline_color", Color("#19080d"))
+	heading.add_theme_constant_override("outline_size", 3)
+	heading.add_theme_color_override("font_shadow_color", Color(0.86, 0.025, 0.09, 0.96))
+	heading.add_theme_constant_override("shadow_offset_x", 3)
+	heading.add_theme_constant_override("shadow_offset_y", 4)
+	heading.add_theme_constant_override("shadow_outline_size", 8)
+	heading.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	heading.z_index = 22
+	map_layer.add_child(heading)
+
+	var subtitle_glow := ColorRect.new()
+	subtitle_glow.name = "MissionSelectSubtitleGlow"
+	subtitle_glow.position = Vector2(27.0, header_height * 0.77)
+	subtitle_glow.size = Vector2(minf(viewport_size.x * 0.46, 445.0), 5.0)
+	subtitle_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	subtitle_glow.z_index = 22
+	var glow_shader := Shader.new()
+	glow_shader.code = """
+shader_type canvas_item;
+render_mode unshaded, blend_add;
+void fragment() {
+	vec2 p = UV - vec2(0.5);
+	float core = exp(-pow(p.x * 4.0, 2.0) - pow(p.y * 16.0, 2.0));
+	float halo = exp(-pow(p.x * 2.8, 2.0) - pow(p.y * 4.0, 2.0));
+	float pulse = 0.78 + 0.22 * sin(TIME * 1.8);
+	COLOR = vec4(vec3(0.78, 0.86, 1.0), (core * 0.52 + halo * 0.22) * pulse);
+}
+"""
+	var glow_material := ShaderMaterial.new()
+	glow_material.shader = glow_shader
+	subtitle_glow.material = glow_material
+	map_layer.add_child(subtitle_glow)
+
+	var subtitle := Label.new()
+	subtitle.name = "MissionSelectStageSubtitle"
+	subtitle.text = "STAGE 1  —  WOODLAWN SUBURBS"
+	subtitle.position = Vector2(34.0, header_height * 0.59)
+	subtitle.size = Vector2(viewport_size.x * 0.56, header_height * 0.34)
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_override("font", display_font)
+	subtitle.add_theme_font_size_override("font_size", clampi(int(viewport_size.y * 0.031), 15, 25))
+	subtitle.add_theme_color_override("font_color", Color("#fffaf6"))
+	subtitle.add_theme_color_override("font_outline_color", Color("#100a12"))
+	subtitle.add_theme_constant_override("outline_size", 2)
+	subtitle.add_theme_color_override("font_shadow_color", Color(0.68, 0.80, 1.0, 0.9))
+	subtitle.add_theme_constant_override("shadow_offset_x", 0)
+	subtitle.add_theme_constant_override("shadow_offset_y", 1)
+	subtitle.add_theme_constant_override("shadow_outline_size", 5)
+	subtitle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	subtitle.z_index = 23
+	map_layer.add_child(subtitle)
+
 	var stage_return := Button.new()
 	stage_return.name = "ReturnToStageSelectButton"
 	stage_return.text = "RETURN TO STAGE SELECT"
-	stage_return.anchor_left = 0.69
+	stage_return.anchor_left = 0.70
 	stage_return.anchor_right = 0.985
-	stage_return.anchor_top = 0.018
-	stage_return.anchor_bottom = 0.085
+	stage_return.anchor_top = 0.025
+	stage_return.anchor_bottom = 0.145
 	stage_return.offset_left = 0
-	stage_return.offset_right = 0
+	stage_return.offset_right = -18
 	stage_return.offset_top = 0
 	stage_return.offset_bottom = 0
 	stage_return.flat = true
 	stage_return.focus_mode = Control.FOCUS_NONE
-	stage_return.add_theme_font_size_override("font_size", 15)
-	stage_return.add_theme_color_override("font_color", Color("#ffffff"))
+	stage_return.add_theme_font_override("font", display_font)
+	stage_return.add_theme_font_size_override("font_size", clampi(int(viewport_size.y * 0.027), 13, 19))
+	stage_return.add_theme_color_override("font_color", Color("#fffaf6"))
 	stage_return.add_theme_color_override("font_hover_color", Color("#ffffff"))
 	stage_return.add_theme_color_override("font_pressed_color", Color("#ffffff"))
-	stage_return.add_theme_color_override("font_shadow_color", Color(0.72, 0.84, 1.0, 0.82))
+	stage_return.add_theme_color_override("font_outline_color", Color("#17080d"))
+	stage_return.add_theme_constant_override("outline_size", 2)
+	stage_return.add_theme_color_override("font_shadow_color", Color(0.84, 0.90, 1.0, 0.95))
 	stage_return.add_theme_constant_override("shadow_offset_x", 0)
 	stage_return.add_theme_constant_override("shadow_offset_y", 0)
-	stage_return.add_theme_constant_override("shadow_outline_size", 8)
+	stage_return.add_theme_constant_override("shadow_outline_size", 7)
 	for state in ["normal", "hover", "pressed", "focus"]:
 		stage_return.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	stage_return.pressed.connect(_return_to_stage_select)
+	stage_return.z_index = 24
 	map_layer.add_child(stage_return)
+	stage_return.pressed.connect(_return_to_stage_select)
 	var stage_return_pulse := stage_return.create_tween().set_loops()
-	stage_return_pulse.tween_property(stage_return, "modulate:a", 0.70, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	stage_return_pulse.tween_property(stage_return, "modulate:a", 1.0, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	stage_return_pulse.tween_property(stage_return, "modulate:a", 0.76, 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	stage_return_pulse.tween_property(stage_return, "modulate:a", 1.0, 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
 
 func _make_checkpoint_marker(left: float, top: float, right: float, bottom: float, should_pulse: bool = true) -> TextureRect:
 	var marker := TextureRect.new()

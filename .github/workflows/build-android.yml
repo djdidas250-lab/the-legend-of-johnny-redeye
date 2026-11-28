@@ -262,6 +262,24 @@ jobs:
           print('Verified complete single-image Leaside panorama:', image.size)
           PY
 
+      - name: Verify Stage One Mission Select map artwork
+        run: |
+          test -s "images/stage 1 map.jpeg"
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          image_path = Path("images/stage 1 map.jpeg")
+          with Image.open(image_path) as image:
+              ratio = image.width / image.height
+              assert 2.20 <= ratio <= 2.30, (image.size, ratio)
+              print(f"Verified exact Stage One map artwork: {image.size}, aspect={ratio:.4f}")
+          source = Path("scripts/main.gd").read_text()
+          assert 'const MAP_IMAGE := preload("res://images/stage 1 map.jpeg")' in source
+          assert "MissionSelectHeading" in source
+          assert "MissionSelectStageSubtitle" in source
+          print("Verified Mission Select uses the supplied map and layered header.")
+          PY
+
       - name: Import project resources
         run: godot --headless --editor --path . --quit
 
