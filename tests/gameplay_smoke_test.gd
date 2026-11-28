@@ -122,20 +122,20 @@ func _ready() -> void:
 	# Stage Two must be unavailable before Matt-ijuana is defeated, then
 	# use the uploaded map and the same Stage Select / Mission Select presentation.
 	var stage_two_button := stage_select.find_child("StageTwoButton", true, false) as Button
-	if not _check(stage_two_button != null and stage_two_button.disabled and stage_two_button.text == "STAGE 2 — LOCKED" and not bool(game.get("active_slot_unlocked_stage2")), "Stage 2 must remain visibly locked until Matt-ijuana is defeated."): return
+	if not _check(stage_two_button != null and stage_two_button.disabled and stage_two_button.text == "STAGE 2 — DEATH DRIVE — LOCKED" and not bool(game.get("active_slot_unlocked_stage2")), "Stage 2 must remain visibly locked until Matt-ijuana is defeated."): return
 	if not _check(ResourceLoader.exists("res://images/Stage 2 map.jpg") and davy_script_text.contains('const STAGE_TWO_MAP_IMAGE := preload("res://images/Stage 2 map.jpg")') and davy_script_text.contains("active_slot_unlocked_stage2 = true") and davy_script_text.contains('cfg.set_value(section, "unlocked_stage2", active_slot_unlocked_stage2)'), "Stage 2 map asset and persistent boss-defeat unlock must be wired into the game."): return
 	game.set("active_slot_unlocked_stage2", true)
 	game.call("_show_stage_select_screen")
 	await get_tree().process_frame
 	stage_select = game.get("stage_select_layer")
 	stage_two_button = stage_select.find_child("StageTwoButton", true, false) as Button
-	if not _check(stage_two_button != null and not stage_two_button.disabled and stage_two_button.text == "STAGE 2" and stage_two_button.flat and stage_two_button.get_theme_stylebox("normal") is StyleBoxEmpty and stage_two_button.get_theme_stylebox("hover") is StyleBoxEmpty and stage_two_button.get_theme_stylebox("pressed") is StyleBoxEmpty, "Unlocked Stage 2 must use the same text-only presentation as Stage 1."): return
+	if not _check(stage_two_button != null and not stage_two_button.disabled and stage_two_button.text == "STAGE 2 — DEATH DRIVE" and stage_two_button.flat and stage_two_button.get_theme_stylebox("normal") is StyleBoxEmpty and stage_two_button.get_theme_stylebox("hover") is StyleBoxEmpty and stage_two_button.get_theme_stylebox("pressed") is StyleBoxEmpty, "Unlocked Stage 2 must use the same text-only presentation as Stage 1."): return
 	game.call("_on_stage_selected", "stage_two")
 	await get_tree().process_frame
 	var stage_two_map_layer := game.get("map_layer") as CanvasLayer
 	var stage_two_map_art := stage_two_map_layer.find_child("StageTwoMapArtwork", true, false) as TextureRect
 	var stage_two_header_location := stage_two_map_layer.find_child("MissionSelectLocationTitle", true, false) as Label
-	if not _check(stage_two_map_layer != null and stage_two_map_art != null and stage_two_map_art.texture.resource_path == "res://images/Stage 2 map.jpg" and stage_two_header_location != null and stage_two_header_location.text == "STAGE TWO MAP" and stage_two_map_layer.get_node_or_null("JohnHouseCheckpointMarker") == null and stage_two_map_layer.get_node_or_null("McRaeCheckpointMarker") == null, "Selecting Stage 2 must display its own map and header without Stage 1 checkpoint markers."): return
+	if not _check(stage_two_map_layer != null and stage_two_map_art != null and stage_two_map_art.texture.resource_path == "res://images/Stage 2 map.jpg" and stage_two_header_location != null and stage_two_header_location.text == "DEATH DRIVE" and stage_two_map_layer.get_node_or_null("JohnHouseCheckpointMarker") == null and stage_two_map_layer.get_node_or_null("McRaeCheckpointMarker") == null, "Selecting Stage 2 must display its own map and header without Stage 1 checkpoint markers."): return
 	game.set("active_slot_unlocked_stage2", false)
 	game.call("_return_to_stage_select")
 	await get_tree().process_frame
