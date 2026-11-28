@@ -1,0 +1,23 @@
+name: Temporary reference image inspection
+on:
+  push:
+    branches:
+      - inspect/reference-images-only
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package reference images and mission map
+        run: |
+          mkdir -p inspection
+          cp "images/file_0000000019d8822f8ccec539f9c5570c.png" inspection/reference-1.png
+          cp "images/file_000000004860822fabe70313fb487f31.png" inspection/reference-2.png
+          cp "images/file_000000005268822f8114c8d6d185d9e5.png" inspection/reference-3.png
+          cp "images/stage 1 map.jpeg" inspection/stage-1-map.jpeg
+          zip -j reference-image-inspection.zip inspection/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-image-inspection
+          path: reference-image-inspection.zip
+          retention-days: 1
