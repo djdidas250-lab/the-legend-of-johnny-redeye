@@ -119,6 +119,29 @@ func _ready() -> void:
 	if not _check(stage_select.find_child("StageSelectPanel", true, false) == null and stage_glow != null and stage_glow.material is ShaderMaterial and (stage_glow.material as ShaderMaterial).shader.code.contains("sin(TIME"), "Stage Select must have no menu box and must use a soft animated white selection glow."): return
 	if not _check(stage_button.flat and stage_button.get_theme_stylebox("normal") is StyleBoxEmpty and stage_button.get_theme_stylebox("hover") is StyleBoxEmpty and stage_button.get_theme_stylebox("pressed") is StyleBoxEmpty, "Stage selection must be a text-only interactive element without a button panel or border."): return
 	if not _check(game.get_script().source_code.contains('const TITLE_CLICK_SOUND := preload("res://images/freesound_community-game-start-6104.mp3")') and game.get_script().source_code.contains('_run_title_button_action(stage_button, Callable(self, "_on_stage_selected").bind("woodlawn_suburbs"))'), "Selecting Stage 1 must reuse the exact existing briefing-screen click audio path."): return
+	# Stage Two must be unavailable before Matt-ijuana is defeated, then
+	# use the uploaded map and the same Stage Select / Mission Select presentation.
+	var stage_two_button := stage_select.find_child("StageTwoButton", true, false) as Button
+	if not _check(stage_two_button != null and stage_two_button.disabled and stage_two_button.text == "STAGE 2 — LOCKED" and not bool(game.get("active_slot_unlocked_stage2")), "Stage 2 must remain visibly locked until Matt-ijuana is defeated."): return
+	if not _check(ResourceLoader.exists("res://images/Stage 2 map.jpg") and game_script.source_code.contains('const STAGE_TWO_MAP_IMAGE := preload("res://images/Stage 2 map.jpg")') and game_script.source_code.contains("active_slot_unlocked_stage2 = true") and game_script.source_code.contains('cfg.set_value(section, "unlocked_stage2", active_slot_unlocked_stage2)'), "Stage 2 map asset and persistent boss-defeat unlock must be wired into the game."): return
+	game.set("active_slot_unlocked_stage2", true)
+	game.call("_show_stage_select_screen")
+	await get_tree().process_frame
+	stage_select = game.get("stage_select_layer")
+	stage_two_button = stage_select.find_child("StageTwoButton", true, false) as Button
+	if not _check(stage_two_button != null and not stage_two_button.disabled and stage_two_button.text == "STAGE 2" and stage_two_button.flat and stage_two_button.get_theme_stylebox("normal") is StyleBoxEmpty and stage_two_button.get_theme_stylebox("hover") is StyleBoxEmpty and stage_two_button.get_theme_stylebox("pressed") is StyleBoxEmpty, "Unlocked Stage 2 must use the same text-only presentation as Stage 1."): return
+	game.call("_on_stage_selected", "stage_two")
+	await get_tree().process_frame
+	var stage_two_map_layer := game.get("map_layer") as CanvasLayer
+	var stage_two_map_art := stage_two_map_layer.find_child("StageTwoMapArtwork", true, false) as TextureRect
+	var stage_two_header_location := stage_two_map_layer.find_child("MissionSelectLocationTitle", true, false) as Label
+	if not _check(stage_two_map_layer != null and stage_two_map_art != null and stage_two_map_art.texture.resource_path == "res://images/Stage 2 map.jpg" and stage_two_header_location != null and stage_two_header_location.text == "STAGE TWO MAP" and stage_two_map_layer.get_node_or_null("JohnHouseCheckpointMarker") == null and stage_two_map_layer.get_node_or_null("McRaeCheckpointMarker") == null, "Selecting Stage 2 must display its own map and header without Stage 1 checkpoint markers."): return
+	game.set("active_slot_unlocked_stage2", false)
+	game.call("_return_to_stage_select")
+	await get_tree().process_frame
+	stage_select = game.get("stage_select_layer")
+	stage_button = stage_select.find_child("WoodlawnSuburbsStageButton", true, false) as Button
+	if not _check(stage_select != null and stage_button != null, "Returning from the Stage 2 map must restore Stage Select."): return
 	game.call("_on_stage_selected", "woodlawn_suburbs")
 	await get_tree().process_frame
 	var map_layer: CanvasLayer = game.get("map_layer")
