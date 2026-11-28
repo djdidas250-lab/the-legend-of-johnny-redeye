@@ -226,6 +226,8 @@ var intro_image_index := -1
 var map_layer: CanvasLayer
 var death_layer: CanvasLayer
 var splash_layer: CanvasLayer
+var stage_two_cutscene_layer: CanvasLayer
+var stage_two_cutscene_audio_player: AudioStreamPlayer
 var stage_one_cutscene_layer: CanvasLayer
 var stage_one_cutscene_audio_player: AudioStreamPlayer
 var stage_one_cutscene_active := false
@@ -1862,6 +1864,9 @@ func _show_map_screen() -> void:
 			park_hitbox.pressed.connect(_show_woodlawn_park_checkpoint_from_map)
 			map_layer.add_child(park_hitbox)
 
+	if active_stage_id == "stage_two":
+		_add_stage_two_mission_one_marker()
+
 	# Compact reusable Mission Select header. Keep it shallow so the supplied map
 	# remains visible; future stages only need different title strings.
 	var mission_header := _create_mission_select_header("STAGE TWO", "DEATH DRIVE", "MISSION SELECT") if active_stage_id == "stage_two" else _create_mission_select_header("STAGE ONE", "WOODLAWN SUBURBS", "MISSION SELECT")
@@ -1896,7 +1901,123 @@ func _show_map_screen() -> void:
 	map_layer.add_child(stage_return)
 	var stage_return_pulse := stage_return.create_tween().set_loops()
 	stage_return_pulse.tween_property(stage_return, "modulate:a", 0.70, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	stage_return_pulse.tween_property(stage_return, "modulate:a", 1.0, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	stage_return_pulse.tween_property
+
+func _add_stage_two_mission_one_marker() -> void:
+	var marker := _make_checkpoint_marker(0.465, 0.42, 0.535, 0.58, false)
+	marker.name = "StageTwoMissionOneMarker"
+	map_layer.add_child(marker)
+	var pulse := create_tween().set_loops(2)
+	pulse.tween_property(marker, "modulate:a", 0.48, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	pulse.tween_property(marker, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	var hitbox := Button.new()
+	hitbox.name = "StageTwoMissionOneHitbox"
+	hitbox.anchor_left = 0.445
+	hitbox.anchor_right = 0.555
+	hitbox.anchor_top = 0.395
+	hitbox.anchor_bottom = 0.605
+	hitbox.focus_mode = Control.FOCUS_NONE
+	hitbox.text = ""
+	hitbox.modulate = Color(1, 1, 1, 0.02)
+	var clear_style := StyleBoxEmpty.new()
+	hitbox.add_theme_stylebox_override("normal", clear_style)
+	hitbox.add_theme_stylebox_override("hover", clear_style)
+	hitbox.add_theme_stylebox_override("pressed", clear_style)
+	hitbox.add_theme_stylebox_override("focus", clear_style)
+	hitbox.pressed.connect(_start_stage_two_opening_cinematic)
+	map_layer.add_child(hitbox)
+
+
+func _start_stage_two_opening_cinematic() -> void:
+	if is_instance_valid(map_layer):
+		map_layer.queue_free()
+		map_layer = null
+	if music_player != null:
+		music_player.stop()
+	if is_instance_valid(stage_two_cutscene_layer):
+		stage_two_cutscene_layer.queue_free()
+	stage_two_cutscene_layer = CanvasLayer.new()
+	stage_two_cutscene_layer.name = "StageTwoOpeningCinematic"
+	stage_two_cutscene_layer.layer = 30
+	add_child(stage_two_cutscene_layer)
+	var art := TextureRect.new()
+	art.name = "StageTwoCinematicArtwork"
+	art.texture = load("res://images/stage2_mission1_assets/Stage 2 cinematic cutscene.jpg") as Texture2D
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	stage_two_cutscene_layer.add_child(art)
+	var fade := ColorRect.new()
+	fade.name = "StageTwoCinematicFade"
+	fade.color = Color.BLACK
+	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	stage_two_cutscene_layer.add_child(fade)
+	var fade_tween := create_tween()
+	fade_tween.tween_property(fade, "color:a", 0.0, 0.9)
+	stage_two_cutscene_audio_player = AudioStreamPlayer.new()
+	stage_two_cutscene_audio_player.stream = load("res://images/stage2_mission1_assets/stage 2 cutscene cinematic.mp3") as AudioStream
+	stage_two_cutscene_audio_player.finished.connect(_on_stage_two_cinematic_audio_finished)
+	add_child(stage_two_cutscene_audio_player)
+	stage_two_cutscene_audio_player.play()
+
+
+func _on_stage_two_cinematic_audio_finished() -> void:
+	if is_instance_valid(stage_two_cutscene_audio_player):
+		stage_two_cutscene_audio_player.queue_free()
+	stage_two_cutscene_audio_player = null
+	if is_instance_valid(stage_two_cutscene_layer):
+		stage_two_cutscene_layer.queue_free()
+	stage_two_cutscene_layer = null
+	_show_stage_two_mission_one_briefing()
+
+
+func _show_stage_two_mission_one_briefing() -> void:
+	if is_instance_valid(splash_layer):
+		splash_layer.queue_free()
+	splash_layer = CanvasLayer.new()
+	splash_layer.name = "StageTwoMissionOneBriefing"
+	splash_layer.layer = 30
+	add_child(splash_layer)
+	var art := TextureRect.new()
+	art.name = "StageTwoBriefingArtwork"
+	art.texture = load("res://images/stage2_mission1_assets/Stage 2 mission brief .jpg") as Texture2D
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	splash_layer.add_child(art)
+	var shade := ColorRect.new()
+	shade.color = Color(0, 0, 0, 0.48)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	splash_layer.add_child(shade)
+	var heading := Label.new()
+	heading.name = "StageHeading"
+	heading.text = "STAGE 2  —  DEATH DRIVE"
+	heading.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	heading.offset_left = -420
+	heading.offset_right = 420
+	heading.offset_top = 34
+	heading.offset_bottom = 92
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", 30)
+	heading.add_theme_color_override("font_color", Color.WHITE)
+	splash_layer.add_child(heading)
+	var objective := Label.new()
+	objective.name = "StageObjective"
+	objective.text = "Make your way down Woodlawn Road to meet with Al at Toke Cannabis."
+	objective.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	objective.offset_left = -420
+	objective.offset_right = 420
+	objective.offset_top = -35
+	objective.offset_bottom = 65
+	objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	objective.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	objective.add_theme_font_size_override("font_size", 25)
+	objective.add_theme_color_override("font_color", Color.WHITE)
+	splash_layer.add_child(objective)
+
+(stage_return, "modulate:a", 1.0, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func _create_mission_select_header(stage_title: String, location_title: String, screen_title: String) -> Control:
