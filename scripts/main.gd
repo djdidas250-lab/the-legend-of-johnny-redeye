@@ -20,6 +20,7 @@ const INTRO_SLIDE_DURATION := INTRO_TRACK_DURATION / 5.0
 const INTRO_TRANSITION_DURATION := 1.18
 const TITLE_CLICK_VOLUME_DB := -2.0
 const MAP_IMAGE := preload("res://images/stage 1 map.jpeg")
+const STAGE_TWO_MAP_IMAGE := preload("res://images/Stage 2 map.jpg")
 const STAGE_SELECT_IMAGE := preload("res://images/stage select screen.jpeg")
 const MAP_CHECKPOINT_MARKER := preload("res://images/map_checkpoint_x.svg")
 const MAP_MUSIC := preload("res://images/28. Holy Sanctuary.wav")
@@ -94,6 +95,8 @@ var active_slot_unlocked_mcrae := false
 var active_slot_unlocked_newleaf_checkpoint := false
 var active_slot_unlocked_woodlawn_checkpoint := false
 var active_slot_unlocked_woodlawn_park_checkpoint := false
+var active_slot_unlocked_stage2 := false
+var active_stage_id := "woodlawn_suburbs"
 var active_slot_area := "Newleaf Crescent"
 var save_slot_layer: CanvasLayer
 var stage_select_layer: CanvasLayer
@@ -1284,6 +1287,43 @@ void fragment() {
 	stage_pulse.tween_property(stage_button, "modulate", Color(1.0, 1.0, 1.0, 0.70), 1.25)
 	stage_pulse.tween_property(stage_button, "modulate", Color.WHITE, 1.25)
 
+	# Stage Two uses the same typography, glow, transparent button treatment and
+	# pulse as Stage One. It remains visible but unavailable until Matt-ijuana falls.
+	var stage_two_button := Button.new()
+	stage_two_button.name = "StageTwoButton"
+	stage_two_button.text = "STAGE 2" if active_slot_unlocked_stage2 else "STAGE 2 — LOCKED"
+	stage_two_button.position = Vector2(viewport_size.x * 0.525, viewport_size.y * 0.49)
+	stage_two_button.size = Vector2(viewport_size.x * 0.44, viewport_size.y * 0.13)
+	stage_two_button.flat = true
+	stage_two_button.focus_mode = Control.FOCUS_NONE
+	stage_two_button.disabled = not active_slot_unlocked_stage2
+	stage_two_button.add_theme_font_override("font", display_font)
+	stage_two_button.add_theme_font_size_override("font_size", clampi(int(viewport_size.y * 0.037), 17, 36))
+	stage_two_button.add_theme_color_override("font_color", Color("#fffaf6"))
+	stage_two_button.add_theme_color_override("font_hover_color", Color.WHITE)
+	stage_two_button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	stage_two_button.add_theme_color_override("font_outline_color", Color("#16090d"))
+	stage_two_button.add_theme_constant_override("outline_size", 2)
+	stage_two_button.add_theme_color_override("font_shadow_color", Color(0.88, 0.94, 1.0, 0.95))
+	stage_two_button.add_theme_constant_override("shadow_offset_x", 0)
+	stage_two_button.add_theme_constant_override("shadow_offset_y", 0)
+	stage_two_button.add_theme_constant_override("shadow_outline_size", 8)
+	stage_two_button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	stage_two_button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+	stage_two_button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+	stage_two_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	stage_two_button.z_index = 6
+	if not active_slot_unlocked_stage2:
+		stage_two_button.modulate = Color(0.55, 0.55, 0.55, 0.72)
+	stage_select_layer.add_child(stage_two_button)
+	if active_slot_unlocked_stage2:
+		stage_two_button.pressed.connect(func() -> void:
+			_run_title_button_action(stage_two_button, Callable(self, "_on_stage_selected").bind("stage_two"))
+		)
+		var stage_two_pulse := create_tween().set_loops()
+		stage_two_pulse.tween_property(stage_two_button, "modulate", Color(1.0, 1.0, 1.0, 0.70), 1.25)
+		stage_two_pulse.tween_property(stage_two_button, "modulate", Color.WHITE, 1.25)
+
 func _loop_stage_select_music() -> void:
 	if is_instance_valid(stage_select_layer) and music_player != null:
 		music_player.play()
@@ -1291,7 +1331,11 @@ func _loop_stage_select_music() -> void:
 func _on_stage_selected(stage_id: String) -> void:
 	if not is_instance_valid(stage_select_layer):
 		return
-	if stage_id != "woodlawn_suburbs":
+	if stage_id == "woodlawn_suburbs":
+		active_stage_id = "woodlawn_suburbs"
+	elif stage_id == "stage_two" and active_slot_unlocked_stage2:
+		active_stage_id = "stage_two"
+	else:
 		return
 	stage_select_layer.queue_free()
 	stage_select_layer = null
@@ -1470,6 +1514,8 @@ func _begin_fresh_save_slot(slot_index: int) -> void:
 	active_slot_unlocked_newleaf_checkpoint = false
 	active_slot_unlocked_woodlawn_checkpoint = false
 	active_slot_unlocked_woodlawn_park_checkpoint = false
+	active_slot_unlocked_stage2 = false
+	active_stage_id = "woodlawn_suburbs"
 	active_slot_area = "Newleaf Crescent"
 	has_slingshot = false
 	player_lives = 3
@@ -1484,6 +1530,7 @@ func _begin_fresh_save_slot(slot_index: int) -> void:
 	cfg.set_value(section, "unlocked_newleaf_checkpoint", false)
 	cfg.set_value(section, "unlocked_woodlawn_checkpoint", false)
 	cfg.set_value(section, "unlocked_woodlawn_park_checkpoint", false)
+	cfg.set_value(section, "unlocked_stage2", false)
 	cfg.set_value(section, "area", active_slot_area)
 	cfg.set_value(section, "has_slingshot", false)
 	cfg.set_value(section, "lives", 3)
@@ -1574,6 +1621,7 @@ func _on_save_slot_selected(slot_index: int, for_new_game: bool) -> void:
 	active_slot_unlocked_newleaf_checkpoint = bool(cfg.get_value(section, "unlocked_newleaf_checkpoint", false))
 	active_slot_unlocked_woodlawn_checkpoint = bool(cfg.get_value(section, "unlocked_woodlawn_checkpoint", false))
 	active_slot_unlocked_woodlawn_park_checkpoint = bool(cfg.get_value(section, "unlocked_woodlawn_park_checkpoint", false))
+	active_slot_unlocked_stage2 = bool(cfg.get_value(section, "unlocked_stage2", false))
 	active_slot_area = _corrected_area_spelling(str(cfg.get_value(section, "area", "Newleaf Crescent")))
 	has_slingshot = bool(cfg.get_value(section, "has_slingshot", false))
 	player_lives = clampi(int(cfg.get_value(section, "lives", 3)), 0, 99)
@@ -1661,7 +1709,7 @@ func _show_map_screen() -> void:
 
 	# Keep the complete supplied neighborhood map visible edge-to-edge.
 	var map_art := TextureRect.new()
-	map_art.texture = MAP_IMAGE
+	map_art.texture = STAGE_TWO_MAP_IMAGE if active_stage_id == "stage_two" else MAP_IMAGE
 	map_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	map_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	map_art.stretch_mode = TextureRect.STRETCH_SCALE
@@ -1673,147 +1721,148 @@ func _show_map_screen() -> void:
 	map_atmosphere.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	map_art.add_child(map_atmosphere)
 
-	# John's X is centred in the gap between the fourth and fifth houses
-	# to the right of the SILVAN DR label. The hitbox shares its bounds.
-	var john_marker := _make_checkpoint_marker(0.79, 0.745, 0.835, 0.855, not active_slot_unlocked_mcrae)
-	john_marker.name = "JohnHouseCheckpointMarker"
-	map_layer.add_child(john_marker)
+	if active_stage_id == "woodlawn_suburbs":
+		# John's X is centred in the gap between the fourth and fifth houses
+		# to the right of the SILVAN DR label. The hitbox shares its bounds.
+		var john_marker := _make_checkpoint_marker(0.79, 0.745, 0.835, 0.855, not active_slot_unlocked_mcrae)
+		john_marker.name = "JohnHouseCheckpointMarker"
+		map_layer.add_child(john_marker)
 
-	var john_hitbox := Button.new()
-	john_hitbox.name = "JohnHouseCheckpointHitbox"
-	john_hitbox.anchor_left = 0.79
-	john_hitbox.anchor_right = 0.835
-	john_hitbox.anchor_top = 0.745
-	john_hitbox.anchor_bottom = 0.855
-	john_hitbox.offset_left = 0
-	john_hitbox.offset_right = 0
-	john_hitbox.offset_top = 0
-	john_hitbox.offset_bottom = 0
-	john_hitbox.focus_mode = Control.FOCUS_NONE
-	john_hitbox.text = ""
-	john_hitbox.modulate = Color(1, 1, 1, 0.02)
-	var clear_style := StyleBoxFlat.new()
-	clear_style.bg_color = Color(0, 0, 0, 0)
-	clear_style.border_color = Color(0, 0, 0, 0)
-	john_hitbox.add_theme_stylebox_override("normal", clear_style)
-	john_hitbox.add_theme_stylebox_override("hover", clear_style)
-	john_hitbox.add_theme_stylebox_override("pressed", clear_style)
-	john_hitbox.add_theme_stylebox_override("focus", clear_style)
-	john_hitbox.pressed.connect(_play_map_click)
-	john_hitbox.pressed.connect(_show_stage_one_splash)
-	map_layer.add_child(john_hitbox)
+		var john_hitbox := Button.new()
+		john_hitbox.name = "JohnHouseCheckpointHitbox"
+		john_hitbox.anchor_left = 0.79
+		john_hitbox.anchor_right = 0.835
+		john_hitbox.anchor_top = 0.745
+		john_hitbox.anchor_bottom = 0.855
+		john_hitbox.offset_left = 0
+		john_hitbox.offset_right = 0
+		john_hitbox.offset_top = 0
+		john_hitbox.offset_bottom = 0
+		john_hitbox.focus_mode = Control.FOCUS_NONE
+		john_hitbox.text = ""
+		john_hitbox.modulate = Color(1, 1, 1, 0.02)
+		var clear_style := StyleBoxFlat.new()
+		clear_style.bg_color = Color(0, 0, 0, 0)
+		clear_style.border_color = Color(0, 0, 0, 0)
+		john_hitbox.add_theme_stylebox_override("normal", clear_style)
+		john_hitbox.add_theme_stylebox_override("hover", clear_style)
+		john_hitbox.add_theme_stylebox_override("pressed", clear_style)
+		john_hitbox.add_theme_stylebox_override("focus", clear_style)
+		john_hitbox.pressed.connect(_play_map_click)
+		john_hitbox.pressed.connect(_show_stage_one_splash)
+		map_layer.add_child(john_hitbox)
 
-	# The only additional mission marker is the Leeside–McRae intersection.
-	# It remains hidden until the player reaches that intersection and the
-	# McRae progress flag is saved. There is no separate Leaside marker.
-	if active_slot_unlocked_mcrae:
-		# Center the X on the Leeside Drive–McRae Drive road junction.
-		# Coordinates are normalized to the supplied Mission Select artwork.
-		var mcrae_marker := _make_checkpoint_marker(0.528, 0.62, 0.608, 0.75, not active_slot_unlocked_newleaf_checkpoint)
-		mcrae_marker.name = "McRaeCheckpointMarker"
-		map_layer.add_child(mcrae_marker)
-		var mcrae_hitbox := Button.new()
-		mcrae_hitbox.name = "McRaeCheckpointHitbox"
-		mcrae_hitbox.anchor_left = 0.533
-		mcrae_hitbox.anchor_right = 0.603
-		mcrae_hitbox.anchor_top = 0.635
-		mcrae_hitbox.anchor_bottom = 0.735
-		mcrae_hitbox.focus_mode = Control.FOCUS_NONE
-		mcrae_hitbox.text = ""
-		mcrae_hitbox.modulate = Color(1, 1, 1, 0.02)
-		mcrae_hitbox.add_theme_stylebox_override("normal", clear_style)
-		mcrae_hitbox.add_theme_stylebox_override("hover", clear_style)
-		mcrae_hitbox.add_theme_stylebox_override("pressed", clear_style)
-		mcrae_hitbox.add_theme_stylebox_override("focus", clear_style)
-		mcrae_hitbox.pressed.connect(_play_map_click)
-		mcrae_hitbox.pressed.connect(_show_mcrae_checkpoint_from_map)
-		map_layer.add_child(mcrae_hitbox)
+		# The only additional mission marker is the Leeside–McRae intersection.
+		# It remains hidden until the player reaches that intersection and the
+		# McRae progress flag is saved. There is no separate Leaside marker.
+		if active_slot_unlocked_mcrae:
+			# Center the X on the Leeside Drive–McRae Drive road junction.
+			# Coordinates are normalized to the supplied Mission Select artwork.
+			var mcrae_marker := _make_checkpoint_marker(0.528, 0.62, 0.608, 0.75, not active_slot_unlocked_newleaf_checkpoint)
+			mcrae_marker.name = "McRaeCheckpointMarker"
+			map_layer.add_child(mcrae_marker)
+			var mcrae_hitbox := Button.new()
+			mcrae_hitbox.name = "McRaeCheckpointHitbox"
+			mcrae_hitbox.anchor_left = 0.533
+			mcrae_hitbox.anchor_right = 0.603
+			mcrae_hitbox.anchor_top = 0.635
+			mcrae_hitbox.anchor_bottom = 0.735
+			mcrae_hitbox.focus_mode = Control.FOCUS_NONE
+			mcrae_hitbox.text = ""
+			mcrae_hitbox.modulate = Color(1, 1, 1, 0.02)
+			mcrae_hitbox.add_theme_stylebox_override("normal", clear_style)
+			mcrae_hitbox.add_theme_stylebox_override("hover", clear_style)
+			mcrae_hitbox.add_theme_stylebox_override("pressed", clear_style)
+			mcrae_hitbox.add_theme_stylebox_override("focus", clear_style)
+			mcrae_hitbox.pressed.connect(_play_map_click)
+			mcrae_hitbox.pressed.connect(_show_mcrae_checkpoint_from_map)
+			map_layer.add_child(mcrae_hitbox)
 
-	# The Newleaf–McRae checkpoint unlocks only after the player has
-	# travelled from McRae back onto Newleaf during normal progression.
-	if active_slot_unlocked_newleaf_checkpoint:
-		var newleaf_marker := _make_checkpoint_marker(0.519, 0.345, 0.581, 0.505, not active_slot_unlocked_woodlawn_checkpoint)
-		newleaf_marker.name = "NewleafMcRaeCheckpointMarker"
-		map_layer.add_child(newleaf_marker)
-		var newleaf_hitbox := Button.new()
-		newleaf_hitbox.name = "NewleafMcRaeCheckpointHitbox"
-		newleaf_hitbox.anchor_left = 0.525
-		newleaf_hitbox.anchor_right = 0.575
-		newleaf_hitbox.anchor_top = 0.370
-		newleaf_hitbox.anchor_bottom = 0.480
-		newleaf_hitbox.offset_left = 0
-		newleaf_hitbox.offset_right = 0
-		newleaf_hitbox.offset_top = 0
-		newleaf_hitbox.offset_bottom = 0
-		newleaf_hitbox.focus_mode = Control.FOCUS_NONE
-		newleaf_hitbox.text = ""
-		newleaf_hitbox.modulate = Color(1, 1, 1, 0.02)
-		newleaf_hitbox.add_theme_stylebox_override("normal", clear_style)
-		newleaf_hitbox.add_theme_stylebox_override("hover", clear_style)
-		newleaf_hitbox.add_theme_stylebox_override("pressed", clear_style)
-		newleaf_hitbox.add_theme_stylebox_override("focus", clear_style)
-		newleaf_hitbox.pressed.connect(_play_map_click)
-		newleaf_hitbox.pressed.connect(_show_newleaf_checkpoint_from_map)
-		map_layer.add_child(newleaf_hitbox)
+		# The Newleaf–McRae checkpoint unlocks only after the player has
+		# travelled from McRae back onto Newleaf during normal progression.
+		if active_slot_unlocked_newleaf_checkpoint:
+			var newleaf_marker := _make_checkpoint_marker(0.519, 0.345, 0.581, 0.505, not active_slot_unlocked_woodlawn_checkpoint)
+			newleaf_marker.name = "NewleafMcRaeCheckpointMarker"
+			map_layer.add_child(newleaf_marker)
+			var newleaf_hitbox := Button.new()
+			newleaf_hitbox.name = "NewleafMcRaeCheckpointHitbox"
+			newleaf_hitbox.anchor_left = 0.525
+			newleaf_hitbox.anchor_right = 0.575
+			newleaf_hitbox.anchor_top = 0.370
+			newleaf_hitbox.anchor_bottom = 0.480
+			newleaf_hitbox.offset_left = 0
+			newleaf_hitbox.offset_right = 0
+			newleaf_hitbox.offset_top = 0
+			newleaf_hitbox.offset_bottom = 0
+			newleaf_hitbox.focus_mode = Control.FOCUS_NONE
+			newleaf_hitbox.text = ""
+			newleaf_hitbox.modulate = Color(1, 1, 1, 0.02)
+			newleaf_hitbox.add_theme_stylebox_override("normal", clear_style)
+			newleaf_hitbox.add_theme_stylebox_override("hover", clear_style)
+			newleaf_hitbox.add_theme_stylebox_override("pressed", clear_style)
+			newleaf_hitbox.add_theme_stylebox_override("focus", clear_style)
+			newleaf_hitbox.pressed.connect(_play_map_click)
+			newleaf_hitbox.pressed.connect(_show_newleaf_checkpoint_from_map)
+			map_layer.add_child(newleaf_hitbox)
 
-	# The Road to Woodlawn checkpoint appears only after the secret-path handoff
-	# has delivered the player into Woodlawn Park. Its position matches the
-	# red-dot reference on the upper Leeside Drive segment.
-	if active_slot_unlocked_woodlawn_checkpoint:
-		var woodlawn_marker := _make_checkpoint_marker(0.216, 0.145, 0.279, 0.285, not active_slot_unlocked_woodlawn_park_checkpoint)
-		woodlawn_marker.name = "RoadToWoodlawnCheckpointMarker"
-		map_layer.add_child(woodlawn_marker)
-		var woodlawn_hitbox := Button.new()
-		woodlawn_hitbox.name = "RoadToWoodlawnCheckpointHitbox"
-		woodlawn_hitbox.anchor_left = 0.225
-		woodlawn_hitbox.anchor_right = 0.270
-		woodlawn_hitbox.anchor_top = 0.165
-		woodlawn_hitbox.anchor_bottom = 0.265
-		woodlawn_hitbox.offset_left = 0
-		woodlawn_hitbox.offset_right = 0
-		woodlawn_hitbox.offset_top = 0
-		woodlawn_hitbox.offset_bottom = 0
-		woodlawn_hitbox.focus_mode = Control.FOCUS_NONE
-		woodlawn_hitbox.text = ""
-		woodlawn_hitbox.modulate = Color(1, 1, 1, 0.02)
-		woodlawn_hitbox.add_theme_stylebox_override("normal", clear_style)
-		woodlawn_hitbox.add_theme_stylebox_override("hover", clear_style)
-		woodlawn_hitbox.add_theme_stylebox_override("pressed", clear_style)
-		woodlawn_hitbox.add_theme_stylebox_override("focus", clear_style)
-		woodlawn_hitbox.pressed.connect(_play_map_click)
-		woodlawn_hitbox.pressed.connect(_show_woodlawn_checkpoint_from_map)
-		map_layer.add_child(woodlawn_hitbox)
+		# The Road to Woodlawn checkpoint appears only after the secret-path handoff
+		# has delivered the player into Woodlawn Park. Its position matches the
+		# red-dot reference on the upper Leeside Drive segment.
+		if active_slot_unlocked_woodlawn_checkpoint:
+			var woodlawn_marker := _make_checkpoint_marker(0.216, 0.145, 0.279, 0.285, not active_slot_unlocked_woodlawn_park_checkpoint)
+			woodlawn_marker.name = "RoadToWoodlawnCheckpointMarker"
+			map_layer.add_child(woodlawn_marker)
+			var woodlawn_hitbox := Button.new()
+			woodlawn_hitbox.name = "RoadToWoodlawnCheckpointHitbox"
+			woodlawn_hitbox.anchor_left = 0.225
+			woodlawn_hitbox.anchor_right = 0.270
+			woodlawn_hitbox.anchor_top = 0.165
+			woodlawn_hitbox.anchor_bottom = 0.265
+			woodlawn_hitbox.offset_left = 0
+			woodlawn_hitbox.offset_right = 0
+			woodlawn_hitbox.offset_top = 0
+			woodlawn_hitbox.offset_bottom = 0
+			woodlawn_hitbox.focus_mode = Control.FOCUS_NONE
+			woodlawn_hitbox.text = ""
+			woodlawn_hitbox.modulate = Color(1, 1, 1, 0.02)
+			woodlawn_hitbox.add_theme_stylebox_override("normal", clear_style)
+			woodlawn_hitbox.add_theme_stylebox_override("hover", clear_style)
+			woodlawn_hitbox.add_theme_stylebox_override("pressed", clear_style)
+			woodlawn_hitbox.add_theme_stylebox_override("focus", clear_style)
+			woodlawn_hitbox.pressed.connect(_play_map_click)
+			woodlawn_hitbox.pressed.connect(_show_woodlawn_checkpoint_from_map)
+			map_layer.add_child(woodlawn_hitbox)
 
-	# The actual Woodlawn Park checkpoint sits within the wooded park area,
-	# left of the vertical WOODLAWN PARK lettering so the label remains clear.
-	if active_slot_unlocked_woodlawn_park_checkpoint:
-		var park_marker := _make_checkpoint_marker(0.025, 0.545, 0.095, 0.685, not mattijuana_defeated)
-		park_marker.name = "WoodlawnParkCheckpointMarker"
-		map_layer.add_child(park_marker)
-		var park_hitbox := Button.new()
-		park_hitbox.name = "WoodlawnParkCheckpointHitbox"
-		park_hitbox.anchor_left = 0.025
-		park_hitbox.anchor_right = 0.095
-		park_hitbox.anchor_top = 0.545
-		park_hitbox.anchor_bottom = 0.685
-		park_hitbox.offset_left = 0
-		park_hitbox.offset_right = 0
-		park_hitbox.offset_top = 0
-		park_hitbox.offset_bottom = 0
-		park_hitbox.focus_mode = Control.FOCUS_NONE
-		park_hitbox.text = ""
-		park_hitbox.modulate = Color(1, 1, 1, 0.02)
-		park_hitbox.add_theme_stylebox_override("normal", clear_style)
-		park_hitbox.add_theme_stylebox_override("hover", clear_style)
-		park_hitbox.add_theme_stylebox_override("pressed", clear_style)
-		park_hitbox.add_theme_stylebox_override("focus", clear_style)
-		park_hitbox.pressed.connect(_play_map_click)
-		park_hitbox.pressed.connect(_show_woodlawn_park_checkpoint_from_map)
-		map_layer.add_child(park_hitbox)
+		# The actual Woodlawn Park checkpoint sits within the wooded park area,
+		# left of the vertical WOODLAWN PARK lettering so the label remains clear.
+		if active_slot_unlocked_woodlawn_park_checkpoint:
+			var park_marker := _make_checkpoint_marker(0.025, 0.545, 0.095, 0.685, not mattijuana_defeated)
+			park_marker.name = "WoodlawnParkCheckpointMarker"
+			map_layer.add_child(park_marker)
+			var park_hitbox := Button.new()
+			park_hitbox.name = "WoodlawnParkCheckpointHitbox"
+			park_hitbox.anchor_left = 0.025
+			park_hitbox.anchor_right = 0.095
+			park_hitbox.anchor_top = 0.545
+			park_hitbox.anchor_bottom = 0.685
+			park_hitbox.offset_left = 0
+			park_hitbox.offset_right = 0
+			park_hitbox.offset_top = 0
+			park_hitbox.offset_bottom = 0
+			park_hitbox.focus_mode = Control.FOCUS_NONE
+			park_hitbox.text = ""
+			park_hitbox.modulate = Color(1, 1, 1, 0.02)
+			park_hitbox.add_theme_stylebox_override("normal", clear_style)
+			park_hitbox.add_theme_stylebox_override("hover", clear_style)
+			park_hitbox.add_theme_stylebox_override("pressed", clear_style)
+			park_hitbox.add_theme_stylebox_override("focus", clear_style)
+			park_hitbox.pressed.connect(_play_map_click)
+			park_hitbox.pressed.connect(_show_woodlawn_park_checkpoint_from_map)
+			map_layer.add_child(park_hitbox)
 
 	# Compact reusable Mission Select header. Keep it shallow so the supplied map
 	# remains visible; future stages only need different title strings.
-	var mission_header := _create_mission_select_header("STAGE ONE", "WOODLAWN SUBURBS", "MISSION SELECT")
+	var mission_header := _create_mission_select_header("STAGE TWO", "STAGE TWO MAP", "MISSION SELECT") if active_stage_id == "stage_two" else _create_mission_select_header("STAGE ONE", "WOODLAWN SUBURBS", "MISSION SELECT")
 	map_layer.add_child(mission_header)
 
 	# A quiet text-only return shortcut sits in the upper-right corner without
@@ -4436,6 +4485,9 @@ func _finish_mattijuana_encounter() -> void:
 	mattijuana_boss_state = "defeated"
 	mattijuana_boss_active = false
 	mattijuana_defeated = true
+	active_slot_unlocked_stage2 = true
+	if active_save_slot >= 0:
+		_save_slot_progress()
 	if is_instance_valid(music_player):
 		music_player.stop()
 	if is_instance_valid(mattijuana_boss):
@@ -5815,6 +5867,7 @@ func _save_slot_progress() -> bool:
 	cfg.set_value(section, "unlocked_newleaf_checkpoint", active_slot_unlocked_newleaf_checkpoint)
 	cfg.set_value(section, "unlocked_woodlawn_checkpoint", active_slot_unlocked_woodlawn_checkpoint)
 	cfg.set_value(section, "unlocked_woodlawn_park_checkpoint", active_slot_unlocked_woodlawn_park_checkpoint)
+	cfg.set_value(section, "unlocked_stage2", active_slot_unlocked_stage2)
 	cfg.set_value(section, "area", active_slot_area)
 	cfg.set_value(section, "has_slingshot", has_slingshot)
 	cfg.set_value(section, "lives", clampi(player_lives, 0, 99))
