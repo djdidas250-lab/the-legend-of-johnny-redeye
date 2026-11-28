@@ -1261,7 +1261,9 @@ void fragment() {
 	stage_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	stage_button.z_index = 6
 	stage_select_layer.add_child(stage_button)
-	stage_button.pressed.connect(_on_stage_selected.bind("woodlawn_suburbs"))
+	stage_button.pressed.connect(func() -> void:
+		_run_title_button_action(stage_button, Callable(self, "_on_stage_selected").bind("woodlawn_suburbs"))
+	)
 	var stage_pulse := create_tween().set_loops()
 	stage_pulse.tween_property(stage_button, "modulate", Color(1.0, 1.0, 1.0, 0.70), 1.25)
 	stage_pulse.tween_property(stage_button, "modulate", Color.WHITE, 1.25)
@@ -1789,8 +1791,39 @@ func _show_map_screen() -> void:
 		park_hitbox.add_theme_stylebox_override("pressed", clear_style)
 		park_hitbox.add_theme_stylebox_override("focus", clear_style)
 		park_hitbox.pressed.connect(_play_map_click)
-		park_hitbox.pressed.connect(_show_woodlawn_park_checkpoint_from_map)
+			park_hitbox.pressed.connect(_show_woodlawn_park_checkpoint_from_map)
 		map_layer.add_child(park_hitbox)
+
+	# A quiet text-only return shortcut sits in the upper-right corner without
+	# covering the checkpoint markers or adding a panel to the supplied map.
+	var stage_return := Button.new()
+	stage_return.name = "ReturnToStageSelectButton"
+	stage_return.text = "RETURN TO STAGE SELECT"
+	stage_return.anchor_left = 0.69
+	stage_return.anchor_right = 0.985
+	stage_return.anchor_top = 0.018
+	stage_return.anchor_bottom = 0.085
+	stage_return.offset_left = 0
+	stage_return.offset_right = 0
+	stage_return.offset_top = 0
+	stage_return.offset_bottom = 0
+	stage_return.flat = true
+	stage_return.focus_mode = Control.FOCUS_NONE
+	stage_return.add_theme_font_size_override("font_size", 15)
+	stage_return.add_theme_color_override("font_color", Color("#ffffff"))
+	stage_return.add_theme_color_override("font_hover_color", Color("#ffffff"))
+	stage_return.add_theme_color_override("font_pressed_color", Color("#ffffff"))
+	stage_return.add_theme_color_override("font_shadow_color", Color(0.72, 0.84, 1.0, 0.82))
+	stage_return.add_theme_constant_override("shadow_offset_x", 0)
+	stage_return.add_theme_constant_override("shadow_offset_y", 0)
+	stage_return.add_theme_constant_override("shadow_outline_size", 8)
+	for state in ["normal", "hover", "pressed", "focus"]:
+		stage_return.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	stage_return.pressed.connect(_return_to_stage_select)
+	map_layer.add_child(stage_return)
+	var stage_return_pulse := create_tween().set_loops()
+	stage_return_pulse.tween_property(stage_return, "modulate:a", 0.70, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	stage_return_pulse.tween_property(stage_return, "modulate:a", 1.0, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 func _make_checkpoint_marker(left: float, top: float, right: float, bottom: float, should_pulse: bool = true) -> TextureRect:
 	var marker := TextureRect.new()
@@ -2302,15 +2335,32 @@ func _start_game(start_x: float, start_y: float) -> void:
 	if game_started and is_instance_valid(music_player):
 		music_player.play()
 
+func _return_to_title_screen() -> void:
+	_queue_game_return("title")
+
+
+func _return_to_stage_select() -> void:
+	_queue_game_return("stage_select")
+
+
 func _return_to_mission_select() -> void:
+	_queue_game_return("mission_select")
+
+
+func _queue_game_return(destination: String) -> void:
 	if not game_started:
 		return
 	# Defer teardown until the pressed signal has finished dispatching. Freeing
 	# the emitting Button synchronously can invalidate the active signal stack.
-	call_deferred("_complete_return_to_mission_select")
+	call_deferred("_complete_game_return", destination)
 
 
+# Kept as a compatibility entry point for the existing smoke test.
 func _complete_return_to_mission_select() -> void:
+	_complete_game_return("mission_select")
+
+
+func _complete_game_return(destination: String) -> void:
 	if not game_started:
 		return
 	# Do not leave gameplay unless the current slot was safely persisted.
@@ -2378,7 +2428,12 @@ func _complete_return_to_mission_select() -> void:
 	horror_atmosphere = null
 	material = null
 	light_mask = 1
-	_show_map_screen()
+	if destination == "stage_select":
+		_show_stage_select_screen()
+	elif destination == "title":
+		_show_title()
+	else:
+		_show_map_screen()
 	queue_redraw()
 
 
@@ -2437,7 +2492,7 @@ func _build_game(start_x: float, start_y: float) -> void:
 	hud.add_child(menu_button)
 	var menu_panel := PanelContainer.new()
 	menu_panel.position = Vector2(32, 74)
-	menu_panel.custom_minimum_size = Vector2(250, 112)
+	menu_panel.custom_minimum_size = Vector2(250, 170)
 	menu_panel.visible = false
 	var menu_panel_style := StyleBoxFlat.new()
 	menu_panel_style.bg_color = Color("#08070c")
@@ -2454,14 +2509,21 @@ func _build_game(start_x: float, start_y: float) -> void:
 	hud.add_child(menu_panel)
 	var menu_contents := VBoxContainer.new()
 	menu_panel.add_child(menu_contents)
+	var title_button := _make_menu_button("RETURN TO TITLE SCREEN")
+	title_button.name = "ReturnToTitleScreenButton"
+	title_button.custom_minimum_size = Vector2(240, 48)
+	title_button.pressed.connect(_return_to_title_screen)
+	menu_contents.add_child(title_button)
+	var stage_select_button := _make_menu_button("RETURN TO STAGE SELECT")
+	stage_select_button.name = "ReturnToStageSelectButton"
+	stage_select_button.custom_minimum_size = Vector2(240, 48)
+	stage_select_button.pressed.connect(_return_to_stage_select)
+	menu_contents.add_child(stage_select_button)
 	var mission_select_button := _make_menu_button("RETURN TO MISSION SELECT")
+	mission_select_button.name = "ReturnToMissionSelectButton"
 	mission_select_button.custom_minimum_size = Vector2(240, 48)
 	mission_select_button.pressed.connect(_return_to_mission_select)
 	menu_contents.add_child(mission_select_button)
-	var return_button := _make_menu_button("RETURN TO MAIN SCREEN")
-	return_button.custom_minimum_size = Vector2(240, 48)
-	return_button.pressed.connect(func(): get_tree().reload_current_scene())
-	menu_contents.add_child(return_button)
 	menu_button.pressed.connect(func(): menu_panel.visible = not menu_panel.visible)
 
 	mission_label = null
