@@ -884,7 +884,7 @@ void fragment() {
 	loading_text.name = "LoadingText"
 	loading_text.text = "LOADING"
 	loading_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	loading_text.add_theme_font_size_override("font_size", 19)
+	loading_text.add_theme_font_size_override("font_size", 17)
 	loading_text.add_theme_color_override("font_color", Color("#ffb04a"))
 	loading_text.add_theme_color_override("font_shadow_color", Color("#6d1d08"))
 	loading_text.add_theme_constant_override("shadow_offset_x", 2)
@@ -1852,7 +1852,7 @@ func _create_mission_select_header(stage_title: String, location_title: String, 
 	header.offset_left = 0.0
 	header.offset_right = 0.0
 	header.offset_top = 0.0
-	header.offset_bottom = 62.0
+	header.offset_bottom = 52.0
 	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var backing := ColorRect.new()
@@ -1868,11 +1868,11 @@ func _create_mission_select_header(stage_title: String, location_title: String, 
 	stage_label.text = stage_title
 	stage_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	stage_label.offset_top = 2.0
-	stage_label.offset_bottom = -48.0
+	stage_label.offset_bottom = -40.0
 	stage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stage_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	stage_label.add_theme_font_override("font", display_font)
-	stage_label.add_theme_font_size_override("font_size", 11)
+	stage_label.add_theme_font_size_override("font_size", 9)
 	stage_label.add_theme_color_override("font_color", Color("#e5e5e5"))
 	stage_label.add_theme_color_override("font_outline_color", Color(0.015, 0.012, 0.02, 0.95))
 	stage_label.add_theme_constant_override("outline_size", 2)
@@ -1883,8 +1883,8 @@ func _create_mission_select_header(stage_title: String, location_title: String, 
 	location_label.name = "MissionSelectLocationTitle"
 	location_label.text = location_title
 	location_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	location_label.offset_top = 13.0
-	location_label.offset_bottom = -24.0
+	location_label.offset_top = 10.0
+	location_label.offset_bottom = -18.0
 	location_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	location_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	location_label.add_theme_font_override("font", display_font)
@@ -1902,12 +1902,12 @@ func _create_mission_select_header(stage_title: String, location_title: String, 
 	screen_label.name = "MissionSelectScreenTitle"
 	screen_label.text = screen_title
 	screen_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	screen_label.offset_top = 39.0
-	screen_label.offset_bottom = -2.0
+	screen_label.offset_top = 34.0
+	screen_label.offset_bottom = -1.0
 	screen_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	screen_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	screen_label.add_theme_font_override("font", display_font)
-	screen_label.add_theme_font_size_override("font_size", 10)
+	screen_label.add_theme_font_size_override("font_size", 9)
 	screen_label.add_theme_color_override("font_color", Color("#f4f0ee"))
 	screen_label.add_theme_color_override("font_outline_color", Color(0.015, 0.012, 0.02, 0.95))
 	screen_label.add_theme_constant_override("outline_size", 2)
@@ -1920,7 +1920,7 @@ func _create_mission_select_header(stage_title: String, location_title: String, 
 	red_accent.anchor_right = 0.61
 	red_accent.anchor_top = 1.0
 	red_accent.anchor_bottom = 1.0
-	red_accent.offset_top = -2.0
+	red_accent.offset_top = -1.5
 	red_accent.offset_bottom = 0.0
 	red_accent.color = Color("#bd102d")
 	red_accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
