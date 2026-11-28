@@ -1710,6 +1710,7 @@ func _show_map_screen() -> void:
 
 	# Keep the complete supplied neighborhood map visible edge-to-edge.
 	var map_art := TextureRect.new()
+	map_art.name = "StageTwoMapArtwork" if active_stage_id == "stage_two" else "MissionSelectMapArtwork"
 	map_art.texture = STAGE_TWO_MAP_IMAGE if active_stage_id == "stage_two" else MAP_IMAGE
 	map_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	map_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
