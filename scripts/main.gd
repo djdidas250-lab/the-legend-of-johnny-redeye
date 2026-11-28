@@ -2377,6 +2377,28 @@ func _complete_game_return(destination: String) -> void:
 		push_error("Could not save the active slot; staying in gameplay instead of losing progress.")
 		return
 	_reset_davy_boss_state()
+	# Remove Matt-ijuana and every attached phase visual/fire effect before
+	# switching screens; asynchronous phase timers then fail their validity
+	# guards and cannot resurrect a boss after navigation.
+	if is_instance_valid(mattijuana_dialogue_layer):
+		mattijuana_dialogue_layer.queue_free()
+	mattijuana_dialogue_layer = null
+	if is_instance_valid(mattijuana_voice_player):
+		mattijuana_voice_player.stop()
+		mattijuana_voice_player.queue_free()
+	mattijuana_voice_player = null
+	if is_instance_valid(mattijuana_boss):
+		remove_child(mattijuana_boss)
+		mattijuana_boss.free()
+	mattijuana_boss = null
+	mattijuana_boss_visual = null
+	mattijuana_health_bar = null
+	mattijuana_boss_active = false
+	mattijuana_boss_state = "inactive"
+	mattijuana_health = 10
+	mattijuana_phase = 1
+	mattijuana_attack_cooldown = 1.4
+	mattijuana_fire_cooldown = 2.8
 	_clear_touch_directions()
 	direction_touch_buttons.clear()
 	game_started = false
