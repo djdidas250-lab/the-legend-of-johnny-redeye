@@ -1905,21 +1905,29 @@ func _show_map_screen() -> void:
 
 
 func _add_stage_two_mission_one_marker() -> void:
-	var marker := _make_checkpoint_marker(0.465, 0.42, 0.535, 0.58, false)
+	# Reference-image placement: Woodlawn Road immediately above Woodlawn Park.
+	# The source map is shown edge-to-edge; these anchors map the red X in the
+	# supplied 1079x458 placement reference to the upper-right road position.
+	var marker := _make_checkpoint_marker(0.848, 0.154, 0.968, 0.311, false)
 	marker.name = "StageTwoMissionOneMarker"
+	marker.stretch_mode = TextureRect.STRETCH_SCALE
 	map_layer.add_child(marker)
-	var pulse := create_tween().set_loops(2)
-	pulse.tween_property(marker, "modulate:a", 0.48, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	pulse.tween_property(marker, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	var pulse := create_tween().set_loops()
+	pulse.tween_property(marker, "modulate:a", 0.58, 1.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	pulse.tween_property(marker, "modulate:a", 1.0, 1.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	var hitbox := Button.new()
 	hitbox.name = "StageTwoMissionOneHitbox"
-	hitbox.anchor_left = 0.445
-	hitbox.anchor_right = 0.555
-	hitbox.anchor_top = 0.395
-	hitbox.anchor_bottom = 0.605
+	hitbox.anchor_left = 0.83
+	hitbox.anchor_right = 0.99
+	hitbox.anchor_top = 0.12
+	hitbox.anchor_bottom = 0.35
+	hitbox.offset_left = 0
+	hitbox.offset_right = 0
+	hitbox.offset_top = 0
+	hitbox.offset_bottom = 0
 	hitbox.focus_mode = Control.FOCUS_NONE
 	hitbox.text = ""
-	hitbox.modulate = Color(1, 1, 1, 0.02)
+	hitbox.modulate = Color(1, 1, 1, 0.0)
 	var clear_style := StyleBoxEmpty.new()
 	hitbox.add_theme_stylebox_override("normal", clear_style)
 	hitbox.add_theme_stylebox_override("hover", clear_style)
