@@ -132,7 +132,7 @@ func _ready() -> void:
 	var mission_stage_title := map_layer.find_child("MissionSelectStageTitle", true, false) as Label
 	var mission_location_title := map_layer.find_child("MissionSelectLocationTitle", true, false) as Label
 	var mission_screen_title := map_layer.find_child("MissionSelectScreenTitle", true, false) as Label
-	if not _check(mission_header != null and is_equal_approx(mission_header.offset_bottom, 62.0) and mission_header.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Mission Select must use a shallow 62px full-width header that does not intercept map taps."): return
+	if not _check(mission_header != null and is_equal_approx(mission_header.offset_bottom, 52.0) and mission_header.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Mission Select must use a shallow 52px full-width header that does not intercept map taps."): return
 	if not _check(mission_stage_title != null and mission_stage_title.text == "STAGE ONE" and mission_location_title != null and mission_location_title.text == "WOODLAWN SUBURBS" and mission_screen_title != null and mission_screen_title.text == "MISSION SELECT" and game.get_script().source_code.contains("func _create_mission_select_header(stage_title: String, location_title: String, screen_title: String)"), "Mission Select header must use the approved three-line copy and a reusable stage-title template."): return
 	var john_marker := map_layer.get_child(1) as TextureRect
 	if not _check(john_marker != null and john_marker.name == "JohnHouseCheckpointMarker" and john_marker.texture.resource_path == "res://images/map_checkpoint_x.svg", "John's Silvan Drive checkpoint marker is missing."): return
